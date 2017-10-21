@@ -1,9 +1,6 @@
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.LinkedList;
 import java.util.List;
-
-import javax.swing.text.ChangedCharSetException;
 
 import org.javatuples.Pair;
 import org.javatuples.Triplet;
@@ -14,12 +11,12 @@ import krpc.client.Stream;
 import krpc.client.StreamException;
 import krpc.client.services.SpaceCenter;
 import krpc.client.services.SpaceCenter.Flight;
-import krpc.client.services.SpaceCenter.Leg;
-import krpc.client.services.SpaceCenter.Part;
 import krpc.client.services.SpaceCenter.Parts;
+import krpc.client.services.SpaceCenter.Leg;
 import krpc.client.services.SpaceCenter.ReferenceFrame;
 import krpc.client.services.SpaceCenter.VesselSituation;
 import krpc.client.services.UI;
+import krpc.client.services.UI.Button;
 import krpc.client.services.UI.Canvas;
 import krpc.client.services.UI.Panel;
 import krpc.client.services.UI.RectTransform;
@@ -57,11 +54,9 @@ public class SuicideBurn {
 	private static double correcaoAceleracao = 1.0;
 	private static boolean suicideInicio = false;
 	private static String dadosColetados = null;
-
-	static double[] tamAmostraVel = new double[25];
-	static double[] tamAmostraAlt = new double[25];
-	static int posicao = 0;
-	static double gravarDados = 0;
+	private static VesselSituation pouso;
+	static int amostras = 5;
+	private static boolean execucaoPrograma = true;
 
 	public static void main(String[] args) throws IOException, RPCException, InterruptedException, StreamException {
 
@@ -87,154 +82,189 @@ public class SuicideBurn {
 		velocidade = naveAtual.flight(refVelocidade).getVelocity(); // Adiciona a Stream de velocidade da nave
 		aceleracaoGravidade = naveAtual.getOrbit().getBody().getSurfaceGravity(); // aceleração da gravidade do corpo
 																					// celeste orbitado ao nível do mar
+		UI telaUsuario = UI.newInstance(conexao);
+		Canvas telaItens = telaUsuario.getStockCanvas();
+		// Tamanho da tela de jogo em pixels
+		Pair<Double, Double> tamanhoTela = telaItens.getRectTransform().getSize();
+		// Adicionar um painel para conter os elementos de UI
+		Panel painelInfo = telaItens.addPanel(true);
+
+		// Posicionar o painel à esquerda da tela
+		RectTransform retangulo = painelInfo.getRectTransform();
+		retangulo.setSize(new Pair<Double, Double>(200.0, 100.0));
+		retangulo.setPosition(new Pair<Double, Double>((110 - (tamanhoTela.getValue0()) / 3), 150.0));
+
+		// Adicionar texto mostrando o empuxo
+
+		Text textoPainel = painelInfo.addText("Velocidade:", true);
+		textoPainel.getRectTransform().setPosition(new Pair<Double, Double>(0.0, 20.0));
+		textoPainel.setColor(new Triplet<Double, Double, Double>(1.0, 1.0, 1.0));
+		textoPainel.setSize(18);
+		Text textoPainel2 = painelInfo.addText("", true);
+		textoPainel2.getRectTransform().setPosition(new Pair<Double, Double>(0.0, -20.0));
+		textoPainel2.setColor(new Triplet<Double, Double, Double>(1.0, 1.0, 1.0));
+		textoPainel2.setSize(24);
 
 		// ---------- CÓDIGO DE EXECUÇÃO E CHECAGEM DO SUICIDE BURN! ---------------
 
-		while (true) {
-
+		while (execucaoPrograma) {
+			
 			atualizarVariaveis();
+			
+			textoPainel2.setContent(velocidade.getValue0().toString());
 
 			if (checarSuicide()) {
-
+				aceleracao = 1.0f;
+				correcaoAceleracao = 1.0f;
 				atualizarVariaveis();
 				System.out.println("Ínicio do Suicide Burn!!!");
 				suicideInicio = true;
 				naveAtual.getControl().setThrottle(1.0f);
-				break;
+
+				while (suicideInicio) {
+					atualizarVariaveis();
+					textoPainel2.setContent(velocidade.getValue0().toString());
+					
+					if (!checarSuicide()) {
+						atualizarVariaveis();
+						naveAtual.getControl().setThrottle(aceleracao*0.95f);
+					}
+					if (checarSuicide()) {
+						atualizarVariaveis();
+						naveAtual.getControl().setThrottle(aceleracao);
+
+						// Correções da aceleração:
+						/*
+						 * correcaoAceleracao = Math.abs(Math.log(Math.sqrt(aceleracao / (naveDeltaV * taxaDeQueima / naveTWR) / Math.abs(Math.sqrt(Math.abs(tempoDeQueima / 2))))));
+						 * 
+						 * Math.sqrt(Math.abs(aceleracao * (tempoDeQueima*Math.E) / ((naveDeltaV) * (taxaDeQueima) / naveTWR)));
+						 * 
+						 * Math.abs(Math.sqrt(Math.abs(Math.signum(aceleracao) * (tempoDeQueima / 1.7) / (naveTWR))));
+						 */
+					}
+
+					if (altitudeSuperficie.get() < 1000.0) {
+						naveAtual.getControl().setLegs(true);
+
+					}
+
+					// CHECK-UP DE VELOCIDADE PARA 95% DE TWR
+
+					if (altitudeSuperficie.get() < 20.0) {
+						textoPainel2.setContent(velocidade.getValue0().toString());
+
+						atualizarVariaveis();
+						if (velocidade.getValue0() > -15) {
+							aceleracao = (float) (correcaoAceleracao * 1.5 / naveTWR);
+							naveAtual.getControl().setThrottle(aceleracao);
+							if (velocidade.getValue0() < -4) {
+								aceleracao = (float) (correcaoAceleracao * 0.9 / naveTWR);
+								naveAtual.getControl().setThrottle(aceleracao);
+							}
+
+						}
+
+						pouso = naveAtual.getSituation();
+						if (pouso.toString() == "LANDED") {
+							System.out.println("Pouso finalizado!");
+							suicideInicio = false;
+							naveAtual.getControl().setThrottle(0);
+
+							execucaoPrograma = false;
+						}
+
+					}
+
+					pouso = naveAtual.getSituation();
+					if (pouso.toString() == "LANDED") {
+						System.out.println("Pouso finalizado!");
+						suicideInicio = false;
+						naveAtual.getControl().setThrottle(0);
+
+						execucaoPrograma = false;
+					}
+				}
 			}
-		}
-		while (suicideInicio) {
-			atualizarVariaveis();
-			System.out.println("Aceleracao: " + aceleracao);
-			System.out.println("Delta V : " + naveDeltaV);
-			System.out.println("Nave TWR: " + naveTWR);
-			System.out.println("Correção Acel: " + correcaoAceleracao);
-			System.out.println("Tempo Queima: " + tempoDeQueima);
-			System.out.println("Taxa De Queima: " + taxaDeQueima);
-			System.out.println("Tempo ate impacto: " + Math.pow((naveDeltaV/taxaDeQueima),2));
-			System.out.println(" ");
-			
-			// gravar log:
-			dadosColetados = coletarDados(velocidade.getValue0(), altitudeSuperficie.get());
-			if (dadosColetados != null) {
-
-				gravadorDeDados.println(dadosColetados);
-				gravarDados = 0;
-			}
-
-			if (checarSuicide()) {
-				atualizarVariaveis();
-				correcaoAceleracao = Math.abs(Math.log((Math.sqrt(aceleracao / Math.pow((naveDeltaV/taxaDeQueima),2) * naveTWR))));
-				
-				//correcaoAceleracao = Math.abs(Math.log(Math.sqrt((aceleracao / naveDeltaV) * naveTWR)));
-				
-				aceleracao = (float) (correcaoAceleracao);
-
-				System.out.println("Após correção: " + aceleracao);
-				naveAtual.getControl().setThrottle(aceleracao);
-
-				
-			}
-
-			/*
-			 * if (altitudeSuperficie.get() < 300) { List<Leg> pernas =
-			 * naveAtual.getParts().getLegs(); for (Leg perna : pernas) { if
-			 * (perna.getDeployable() && !perna.getDeployed()) { perna.setDeployed(true); }
-			 * } }
-			 */
-			// CHECK-UP DE VELOCIDADE PARA 95% DE TWR
-			if (velocidade.getValue0() > -4.0) {
-				aceleracao = (float) (correcaoAceleracao * 0.90 / naveTWR);
-				naveAtual.getControl().setThrottle(aceleracao);
-
-			}
-
-			VesselSituation pouso = naveAtual.getSituation();
-			if (pouso.toString() == "LANDED") {
-				System.out.println("Pouso finalizado!");
-				suicideInicio = false;
-				naveAtual.getControl().setThrottle(0);
+			if (!execucaoPrograma) {
 				gravadorDeDados.close();
 				conexao.close();
-
 			}
+
 		}
 	}
-
-	public static void atualizarVariaveis() throws InterruptedException {
+	
+	//Método que atualiza as variáveis de voo, para fazer os cálculos:
+	public static void atualizarVariaveis() throws InterruptedException, IOException {
 		try {
 			tempoAteImpacto = Math.sqrt(2 * altitudeSuperficie.get() * 1 / aceleracaoGravidade);
 			velocidade = naveAtual.flight(refVelocidade).getVelocity();
 			velocidadeNoImpacto = velocidade.getValue0() + aceleracaoGravidade * (tempoAteImpacto * tempoAteImpacto);
 			distanciaDaQueima = -velocidade.getValue0() * tempoDeQueima + 1 / 2 * acelMax * Math.pow(tempoDeQueima, 2);
-			taxaDeQueima = naveAtual.getAvailableThrust() / (naveAtual.getSpecificImpulse() * aceleracaoGravidade);
-			naveDeltaV = Math.log(massaTotalNave.get() / massaSecaNave.get()) * aceleracaoGravidade *naveAtual.getSpecificImpulse();
+			naveDeltaV = Math.log(massaTotalNave.get() / massaSecaNave.get()) * naveAtual.getSpecificImpulse()
+					* aceleracaoGravidade;
+
 			massaMedia = (float) ((massaTotalNave.get() + (massaTotalNave.get()
 					/ Math.pow(Math.E, (naveDeltaV / (naveAtual.getSpecificImpulse() * aceleracaoGravidade))))) / 2);
-			
-			naveTWR = naveAtual.getAvailableThrust() / (massaMedia * aceleracaoGravidade);
+
+			naveTWR = naveAtual.getAvailableThrust() / (massaTotalNave.get() * aceleracaoGravidade);
+			taxaDeQueima = naveTWR / naveAtual.getSpecificImpulse();
 			acelMax = (naveTWR * aceleracaoGravidade) - aceleracaoGravidade;
 			tempoDeQueima = velocidade.getValue0() / acelMax;
 
-			
-			// gravar log:
-			dadosColetados = coletarDados(velocidade.getValue0(), altitudeSuperficie.get());
-			if (dadosColetados != null) {
+			// -=-=-=- LINHA MUITO IMPORTANTE, DETERMINA A CORREÇÃO PARA ACELERAÇÃO AO
+			// POUSAR -=-=-=-
+			correcaoAceleracao = 
+					Math.abs(Math.sqrt(Math.abs(Math.signum(aceleracao) * (tempoDeQueima / 1.7) / (naveTWR))));
 
+			// gravar log:
+			dadosColetados = coletarDados(aceleracao, altitudeSuperficie.get(), velocidade.getValue0(), naveTWR,
+					tempoDeQueima);
+			if (dadosColetados != null) {
 				gravadorDeDados.println(dadosColetados);
-				gravarDados = 0;
 			}
+
+			aceleracao = (float) correcaoAceleracao;
 			Thread.sleep(25);
 
 		} catch (IOException e) {
 			System.out.println("Erro de gravação de dados: " + e.getMessage());
+			execucaoPrograma = false;
 		} catch (RPCException e) {
 			System.out.println("Erro de conexão com o Mod: " + e.getMessage());
+			execucaoPrograma = false;
 		} catch (StreamException e) {
 			System.out.println("Streams não iniciadas");
 			e.printStackTrace();
+			execucaoPrograma = false;
 		}
 	}
 
+	//Método que calcula a hora do suicide burn:
 	public static boolean checarSuicide() {
 		try {
-			if (0 >= altitudeSuperficie.get() - velocidade.getValue0() * tempoDeQueima
+			if (0 >= (altitudeSuperficie.get()) - (velocidade.getValue0() + aceleracaoGravidade) * tempoDeQueima
 					+ 1 / 2 * acelMax * (tempoDeQueima * tempoDeQueima)) {
 				return true;
 			}
 		} catch (StreamException | RPCException | IOException e) {
 			System.out.println("Erro ao checar hora correta do Suicide Burn");
 			e.printStackTrace();
+			execucaoPrograma = false;
 		}
 		return false;
 	}
 
-	public static String coletarDados(double velocidade, double altitude) {
-
-		if (posicao < tamAmostraVel.length) {
-			tamAmostraVel[posicao] = velocidade;
-		}
-		if (posicao < tamAmostraAlt.length) {
-			tamAmostraVel[posicao] = altitude;
-		}
+	//Esse método grava os valores dos dados que você fornecer no arquivo "valores.txt" separados por vírgula.
+	public static String coletarDados(double dados1, double dados2, double dados3, double dados4, double dados5) {
 		String resultado = null;
-		posicao++;
-		if (posicao >= tamAmostraVel.length) {
-			for (int i = 0; i < tamAmostraVel.length; i++) {
-				gravarDados += tamAmostraVel[i];
-			}
-			gravarDados /= tamAmostraVel.length;
-			resultado = (String.valueOf(gravarDados) + ",");
-			for (int i = 0; i < tamAmostraAlt.length; i++) {
-				gravarDados += tamAmostraAlt[i];
-			}
-			gravarDados /= tamAmostraAlt.length;
-			resultado += (String.valueOf(gravarDados) + ",");
-			posicao = 0;
-
+		if (amostras > 0) {
+			amostras--;
+		} else {
+			resultado = String.valueOf(Math.negateExact((long)dados1)) + "," + String.valueOf(Math.negateExact((long)dados2)) + "," + String.valueOf(Math.negateExact((long)dados3)) + ","
+					+ String.valueOf(Math.negateExact((long)dados4)) + "," + String.valueOf(Math.negateExact((long)dados5)) + ",";
+			amostras = 5;
 		}
 		return resultado;
-
 	}
 
 }
