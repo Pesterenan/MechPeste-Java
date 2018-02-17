@@ -1,7 +1,7 @@
 # Suicide-Burn-KSP
 Código simples em Java para executar o suicide burn num foguete no KSP.
 
-Esse código não está completo, e nem está tão funcional, está com bugs e alguns outros problemas.
+Finalmente o código está executando uma queima que faz o foguete descer certinho!
 O código exige um pouco de conhecimento no mod kRPC.
 
 Vou continuar mexendo e trabalhando nele enquanto puder.
