@@ -1,4 +1,4 @@
-# Suicide-Burn-KSP
+# MechPeste
 Código simples em Java para executar o suicide burn num foguete no KSP.
 
 Finalmente o código está executando uma queima que faz o foguete descer certinho!
