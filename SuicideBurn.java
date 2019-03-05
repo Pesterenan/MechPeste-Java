@@ -14,7 +14,7 @@ import krpc.client.services.SpaceCenter.VesselSituation;
 
 public class SuicideBurn extends MechPeste{
 
-	// DECLARA«√O DE VARIAVEIS GLOBAIS
+	// DECLARA√á√ÉO DE VARIAVEIS GLOBAIS
 	static Connection conexao;
 	static SpaceCenter centroEspacial;
 	private Vessel naveAtual;
@@ -26,7 +26,7 @@ public class SuicideBurn extends MechPeste{
 	private ControlePID controleAcel = new ControlePID();
 	private ControlePID controlePouso = new ControlePID();
 	private Navegacao nav;
-	double distanciaPouso = 50.0; // Altura pra comeÁar o Hover
+	double distanciaPouso = 50.0; // Altura pra come√ßar o Hover
 	float forcaGravidade;
 	boolean executandoSuicideBurn = false;
 	boolean podePousar = false;
@@ -43,7 +43,7 @@ public class SuicideBurn extends MechPeste{
 	}
 
 	public SuicideBurn()  throws StreamException, RPCException, IOException, InterruptedException {
-		// InicializaÁ„o das vari·veis:
+		// Inicializa√ß√£o das vari√°veis:
 		conexao = Connection.newInstance("Suicide Burn - MechPeste");
 		centroEspacial = SpaceCenter.newInstance(conexao);
 		naveAtual = centroEspacial.getActiveVessel(); // objeto da nave
@@ -55,15 +55,15 @@ public class SuicideBurn extends MechPeste{
 		forcaGravidade = naveAtual.getOrbit().getBody().getSurfaceGravity();
 
 		System.out.println("Nave Atual: " +  naveAtual.getName());
-		System.out.println("SituaÁ„o da nave: " + naveAtual.getSituation().toString());
-		System.out.println("ForÁa da Gravidade Atual: " + forcaGravidade + "Corpo Celeste: " + naveAtual.getOrbit().getBody().getName());
+		System.out.println("Situa√ß√£o da nave: " + naveAtual.getSituation().toString());
+		System.out.println("For√ßa da Gravidade Atual: " + forcaGravidade + "Corpo Celeste: " + naveAtual.getOrbit().getBody().getName());
 		calcularParametros();
-		System.out.println("ForÁa de TWR da Nave: " + naveTWRMax);
+		System.out.println("For√ßa de TWR da Nave: " + naveTWRMax);
 		controleAcel.setAmostraTempo(40);
 		controlePouso.setAmostraTempo(40);
 		controleAcel.ajustarPID(0.025, 0.001, 0.025);
 		controlePouso.ajustarPID(0.1, 0.001, 0.1);
-		// Limitar aceleraÁ„o da nave
+		// Limitar acelera√ß√£o da nave
 		naveAtual.getAutoPilot().engage(); // LIGAR O PILOTO
 		decolagemDeTeste();
 		calcularParametros();
@@ -95,7 +95,7 @@ public class SuicideBurn extends MechPeste{
 		
 		// Loop principal de Suicide Burn:
 		while (executandoSuicideBurn) {
-			// Calcula os valores de aceleraÁ„o e TWR do foguete:
+			// Calcula os valores de acelera√ß√£o e TWR do foguete:
 			calcularParametros();
 			// Desce o trem de pouso da nave em menos de 100 metros
 			if (altitudeNave.get() < 100) {
@@ -120,21 +120,21 @@ public class SuicideBurn extends MechPeste{
 			float correcaoAnterior = naveAtual.getControl().getThrottle();
 			try{
 				if (!podePousar) {
-					aceleracao((float) (correcaoAnterior + controleAcel.computarPID() + 1 / naveTWRMax) / 3);
-//					System.out.println("Valor SaÌda ACEL: " + controleAcel.computarPID());
+					aceleracao((float) (correcaoAnterior + controleAcel.computarPID()) / 2);
+//					System.out.println("Valor Sa√≠da ACEL: " + controleAcel.computarPID());
 				} else {
 					aceleracao((float) controlePouso.computarPID());
-//					System.out.println("Valor SaÌda POUSO: " + controlePouso.computarPID());
+//					System.out.println("Valor Sa√≠da POUSO: " + controlePouso.computarPID());
 				}
 			} catch (Exception erro) {
-				System.out.println("Erro no c·lculo da aceleraÁ„o. Usando valor antigo. " + erro);
+				System.out.println("Erro no c√°lculo da acelera√ß√£o. Usando valor antigo. " + erro);
 				aceleracao(correcaoAnterior);
 			}
 			// Verificar se o foguete pousou:
 			checarPouso();
 			Thread.sleep(50);
 		} // Fim loop-while
-	} // Fim cÛdigo principal
+	} // Fim c√≥digo principal
 
 	
 
@@ -159,7 +159,7 @@ public class SuicideBurn extends MechPeste{
 //			System.out.println("TWR         : " + naveTWRMax);
 //			System.out.println("Dist. Queima: " + distanciaDaQueima);
 //			System.out.println("Altitude Voo: " + altitudeNave.get());
-//			System.out.println("CorreÁ„o    : " + controleAcel.computarPID());
+//			System.out.println("Corre√ß√£o    : " + controleAcel.computarPID());
 //			System.out.println("Vel Vert    : " + velVertNave.get());
 		} catch (Exception erro) {
 			naveTWRMax = 1;
@@ -170,7 +170,7 @@ public class SuicideBurn extends MechPeste{
 	
 
 	private void decolagemDeTeste() throws StreamException, RPCException, IOException, InterruptedException{
-		// Decola a nave se estiver na pista, ou pousada. Se estiver voando, apenas corta a aceleraÁ„o.
+		// Decola a nave se estiver na pista, ou pousada. Se estiver voando, apenas corta a acelera√ß√£o.
 		if (naveAtual.getSituation() == VesselSituation.LANDED
 		 || naveAtual.getSituation() == VesselSituation.PRE_LAUNCH) {
 			if (naveAtual.getSituation() == VesselSituation.PRE_LAUNCH) {
