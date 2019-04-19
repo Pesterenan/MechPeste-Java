@@ -1,8 +1,3 @@
-import java.io.IOException;
-
-import krpc.client.RPCException;
-import krpc.client.StreamException;
-
 /*Controlador Proporcional Integral Derivativo
 	Autor: Renan Torres <pesterenan@gmail.com>
  	Data: 22/08/2018 
@@ -22,7 +17,7 @@ public class ControlePID {
 	private double termoIntegral, ultimaEntrada; // variáveis de cálculo de erro
 	private double ultimoCalculo = 0; 	//tempo do último cálculo
 	
-	public double computarPID() throws RPCException, StreamException, IOException{
+	public double computarPID() {
 		// Método que computa o incremento do PID
 		double agora = System.currentTimeMillis(); 	// Buscar tempo imediato
 		double mudancaTempo = agora - this.ultimoCalculo; 	// Comparar com o último cálculo

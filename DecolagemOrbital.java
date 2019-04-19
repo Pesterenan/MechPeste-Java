@@ -1,4 +1,5 @@
 import java.io.IOException;
+
 import org.javatuples.Pair;
 import org.javatuples.Triplet;
 
@@ -11,6 +12,7 @@ import krpc.client.services.SpaceCenter.Flight;
 import krpc.client.services.SpaceCenter.Node;
 import krpc.client.services.SpaceCenter.ReferenceFrame;
 import krpc.client.services.SpaceCenter.Resources;
+import krpc.client.services.SpaceCenter.Vessel;
 import krpc.client.services.UI;
 import krpc.client.services.UI.Button;
 import krpc.client.services.UI.Canvas;
@@ -21,18 +23,18 @@ import krpc.client.services.UI.Text;
 
 public class DecolagemOrbital {
 
-	private static Connection conexao;
-
-	public DecolagemOrbital(Connection conexaoOK)
-			throws StreamException, RPCException, IOException, InterruptedException {
-		conexao = conexaoOK;
-		System.out.println("Iniciando Decolagem.");
-		iniciarDecolagem();
-	}
-
-	public void iniciarDecolagem() throws IOException, RPCException, InterruptedException, StreamException {
-		SpaceCenter centroEspacial = SpaceCenter.newInstance(conexao);
-		SpaceCenter.Vessel naveAtual = centroEspacial.getActiveVessel();
+	private Connection conexao;
+	private SpaceCenter centroEspacial;
+	private Vessel naveAtual;
+	private ReferenceFrame pontoRef;
+	private Flight vooNave;
+	
+	public DecolagemOrbital(Connection con, Vessel nav) throws IOException, RPCException, InterruptedException, StreamException {
+		conexao = con;
+		centroEspacial = SpaceCenter.newInstance(conexao);
+		naveAtual = nav; // objeto da nave
+		pontoRef = naveAtual.getOrbit().getBody().getReferenceFrame();
+		vooNave = naveAtual.flight(pontoRef);
 
 		float altInicioCurva = 350;
 		float altFimCurva = 45000;
@@ -200,7 +202,7 @@ public class DecolagemOrbital {
 			double v2 = Math.sqrt(mu * ((2.0 / r) - (1.0 / a2)));
 			double deltaV = v2 - v1;
 			Node node = naveAtual.getControl().addNode(ut.get() + naveAtual.getOrbit().getTimeToApoapsis(),
-					(float) deltaV, 0, 0);
+				(float) deltaV, 0, 0);
 
 			// Calcular tempo de quueima (equação de foguete)
 			double empuxoTotal = naveAtual.getAvailableThrust(); // pegar empuxo disponível
@@ -233,15 +235,14 @@ public class DecolagemOrbital {
 			textoPainel.setContent("Ajustando...");
 			naveAtual.getControl().setThrottle(0.05f);
 			Stream<Triplet<Double, Double, Double>> remainingBurn = conexao.addStream(node, "remainingBurnVector",
-					node.getReferenceFrame());
+				node.getReferenceFrame());
 			while (remainingBurn.get().getValue1() > 1) {
 			}
 			naveAtual.getControl().setThrottle(0);
 			node.remove();
 			textoPainel.setContent("Lan�amento completo.");
 			naveAtual.getAutoPilot().disengage();
-			MechPeste.resetarPainel();
-
+			
 		}
 	}
 }

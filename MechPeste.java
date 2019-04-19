@@ -1,146 +1,238 @@
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.javatuples.Pair;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+
+import javax.swing.WindowConstants;
+
 import org.javatuples.Triplet;
+
 import krpc.client.Connection;
 import krpc.client.RPCException;
-import krpc.client.Stream;
+
 import krpc.client.StreamException;
+import krpc.client.services.Drawing;
+import krpc.client.services.Drawing.Line;
 import krpc.client.services.SpaceCenter;
 import krpc.client.services.SpaceCenter.Flight;
-import krpc.client.services.SpaceCenter.Leg;
-import krpc.client.services.SpaceCenter.LegState;
 import krpc.client.services.SpaceCenter.ReferenceFrame;
-import krpc.client.services.SpaceCenter.VesselSituation;
-import krpc.client.services.UI;
-import krpc.client.services.UI.Button;
-import krpc.client.services.UI.Canvas;
-import krpc.client.services.UI.Panel;
-import krpc.client.services.UI.RectTransform;
-import krpc.client.services.UI.Text;
+import krpc.client.services.SpaceCenter.Vessel;
 
-public class MechPeste {
+
+import java.awt.GridLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
+
+public class MechPeste extends JFrame implements ActionListener, PropertyChangeListener {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	protected static Connection conexao;
-	private static UI telaUsuario;
-	private static Canvas telaItens;
-	private static Pair<Double, Double> tamanhoTela;
-	static Panel painelBotoes;
-	private static double margemUI = 20.0;
-	public static Text textoPainel;
-	public static Text textoPainel2;
-	public static Button botaoPousar;
-	public static Button botaoFlutuar;
-	public static Button botaoDecolar;
-	public static Button botaoMirar;
-	public static Stream<Boolean> botPousoClick;
+	protected static SpaceCenter centroEspacial;
+	protected static ReferenceFrame pontoRef;
+	protected static Vessel naveAtual;
+	protected static Flight vooNave;
+	protected static MechPeste mp;
+
+	private static int numConexao = 0;
+
+	private JPanel painelBotoes;
+	private JButton botSuicideBurn;
+	private JButton botDecolagem;
+	private JButton botAutoRover;
+	private JButton botSuicideMulti;
+	private JButton botVooAutonomo;
+	private Thread t_SuicideBurn;
+	private Thread t_DecolagemOrbital;
+	private Thread t_VooAutonomo;
+	private JLabel labelAltitude;
+	
 
 	public static void main(String[] args) throws StreamException, RPCException, IOException, InterruptedException {
-		conexao = Connection.newInstance("MechPeste");
-		telaUsuario = UI.newInstance(conexao);
-		telaItens = telaUsuario.getStockCanvas();
-		tamanhoTela = telaItens.getRectTransform().getSize();
-		painelBotoes = adicionarPainel(telaItens);
-		botPousoClick = conexao.addStream(botaoPousar, "getClicked");
-		Stream<Boolean> botSBClick = conexao.addStream(botaoFlutuar, "getClicked");
-		Stream<Boolean> botDecolarClick = conexao.addStream(botaoDecolar, "getClicked");
-		Stream<Boolean> botMirarClick = conexao.addStream(botaoMirar, "getClicked");
+		mp = new MechPeste();
+	}
 
-		while (true) {
-			if (botSBClick.get()) {
-				botaoFlutuar.setClicked(false);
-				botaoDecolar.setVisible(false);
-				botaoFlutuar.setVisible(false);
-				textoPainel.setVisible(true);
-				textoPainel2.setVisible(true);
-				new SuicideBurn(conexao);
-
+	private MechPeste() throws InterruptedException {
+		super("MechPeste - por Pesterenan");
+		try {
+			iniciarConexao();
+			criarJanela();
+		} catch (Exception e) {
+			numConexao++;
+			System.out.println("Erro de conexÃ£o: " + e.getMessage());
+			Thread.sleep(5000);
+			if (numConexao < 3) {
+				new MechPeste();
 			}
-
-			if (botDecolarClick.get()) {
-				botaoDecolar.setClicked(false);
-				botaoDecolar.setVisible(false);
-				textoPainel.setVisible(true);
-				textoPainel2.setVisible(true);
-				new DecolagemOrbital(conexao);
-
-			}
-			if (botMirarClick.get()) {
-				botaoMirar.setClicked(false);
-				botaoMirar.setVisible(false);
-				textoPainel.setVisible(true);
-				textoPainel2.setVisible(true);
-				new Navegacao(conexao);
-			}
-			Thread.sleep(1000);
 		}
 	}
 
-	public static Panel adicionarPainel(Canvas telaItens)
-			throws IOException, RPCException, InterruptedException, StreamException {
-		// Adicionar um painel para conter os elementos de UI
-		Panel painelInfo = telaItens.addPanel(true);
-		// Posicionar o painel Ã  esquerda da tela
-		RectTransform retangulo = painelInfo.getRectTransform();
-		retangulo.setSize(new Pair<Double, Double>(450.0, 40.0));
-		retangulo.setPosition(new Pair<Double, Double>(0.0, tamanhoTela.getValue1() / 2 - 85.0));
+	private void criarJanela() throws RPCException {
+		painelBotoes = new JPanel();
 
-		botaoDecolar = painelInfo.addButton("Decolar", true);
-		botaoDecolar.getRectTransform().setSize(new Pair<Double, Double>(125.0, 30.0));
-		botaoDecolar.getRectTransform().setPosition(new Pair<Double, Double>(-150.0, 0.0));
-
-		botaoFlutuar = painelInfo.addButton("Flutuar", true);
-		botaoFlutuar.getRectTransform().setSize(new Pair<Double, Double>(125.0, 30.0));
-		botaoFlutuar.getRectTransform().setPosition(new Pair<Double, Double>(0.0, 0.0));
-
-		botaoMirar = painelInfo.addButton("Mirar", true);
-		botaoMirar.getRectTransform().setSize(new Pair<Double, Double>(125.0, 30.0));
-		botaoMirar.getRectTransform().setPosition(new Pair<Double, Double>(0.0, -50.0));
-
-		botaoPousar = painelInfo.addButton("Pousar", true);
-		botaoPousar.getRectTransform().setSize(new Pair<Double, Double>(125.0, 30.0));
-		botaoPousar.getRectTransform().setPosition(new Pair<Double, Double>(150.0, 0.0));
-
-		// Adicionar texto mostrando infos
-
-		textoPainel = painelInfo.addText("Alt:", false);
-		textoPainel.getRectTransform().setPosition(new Pair<Double, Double>(10.0, 0.0));
-		textoPainel.getRectTransform().setSize(new Pair<Double, Double>(retangulo.getSize().getValue0(), margemUI));
-		textoPainel.setColor(new Triplet<Double, Double, Double>(1.0, 1.0, 1.0));
-		textoPainel.setSize(18);
-
-		textoPainel2 = painelInfo.addText("0", false);
-		textoPainel2.getRectTransform().setPosition(new Pair<Double, Double>(50.0, 0.0));
-		textoPainel2.getRectTransform().setSize(new Pair<Double, Double>(retangulo.getSize().getValue0(), margemUI));
-		textoPainel2.setColor(new Triplet<Double, Double, Double>(1.0, 1.0, 1.0));
-		textoPainel2.setSize(18);
-		return painelInfo;
-	}
-
-	public static void setTextoPainel(String texto) throws RPCException, IOException {
-		textoPainel.setContent(texto);
-	}
-
-	public static void setTextoPainel2(String texto) throws RPCException, IOException {
-		textoPainel2.setContent(texto);
-	}
-	public static void resetarPainel() throws RPCException,IOException {
-		botaoFlutuar.setClicked(false);
-		botaoDecolar.setClicked(false);
-		botaoMirar.setClicked(false);
-		botaoPousar.setClicked(false);
+		painelBotoes.setLayout(new GridLayout(0,1,5,5));
+		botSuicideBurn = new JButton("Suicide Burn");
+		botDecolagem = new JButton("Decolagem Orbital");
+		botAutoRover = new JButton("Auto-Rover");
+		botSuicideMulti = new JButton("Multi SuicideBurn");
+		botVooAutonomo = new JButton("Voo Autônomo");
 		
-		botaoPousar.setVisible(true);
-		botaoDecolar.setVisible(true);
-		botaoFlutuar.setVisible(true);
-		botaoMirar.setVisible(true);
-		
-		textoPainel.setVisible(false);
-		textoPainel2.setVisible(false);
-		textoPainel.setContent("");
-		textoPainel2.setContent("");
+		JPanel p = new JPanel();
+		p.add(botSuicideBurn);
+		painelBotoes.add(p);
+		p = new JPanel();
+		p.add(botSuicideMulti);
+		painelBotoes.add(p);
+		p = new JPanel();
+		p.add(botDecolagem);
+		painelBotoes.add(p);
+		p = new JPanel();
+		p.add(botAutoRover);
+		painelBotoes.add(p);
+		p = new JPanel();
+		p.add(botVooAutonomo);
+		painelBotoes.add(p);
+		botSuicideBurn.addActionListener(this);
+		botSuicideMulti.addActionListener(this);
+		botDecolagem.addActionListener(this);
+		botAutoRover.addActionListener(this);
+		botVooAutonomo.addActionListener(this);
+
+		setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+		setResizable(false);
+		setSize(250, 250);
+		setLocation(500, 200);
+		p = new JPanel();
+		p.add(painelBotoes);
+		add(p);
+		setVisible(true);
+	}
+
+	public static void iniciarConexao() throws StreamException, RPCException, IOException, InterruptedException {
+		conexao = Connection.newInstance("MechPeste");
+		centroEspacial = SpaceCenter.newInstance(conexao);
+		naveAtual = centroEspacial.getActiveVessel();
+		pontoRef = naveAtual.getOrbit().getBody().getReferenceFrame();
+		vooNave = naveAtual.flight(pontoRef);
+	}
+
+	public void actionPerformed(ActionEvent e) {
+		Object fonte = e.getSource();
+		if (fonte.equals(botSuicideMulti)) {
+			try {
+				List<Vessel> naves = new ArrayList<Vessel>();
+				for (Vessel nave : centroEspacial.getVessels()) {
+					if (nave.getName().contains(naveAtual.getName())) {
+						naves.add(nave);
+					}
+				}
+				for (Vessel nave : naves) {
+					new Thread(new Runnable() {
+						@Override
+						public void run() {
+							try {
+								System.out.println(nave);
+								new SuicideBurn(conexao, nave);
+							} catch (StreamException | RPCException | IOException | InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+						}
+					}).start();
+					System.out.println(nave.getName());
+				}
+
+			} catch (RPCException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+		}
+		if (fonte.equals(botSuicideBurn)) {
+			System.out.println("Iniciando módulo de Suicide Burn");
+			if (t_SuicideBurn == null) {
+				t_SuicideBurn = new Thread(new Runnable() {
+					@Override
+					public void run() {
+						System.out.println("Começou a Rodar");
+						boolean SuicideBurnRodando = true;
+						while (SuicideBurnRodando) {
+							try {
+								new SuicideBurn(conexao, naveAtual);
+								SuicideBurnRodando = false;
+								t_SuicideBurn = null;
+								
+							} catch (StreamException | RPCException | IOException | InterruptedException e) {
+								e.printStackTrace();
+								
+							}
+						}
+					}
+				});
+				t_SuicideBurn.start();
+				
+			} else {
+				System.out.println("Já Rodando");
+			}
+		}
+		if (fonte.equals(botDecolagem)) {
+			System.out.println("Iniciando módulo de Decolagem Orbital");
+			if (t_DecolagemOrbital == null) {
+				t_DecolagemOrbital = new Thread(new Runnable() {
+					@Override
+					public void run() {
+						System.out.println("Começou a Rodar");
+						try {
+							new DecolagemOrbital(conexao, naveAtual);
+						} catch (StreamException | RPCException | IOException | InterruptedException e) {
+							e.printStackTrace();
+						}
+					}
+				});
+				t_DecolagemOrbital.start();
+				
+			} else {
+				System.out.println("Já Rodando");
+			}
+		}
+		if (fonte.equals(botVooAutonomo)) {
+			System.out.println("Iniciando Piloto Automático de Aviões");
+			try {
+				novaJanelaDeVoo();
+				VooAutonomo va = new VooAutonomo(conexao, naveAtual);
+				va.addPropertyChangeListener(this);
+				va.execute();
+				
+			} catch (RPCException | StreamException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+			
+		}
+	}
+
+	private void novaJanelaDeVoo() {
+		JFrame jv = new JFrame();
+		jv.setBounds(mp.getLocation().x + mp.getWidth(), mp.getLocation().y , 200, 200);
+		labelAltitude = new JLabel("Altitude: ");
+		labelAltitude.addPropertyChangeListener(this);
+		jv.add(labelAltitude);
+		jv.setVisible(true);
+	}
+
+	@Override
+	public void propertyChange(PropertyChangeEvent evt) {
+		if ("altitude".equals(evt.getPropertyName())) {
+			labelAltitude.setText("Altitude: AE" + String.valueOf(evt.getNewValue()));
+			labelAltitude.updateUI();
+		}
 		
 	}
+
 }
