@@ -1,3 +1,4 @@
+package com.pesterenan;
 import java.io.IOException;
 
 import org.javatuples.Pair;
@@ -47,13 +48,13 @@ public class DecolagemOrbital {
 		// Adicionar um painel para conter os elementos de UI
 		Panel painelInfo = telaItens.addPanel(true);
 
-		// Posicionar o painel à esquerda da tela
+		// Posicionar o painel ï¿½ esquerda da tela
 		RectTransform retangulo = painelInfo.getRectTransform();
 		retangulo.setSize(new Pair<Double, Double>(400.0, 100.0));
 		retangulo.setPosition(new Pair<Double, Double>((110 - (tamanhoTela.getValue0()) / 3), 150.0));
 
 		// Adicionar um botao ao painel
-		Button botaoPainel = painelInfo.addButton("Lançamento", true);
+		Button botaoPainel = painelInfo.addButton("Lanï¿½amento", true);
 		botaoPainel.getRectTransform().setPosition(new Pair<Double, Double>(100.0, -margemUI));
 		// Adicionar texto mostrando o empuxo
 		InputField caixaTexto = painelInfo.addInputField(true);
@@ -76,7 +77,7 @@ public class DecolagemOrbital {
 		// stream para checar se o botao foi clicado
 		Stream<Boolean> botaoClicado = conexao.addStream(botaoPainel, "getClicked");
 
-		// Esperar clique do botão:
+		// Esperar clique do botï¿½o:
 		while (!botaoClicado.get()) {
 			boolean numero = true;
 			if (caixaTexto.getChanged()) {
@@ -89,7 +90,7 @@ public class DecolagemOrbital {
 					textoPainel.setContent("Digite a Altitude Final: ");
 					botaoPainel.setVisible(true);
 				} else {
-					textoPainel.setContent("Precisa ser um número, acima de 70km!");
+					textoPainel.setContent("Precisa ser um nï¿½mero, acima de 70km!");
 					botaoPainel.setVisible(false);
 				}
 			}
@@ -119,7 +120,7 @@ public class DecolagemOrbital {
 		naveAtual.getControl().setThrottle(aceleracaoLancamento); // ACELERAR COM 1.5 DE TWR
 
 		// Contagem regressiva...
-		textoPainel.setContent("Lançamento em:");
+		textoPainel.setContent("Lanï¿½amento em:");
 		textoPainel2.setContent("5...");
 		Thread.sleep(1000);
 		textoPainel2.setContent("4...");
@@ -136,7 +137,7 @@ public class DecolagemOrbital {
 		naveAtual.getAutoPilot().engage(); // ativa o piloto auto
 		naveAtual.getAutoPilot().targetPitchAndHeading(90, 90); // direÃ§Ã£o
 
-		textoPainel.setContent("Altitude em Relação ao Solo:");
+		textoPainel.setContent("Altitude em Relaï¿½ï¿½o ao Solo:");
 		// Loop principal de subida
 		boolean srbsSeparated = false;
 		double anguloGiro = 0; // angulo de giro
@@ -167,7 +168,7 @@ public class DecolagemOrbital {
 			 * if (srbFuel.get() < 1.0) { //checar nÃ­vel de CS
 			 * naveAtual.getControl().activateNextStage(); //se for menor que 0.1 , ativa
 			 * pra separar srbsSeparated = true; //muda variÃ¡vel para true, saindo do if
-			 * System.out.println("Separação de Boosters"); } }
+			 * System.out.println("Separaï¿½ï¿½o de Boosters"); } }
 			 */
 
 			// Diminuir aceleraÃ§Ã£o ao chegar perto do apoastro alvo
@@ -183,7 +184,7 @@ public class DecolagemOrbital {
 			textoPainel2.setContent(String.valueOf(apoastro.get()));
 
 		}
-		textoPainel.setContent("Apoastro alvo alcançado");
+		textoPainel.setContent("Apoastro alvo alcanï¿½ado");
 		naveAtual.getControl().setThrottle(0); // cortar motor
 		Thread.sleep(1000);
 		// esperar atÃ© sair da atmosfera
@@ -192,7 +193,7 @@ public class DecolagemOrbital {
 			textoPainel2.setContent(String.format(String.valueOf(altitude.get())));
 
 			// Planejar circularizaÃ§Ã£o usando equaÃ§Ã£o vis-viva
-			textoPainel.setContent("Planejando queima de circularização");
+			textoPainel.setContent("Planejando queima de circularizaï¿½ï¿½o");
 			double mu = naveAtual.getOrbit().getBody().getGravitationalParameter(); // pegar parametro G do corpo o qual
 																					// a nave orbita
 			double r = naveAtual.getOrbit().getApoapsis(); // apoastro da orbita
@@ -212,13 +213,13 @@ public class DecolagemOrbital {
 			double taxaQueima = empuxoTotal / isp; // taxa de fluxo, empuxo / isp
 			double tempoQueima = (massaTotal - massaSeca) / taxaQueima;
 			// Orientate ship
-			textoPainel2.setContent("Orientando nave para queima de circularização");
+			textoPainel2.setContent("Orientando nave para queima de circularizaï¿½ï¿½o");
 			naveAtual.getAutoPilot().setReferenceFrame(node.getReferenceFrame());
 			naveAtual.getAutoPilot().setTargetDirection(new Triplet<Double, Double, Double>(0.0, 1.0, 0.0));
 			naveAtual.getAutoPilot().wait_();
 
 			// Wait until burn
-			textoPainel.setContent("Esperando até a queima de circularização");
+			textoPainel.setContent("Esperando atï¿½ a queima de circularizaï¿½ï¿½o");
 			double burnUt = ut.get() + naveAtual.getOrbit().getTimeToApoapsis() - (tempoQueima / 2.0);
 			textoPainel2.setContent("Tempo de queima: " + burnUt);
 			double leadTime = 5;
@@ -240,7 +241,7 @@ public class DecolagemOrbital {
 			}
 			naveAtual.getControl().setThrottle(0);
 			node.remove();
-			textoPainel.setContent("Lançamento completo.");
+			textoPainel.setContent("Lanï¿½amento completo.");
 			naveAtual.getAutoPilot().disengage();
 			
 		}

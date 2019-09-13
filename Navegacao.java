@@ -1,3 +1,4 @@
+package com.pesterenan;
 import java.io.IOException;
 
 import org.javatuples.Triplet;
@@ -13,50 +14,54 @@ public class Navegacao {
 
 	static SpaceCenter centroEspacial;
 	private Vessel naveAtual;
-	private ReferenceFrame pontoRef;
-	private Flight vooNave;
+	private ReferenceFrame pontoRefOrbital;
+	private ReferenceFrame pontoRefSuperficie;
+	private Flight parametrosDeVoo;
 
-	private Vetor alinharDistanciaHorizontal = new Vetor(0, 0, 0);
-	private Triplet<Double, Double, Double> posicaoPousoAlvo = new Triplet<Double, Double, Double>(0.0, 0.0, 0.0);
-	private Vetor vetorDaVelocidade = new Vetor(0, 0, 0);
-	private Vetor retornarVetor = new Vetor(0, 0, 0);
-	public int anguloInclinacaoMax = 60;
-	
-	public Navegacao(SpaceCenter CentroEspacial, Vessel NaveAtual)
+	private Vetor vetorDirecaoHorizontal = new Vetor(0, 0, 0);
+	private Triplet<Double, Double, Double> posicaoAlvo = new Triplet<Double, Double, Double>(0.0, 0.0, 0.0);
+	public int anguloInclinacaoMax = 80;
+
+	public Navegacao(SpaceCenter centro, Vessel nave)
 			throws IOException, RPCException, InterruptedException, StreamException {
-		centroEspacial = CentroEspacial;
-		naveAtual = NaveAtual;
-		pontoRef = naveAtual.getOrbit().getBody().getReferenceFrame();
-		vooNave = naveAtual.flight(pontoRef);
-		MirarNave();
+		centroEspacial = centro;
+		naveAtual = nave;
+		pontoRefOrbital = naveAtual.getOrbit().getBody().getReferenceFrame();
+		pontoRefSuperficie = naveAtual.getSurfaceReferenceFrame();
+		parametrosDeVoo = naveAtual.flight(pontoRefOrbital);
 	}
 
-	public void MirarNave() throws IOException, RPCException, InterruptedException, StreamException {
-		// Buscar N� Retr�grado:
-		posicaoPousoAlvo = centroEspacial.transformPosition(vooNave.getRetrograde(),
-				naveAtual.getSurfaceVelocityReferenceFrame(), pontoRef);
+	public void mirarRetrogrado() throws IOException, RPCException, InterruptedException, StreamException {
+		// Buscar Direção Retrógrada:
+		posicaoAlvo = centroEspacial.transformPosition(parametrosDeVoo.getRetrograde(),
+				naveAtual.getSurfaceVelocityReferenceFrame(), pontoRefOrbital);
 
-		alinharDistanciaHorizontal = Vetor.vetorDistancia(
-				centroEspacial.transformPosition(posicaoPousoAlvo, pontoRef, naveAtual.getSurfaceReferenceFrame()),
-				naveAtual.position(naveAtual.getSurfaceReferenceFrame()));
+		vetorDirecaoHorizontal = Vetor.direcaoAlvoContraria(naveAtual.position(pontoRefSuperficie),
+				centroEspacial.transformPosition(posicaoAlvo, pontoRefOrbital, pontoRefSuperficie));
 
-		Vetor alinharDirecao = getElevacaoDirecaoDoVetor(alinharDistanciaHorizontal);
+		Vetor alinharDirecao = getElevacaoDirecaoDoVetor(vetorDirecaoHorizontal);
 
 		naveAtual.getAutoPilot().targetPitchAndHeading((float) alinharDirecao.y, (float) alinharDirecao.x);
 		naveAtual.getAutoPilot().setTargetRoll((float) alinharDirecao.x);
 	}
 
-	Vetor getElevacaoDirecaoDoVetor(Vetor vetor) throws RPCException, IOException, StreamException {
-		Triplet<Double, Double, Double> velRelativa = centroEspacial.transformPosition(vooNave.getVelocity(), pontoRef,
-				naveAtual.getSurfaceReferenceFrame());
+	public void mirarAlvo(Vessel alvo) throws IOException, RPCException, InterruptedException, StreamException {
+		// Buscar Alvo:
+		vetorDirecaoHorizontal = Vetor.direcaoAlvo(naveAtual.position(pontoRefSuperficie),
+				centroEspacial.transformPosition(alvo.position(pontoRefOrbital), pontoRefOrbital, pontoRefSuperficie));
 
-		vetorDaVelocidade.x = ((Double) velRelativa.getValue1()).doubleValue();
-		vetorDaVelocidade.y = ((Double) velRelativa.getValue2()).doubleValue();
+		Vetor alinharDirecao = getElevacaoDirecaoDoVetor(vetorDirecaoHorizontal);
 
-		vetor = vetor.subtrai(vetorDaVelocidade);
+		naveAtual.getAutoPilot().targetPitchAndHeading((float) alinharDirecao.y, (float) alinharDirecao.x);
+		naveAtual.getAutoPilot().setTargetRoll((float) alinharDirecao.x);
+	}
 
-		retornarVetor.x = Vetor.anguloDirecao(vetor);
-		retornarVetor.y = Math.max(anguloInclinacaoMax, (int) (90 - vetor.Magnitude() * 1.5));
-		return retornarVetor;
+	private Vetor getElevacaoDirecaoDoVetor(Vetor alvo) throws RPCException, IOException, StreamException {
+		Vetor velocidade = new Vetor(
+				centroEspacial.transformPosition(parametrosDeVoo.getVelocity(), pontoRefOrbital, pontoRefSuperficie));
+		Vetor vetorVelocidade = new Vetor(velocidade.y, velocidade.z, velocidade.x);
+		alvo = alvo.subtrai(vetorVelocidade);
+		return new Vetor(Vetor.anguloDirecao(alvo), 
+				Math.max(anguloInclinacaoMax, (int) (90 - alvo.Magnitude() * 0.1)),0);
 	}
 }

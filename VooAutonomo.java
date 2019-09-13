@@ -1,6 +1,10 @@
+package com.pesterenan;
 import javax.swing.SwingWorker;
 
-import krpc.client.*;
+import krpc.client.Connection;
+import krpc.client.RPCException;
+import krpc.client.Stream;
+import krpc.client.StreamException;
 import krpc.client.services.SpaceCenter;
 import krpc.client.services.SpaceCenter.Flight;
 import krpc.client.services.SpaceCenter.ReferenceFrame;

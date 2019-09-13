@@ -1,21 +1,21 @@
+package com.pesterenan;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 
 import org.javatuples.Triplet;
 
 import krpc.client.Connection;
 import krpc.client.RPCException;
+import krpc.client.services.Drawing;
+import krpc.client.services.Drawing.Line;
+import krpc.client.services.Drawing.Text;
 import krpc.client.services.SpaceCenter;
 import krpc.client.services.SpaceCenter.Flight;
 import krpc.client.services.SpaceCenter.ReferenceFrame;
 import krpc.client.services.SpaceCenter.Vessel;
 import krpc.client.services.SpaceCenter.Waypoint;
 import krpc.client.services.SpaceCenter.WaypointManager;
-import krpc.client.services.Drawing;
-import krpc.client.services.Drawing.Line;
-import krpc.client.services.Drawing.Text;
 
 // Módulo de Piloto automático de Rovers
 // Autor: Renan Torres <pesterenan@gmail.com>
@@ -44,8 +44,8 @@ public class RoverPST {
 	float anguloAlvo = 0;
 	float anguloRover = 0;
 	float limiteDistanciaAlvo = 50;
-	float velocidadeMaxima = 20;
-	float velocidadeCurva = 5;
+	float velocidadeMaxima = 6;
+	float velocidadeCurva = 3;
 	ControlePID ctrlDirecao = new ControlePID();
 	ControlePID ctrlAceleracao = new ControlePID();
 	ControlePID ctrlDistancia = new ControlePID();
@@ -82,9 +82,9 @@ public class RoverPST {
 
 	private void definirAlvo() throws IOException, RPCException {
 		posicaoRover = new Vetor(posicionarTupla(rover.position(pontoRefSuperficie)));
-		listarMarcadores("ALVO");
+		listarMarcadores("�rea");
 		checarDistancia();
-		
+		direcaoRover.divide(2);
 	}
 
 	private void listarMarcadores(String nome) throws RPCException, IOException {

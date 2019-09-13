@@ -1,3 +1,4 @@
+package com.pesterenan;
 import java.io.IOException;
 
 import org.javatuples.Triplet;
@@ -25,7 +26,7 @@ public class SuicideBurn {
 	private Stream<Double> altitude;
 	private Stream<Double> velocidadeVertical;
 	private Stream<Float> massaTotal;
-	private float forcaGravidade;
+	private float acelGravidade;
 	private UI ui;
 
 	private ControlePID ctrlAceleracao = new ControlePID();
@@ -47,7 +48,7 @@ public class SuicideBurn {
 	}
 
 	private void mensagem(String texto, float duracao) throws RPCException {
-		ui.message(texto, duracao, MessagePosition.TOP_CENTER, new Triplet<Double,Double,Double>(0.0,1.0,0.0),20);
+		ui.message(texto, duracao, MessagePosition.TOP_CENTER, new Triplet<Double,Double,Double>(0.0,1.0,0.0),16);
 
 	}
 	public SuicideBurn() throws IOException, RPCException, StreamException, InterruptedException {
@@ -63,11 +64,11 @@ public class SuicideBurn {
 		naveAtual = nave;
 		ui = UI.newInstance(conexao);
 
-		Flight vooNave = naveAtual.flight(naveAtual.getOrbit().getBody().getReferenceFrame());
-		altitude = conexao.addStream(vooNave, "getSurfaceAltitude");
-		velocidadeVertical = conexao.addStream(vooNave, "getVerticalSpeed");
+		Flight parametrosDeVoo = naveAtual.flight(naveAtual.getOrbit().getBody().getReferenceFrame());
+		altitude = conexao.addStream(parametrosDeVoo, "getSurfaceAltitude");
+		velocidadeVertical = conexao.addStream(parametrosDeVoo, "getVerticalSpeed");
 		massaTotal = conexao.addStream(naveAtual, "getMass");
-		forcaGravidade = naveAtual.getOrbit().getBody().getSurfaceGravity();
+		acelGravidade = naveAtual.getOrbit().getBody().getSurfaceGravity();
 		Navegacao navegacao = new Navegacao(centroEspacial, naveAtual);
 
 		calcularParametros();
@@ -76,29 +77,30 @@ public class SuicideBurn {
 
 		mensagem("Nave Atual: " + naveAtual.getName(), 3f);
 		mensagem("Situação da nave: " + naveAtual.getSituation().toString(), 3f);
-		mensagem("Força da Gravidade Atual: " + forcaGravidade + "Corpo Celeste: "
+		mensagem("Força da Gravidade Atual: " + acelGravidade + "Corpo Celeste: "
 				+ naveAtual.getOrbit().getBody().getName(), 3f);
 		mensagem("Força de TWR da Nave: " + valorTWR, 3f);
+		double altitudeTWR = 100; 
 		// Loop esperando para executar o Suicide Burn:
 		while (!executandoSuicideBurn) {
 			calcularParametros();
 			podePousar = false;
-			navegacao.MirarNave();
+			navegacao.mirarRetrogrado();
 
 			if (!naveAtual.getControl().getBrakes() && velocidadeVertical.get() < 0) {
 					if (altitude.get() < ALTITUDE_AEROFREIOS
 					|| velocidadeVertical.get() < -VELOCIDADE_AEROFREIOS) {
 				naveAtual.getControl().setBrakes(true);
-				navegacao.anguloInclinacaoMax = 60;
+				navegacao.anguloInclinacaoMax = 70;
 			} else if (altitude.get() > ALTITUDE_AEROFREIOS) {
 				naveAtual.getControl().setBrakes(false);
-				navegacao.anguloInclinacaoMax = 30;
+				navegacao.anguloInclinacaoMax = 45;
 			}}
 			if (altitude.get() < ALTITUDE_RCS) {
 				naveAtual.getControl().setRCS(true);
 			}
 			// Checar altitude para o Suicide Burn:
-			double altitudeTWR = valorTWR * forcaGravidade * 2;
+			altitudeTWR = valorTWR * acelGravidade * 2;
 			if (altitudeTWR < altitudePouso) {
 				altitudePouso = 50.0;
 			} else {
@@ -118,7 +120,7 @@ public class SuicideBurn {
 			// Calcula os valores de aceleração e TWR do foguete:
 			calcularParametros();
 			// Desce o trem de pouso da nave em menos de 100 metros
-			if (altitude.get() < 100) {
+			if (altitude.get() < (altitudeTWR * 3)) {
 				naveAtual.getControl().setGear(true);
 			}
 			// Informa aos PIDs a altitude, limite e velocidade da nave
@@ -126,8 +128,8 @@ public class SuicideBurn {
 			ctrlAceleracao.setLimitePID(distanciaDaQueima);
 			ctrlPouso.setEntradaPID(velocidadeVertical.get());
 			// Aponta nave para o retrograde se a velocidade horizontal for maior que 0.2m/s
-			if (vooNave.getHorizontalSpeed() > 1) {
-				navegacao.MirarNave();
+			if (parametrosDeVoo.getHorizontalSpeed() > 3) {
+				navegacao.mirarRetrogrado();
 				ctrlPouso.setLimitePID(0);
 			} else {
 				naveAtual.getAutoPilot().setTargetPitch(90);
@@ -176,8 +178,8 @@ public class SuicideBurn {
 			} else {
 				empuxo = naveAtual.getAvailableThrust();
 			}
-			valorTWR = empuxo / (massaTotal.get() * forcaGravidade);
-			acelMax = (valorTWR * forcaGravidade) - forcaGravidade;
+			valorTWR = empuxo / (massaTotal.get() * acelGravidade);
+			acelMax = (valorTWR * acelGravidade) - acelGravidade;
 			duracaoDaQueima = Math.abs(velocidadeVertical.get()) / acelMax;
 			distanciaDaQueima = (Math.abs(velocidadeVertical.get()) * duracaoDaQueima
 					+ 1 / 2 * acelMax * Math.pow(duracaoDaQueima, 2));
@@ -210,7 +212,7 @@ public class SuicideBurn {
 	}
 
 	private void aceleracao(float acel) throws RPCException, IOException {
-		naveAtual.getControl().setThrottle((float) acel);
+		naveAtual.getControl().setThrottle(acel);
 	}
 
 	private void checarPouso() throws RPCException, IOException, InterruptedException {

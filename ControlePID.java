@@ -1,3 +1,4 @@
+package com.pesterenan;
 /*Controlador Proporcional Integral Derivativo
 	Autor: Renan Torres <pesterenan@gmail.com>
  	Data: 22/08/2018 
@@ -7,41 +8,41 @@ public class ControlePID {
 	//Controlador PID escrito em Java para uso com o mod MechPeste
 	private double saidaMin = -1; 
 	private double saidaMax = 1;
-	// Variáveis padrão de ajuste do PID:
+	// Variï¿½veis padrï¿½o de ajuste do PID:
 	private double kp = 0.025;
 	private double ki = 0.001;
 	private double kd = 0.1;
 	private double amostraTempo = 20; // Tempo para amostragem
 
-	private double valorEntrada, valorSaida, valorLimite; //variáveis de valores
-	private double termoIntegral, ultimaEntrada; // variáveis de cálculo de erro
-	private double ultimoCalculo = 0; 	//tempo do último cálculo
+	private double valorEntrada, valorSaida, valorLimite; //variï¿½veis de valores
+	private double termoIntegral, ultimaEntrada; // variï¿½veis de cï¿½lculo de erro
+	private double ultimoCalculo = 0; 	//tempo do ï¿½ltimo cï¿½lculo
 	
 	public double computarPID() {
-		// Método que computa o incremento do PID
+		// Mï¿½todo que computa o incremento do PID
 		double agora = System.currentTimeMillis(); 	// Buscar tempo imediato
-		double mudancaTempo = agora - this.ultimoCalculo; 	// Comparar com o último cálculo
+		double mudancaTempo = agora - this.ultimoCalculo; 	// Comparar com o ï¿½ltimo cï¿½lculo
 
 		if (mudancaTempo >= this.amostraTempo) { 
-			// Variáveis para o cálculo do valor de saída:
+			// Variï¿½veis para o cï¿½lculo do valor de saï¿½da:
 			double erro = this.valorLimite - this.valorEntrada;
 			termoIntegral += ki * erro;
 			if (termoIntegral > saidaMax) {termoIntegral = saidaMax;}
 			else if (termoIntegral < saidaMin) {termoIntegral = saidaMin;}
 			double diferencaEntrada = (this.valorEntrada - this.ultimaEntrada);
 			
-			// Computar o valor de saída:
+			// Computar o valor de saï¿½da:
 			this.valorSaida = kp * erro + ki * termoIntegral - kd * diferencaEntrada;
 			
-			// Limitar valor de saída:
+			// Limitar valor de saï¿½da:
 			if (this.valorSaida > saidaMax) {this.valorSaida = saidaMax;}
 			else if (this.valorSaida < saidaMin) {this.valorSaida = saidaMin;}
 			
-			// Guardando os valores atuais para o próximo cálculo:
+			// Guardando os valores atuais para o prï¿½ximo cï¿½lculo:
 			this.ultimaEntrada = this.valorEntrada;
 			this.ultimoCalculo = agora;
 		}
-		// Retorna o valor de saída calculado:
+		// Retorna o valor de saï¿½da calculado:
 		return this.valorSaida;
 	}
 
@@ -50,7 +51,7 @@ public class ControlePID {
 		this.valorEntrada = valor;
 	}
 	public void setLimitePID(double valor) {
-		// Limite para o valor de entrada alcançar:
+		// Limite para o valor de entrada alcanï¿½ar:
 		this.valorLimite = valor;
 	}
 	public void limitarSaida(double Min, double Max) {
