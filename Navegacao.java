@@ -1,4 +1,5 @@
 package com.pesterenan;
+
 import java.io.IOException;
 
 import org.javatuples.Triplet;
@@ -21,6 +22,7 @@ public class Navegacao {
 	private Vetor vetorDirecaoHorizontal = new Vetor(0, 0, 0);
 	private Triplet<Double, Double, Double> posicaoAlvo = new Triplet<Double, Double, Double>(0.0, 0.0, 0.0);
 	public int anguloInclinacaoMax = 80;
+	private static float ajuste = 1.0f;
 
 	public Navegacao(SpaceCenter centro, Vessel nave)
 			throws IOException, RPCException, InterruptedException, StreamException {
@@ -53,7 +55,7 @@ public class Navegacao {
 		Vetor alinharDirecao = getElevacaoDirecaoDoVetor(vetorDirecaoHorizontal);
 
 		naveAtual.getAutoPilot().targetPitchAndHeading((float) alinharDirecao.y, (float) alinharDirecao.x);
-		naveAtual.getAutoPilot().setTargetRoll((float) alinharDirecao.x);
+		// naveAtual.getAutoPilot().setTargetRoll((float) alinharDirecao.x);
 	}
 
 	private Vetor getElevacaoDirecaoDoVetor(Vetor alvo) throws RPCException, IOException, StreamException {
@@ -61,7 +63,11 @@ public class Navegacao {
 				centroEspacial.transformPosition(parametrosDeVoo.getVelocity(), pontoRefOrbital, pontoRefSuperficie));
 		Vetor vetorVelocidade = new Vetor(velocidade.y, velocidade.z, velocidade.x);
 		alvo = alvo.subtrai(vetorVelocidade);
-		return new Vetor(Vetor.anguloDirecao(alvo), 
-				Math.max(anguloInclinacaoMax, (int) (90 - alvo.Magnitude() * 0.1)),0);
+		return new Vetor(Vetor.anguloDirecao(alvo),
+				Math.max(anguloInclinacaoMax, (int) (90 - (alvo.Magnitude() * ajuste))), 0);
+	}
+
+	public static void setAjuste(float ajusteNovo) {
+		ajuste = ajusteNovo;
 	}
 }

@@ -1,4 +1,5 @@
 package com.pesterenan;
+
 import javax.swing.SwingWorker;
 
 import krpc.client.Connection;
@@ -24,9 +25,9 @@ public class VooAutonomo extends SwingWorker<String, String> {
 
 	private VesselSituation situacao;
 
-	public VooAutonomo(Connection con, Vessel nav) throws RPCException, StreamException {
+	public VooAutonomo(Connection con) throws RPCException, StreamException {
 		conexao = con;
-		naveAtual = nav;
+		naveAtual = centroEspacial.getActiveVessel();
 		centroEspacial = SpaceCenter.newInstance(conexao);
 		pontoRef = naveAtual.getOrbit().getBody().getReferenceFrame();
 		vooNave = naveAtual.flight(pontoRef);

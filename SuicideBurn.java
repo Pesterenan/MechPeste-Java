@@ -1,7 +1,6 @@
 package com.pesterenan;
-import java.io.IOException;
 
-import org.javatuples.Triplet;
+import java.io.IOException;
 
 import krpc.client.Connection;
 import krpc.client.RPCException;
@@ -11,62 +10,53 @@ import krpc.client.services.SpaceCenter;
 import krpc.client.services.SpaceCenter.Flight;
 import krpc.client.services.SpaceCenter.Vessel;
 import krpc.client.services.SpaceCenter.VesselSituation;
-import krpc.client.services.UI;
-import krpc.client.services.UI.MessagePosition;
-
 
 public class SuicideBurn {
 
 	private static final int ALTITUDE_AEROFREIOS = 10000;
 	private static final int VELOCIDADE_AEROFREIOS = 400;
-	private static final int ALTITUDE_RCS = 3000;
+	private static int altitudeSCR = 3000;
 	private Connection conexao;
 	private SpaceCenter centroEspacial;
 	private Vessel naveAtual;
 	private Stream<Double> altitude;
-	private Stream<Double> velocidadeVertical;
+	private Stream<Double> velVertical;
+	private Stream<Double> velHorizontal;
 	private Stream<Float> massaTotal;
 	private float acelGravidade;
-	private UI ui;
 
-	private ControlePID ctrlAceleracao = new ControlePID();
-	private ControlePID ctrlPouso = new ControlePID();
+	private ControlePID suicidePID = new ControlePID();
+	private ControlePID pousoPID = new ControlePID();
 
 	double altitudePouso = 50.0;
 
 	boolean executandoSuicideBurn = false;
-	boolean podePousar = false;
+	static boolean podePousar = true;
 	double valorTWR = 1.0;
 	double acelMax = 0;
 
 	double distanciaDaQueima = 0.0;
 	double duracaoDaQueima = 0;
 	float novaAcel = 0;
+	double distanciaQueimaV2 = 0;
 
-	public static void main(String[] args) throws IOException, RPCException, InterruptedException, StreamException {
-		new SuicideBurn();
-	}
-
-	private void mensagem(String texto, float duracao) throws RPCException {
-		ui.message(texto, duracao, MessagePosition.TOP_CENTER, new Triplet<Double,Double,Double>(0.0,1.0,0.0),16);
-
-	}
-	public SuicideBurn() throws IOException, RPCException, StreamException, InterruptedException {
-		conexao = Connection.newInstance("Suicide Burn - MechPeste");
+	public SuicideBurn(Connection con) throws StreamException, RPCException, IOException, InterruptedException {
+		conexao = con;
 		centroEspacial = SpaceCenter.newInstance(conexao);
 		naveAtual = centroEspacial.getActiveVessel();
-		new SuicideBurn(conexao,naveAtual);
+		new SuicideBurn(conexao, naveAtual);
 	}
-	public SuicideBurn(Connection con, Vessel nave)
+
+	public SuicideBurn(Connection con, Vessel nav)
 			throws StreamException, RPCException, IOException, InterruptedException {
 		conexao = con;
 		centroEspacial = SpaceCenter.newInstance(conexao);
-		naveAtual = nave;
-		ui = UI.newInstance(conexao);
+		naveAtual = nav;
 
 		Flight parametrosDeVoo = naveAtual.flight(naveAtual.getOrbit().getBody().getReferenceFrame());
 		altitude = conexao.addStream(parametrosDeVoo, "getSurfaceAltitude");
-		velocidadeVertical = conexao.addStream(parametrosDeVoo, "getVerticalSpeed");
+		velVertical = conexao.addStream(parametrosDeVoo, "getVerticalSpeed");
+		velHorizontal = conexao.addStream(parametrosDeVoo, "getHorizontalSpeed");
 		massaTotal = conexao.addStream(naveAtual, "getMass");
 		acelGravidade = naveAtual.getOrbit().getBody().getSurfaceGravity();
 		Navegacao navegacao = new Navegacao(centroEspacial, naveAtual);
@@ -75,42 +65,40 @@ public class SuicideBurn {
 		iniciarPIDs();
 		decolagemDeTeste();
 
-		mensagem("Nave Atual: " + naveAtual.getName(), 3f);
-		mensagem("Situação da nave: " + naveAtual.getSituation().toString(), 3f);
-		mensagem("Força da Gravidade Atual: " + acelGravidade + "Corpo Celeste: "
-				+ naveAtual.getOrbit().getBody().getName(), 3f);
-		mensagem("Força de TWR da Nave: " + valorTWR, 3f);
-		double altitudeTWR = 100; 
+		GUI.setParametros("nome", naveAtual.getName());
+		GUI.setStatus(
+				"Iniciando Suicide Burn em: " + naveAtual.getOrbit().getBody().getName() + ", TWR em: " + valorTWR);
+		double altitudeTWR = 100;
+
+		float anguloRoll = naveAtual.getAutoPilot().getTargetRoll();
 		// Loop esperando para executar o Suicide Burn:
 		while (!executandoSuicideBurn) {
 			calcularParametros();
-			podePousar = false;
 			navegacao.mirarRetrogrado();
 
-			if (!naveAtual.getControl().getBrakes() && velocidadeVertical.get() < 0) {
-					if (altitude.get() < ALTITUDE_AEROFREIOS
-					|| velocidadeVertical.get() < -VELOCIDADE_AEROFREIOS) {
-				naveAtual.getControl().setBrakes(true);
-				navegacao.anguloInclinacaoMax = 70;
-			} else if (altitude.get() > ALTITUDE_AEROFREIOS) {
-				naveAtual.getControl().setBrakes(false);
-				navegacao.anguloInclinacaoMax = 45;
-			}}
-			if (altitude.get() < ALTITUDE_RCS) {
+			if (!naveAtual.getControl().getBrakes() && velVertical.get() < 0) {
+				if (altitude.get() < ALTITUDE_AEROFREIOS || velVertical.get() < -VELOCIDADE_AEROFREIOS) {
+					naveAtual.getControl().setBrakes(true);
+					navegacao.anguloInclinacaoMax = 50;
+				} else if (altitude.get() > ALTITUDE_AEROFREIOS) {
+					naveAtual.getControl().setBrakes(false);
+					navegacao.anguloInclinacaoMax = 30;
+				}
+			}
+			if (altitude.get() < altitudeSCR) {
 				naveAtual.getControl().setRCS(true);
 			}
 			// Checar altitude para o Suicide Burn:
 			altitudeTWR = valorTWR * acelGravidade * 2;
 			if (altitudeTWR < altitudePouso) {
-				altitudePouso = 50.0;
+				altitudePouso = 80.0;
 			} else {
 				altitudePouso = altitudeTWR;
 			}
-			if (0 > altitude.get() - distanciaDaQueima - altitudePouso && velocidadeVertical.get() < -1) {
+			if ((altitudePouso > altitude.get() - distanciaQueimaV2) && velVertical.get() < -1) {
 				System.out.println(altitudeTWR);
 				executandoSuicideBurn = true;
-				mensagem("Iniciando o Suicide Burn!", 1f);
-				// System.out.println("Iniciando o Suicide Burn!");
+				GUI.setStatus("Iniciando o Suicide Burn!");
 			}
 			Thread.sleep(100);
 		}
@@ -120,57 +108,73 @@ public class SuicideBurn {
 			// Calcula os valores de aceleração e TWR do foguete:
 			calcularParametros();
 			// Desce o trem de pouso da nave em menos de 100 metros
-			if (altitude.get() < (altitudeTWR * 3)) {
+			if (altitude.get() < (altitudeTWR * 1.414)) {
 				naveAtual.getControl().setGear(true);
 			}
 			// Informa aos PIDs a altitude, limite e velocidade da nave
-			ctrlAceleracao.setEntradaPID(altitude.get());
-			ctrlAceleracao.setLimitePID(distanciaDaQueima);
-			ctrlPouso.setEntradaPID(velocidadeVertical.get());
+			suicidePID.setEntradaPID(altitude.get());
+			suicidePID.setLimitePID(distanciaQueimaV2);
+			pousoPID.setEntradaPID(velVertical.get());
 			// Aponta nave para o retrograde se a velocidade horizontal for maior que 0.2m/s
-			if (parametrosDeVoo.getHorizontalSpeed() > 3) {
+			if (parametrosDeVoo.getHorizontalSpeed() > 1) {
+				naveAtual.getAutoPilot().setTargetRoll((float) anguloRoll);
 				navegacao.mirarRetrogrado();
-				ctrlPouso.setLimitePID(0);
+				pousoPID.setLimitePID(0);
 			} else {
 				naveAtual.getAutoPilot().setTargetPitch(90);
-				ctrlPouso.setLimitePID(-(altitude.get()/10));
-			}
-			if (altitude.get() > altitudePouso) {
-				podePousar = false;
-			} else {
-				podePousar = true;
+				pousoPID.setLimitePID(-(altitude.get() * 0.1));
 			}
 			// Corrigir aceleração da nave:
 			float correcaoAnterior = naveAtual.getControl().getThrottle();
+
 			try {
-				if (!podePousar) {
-					aceleracao((float) (correcaoAnterior + ctrlAceleracao.computarPID()) / 2);
+				if (podePousar) {
+					if (altitude.get() < altitudePouso) {
+						aceleracao((float) pousoPID.computarPID());
+					} else {
+						aceleracao((float) (suicidePID.computarPID()));
+					}
 				} else {
-					aceleracao((float) ctrlPouso.computarPID());
+					aceleracao((float) (suicidePID.computarPID()));
 				}
 			} catch (Exception erro) {
-				mensagem("Erro no cálculo da aceleração. Usando valor antigo. " + erro, 1f);
-				// System.out.println("Erro no cálculo da aceleração. Usando valor antigo. " +
-				// erro);
+				GUI.setStatus("Erro no cálculo da aceleração. Usando valor antigo. " + erro);
 				aceleracao(correcaoAnterior);
 			}
+
+//			if (altitude.get() > altitudePouso) {
+//				podePousar = false;
+//			} else {
+//				podePousar = true;
+//			}
+//			try {
+//				if (!podePousar) {
+//					aceleracao((float) (suicidePID.computarPID()));
+//				} else {
+//					aceleracao((float) pousoPID.computarPID());
+//				}
+//			} catch (Exception erro) {
+//				GUI.setStatus("Erro no cálculo da aceleração. Usando valor antigo. " + erro);
+//				aceleracao(correcaoAnterior);
+//			}
 			checarPouso();
 			Thread.sleep(50);
 		}
 	}
 
 	public void iniciarPIDs() {
-		ctrlAceleracao.setAmostraTempo(50);
-		ctrlAceleracao.ajustarPID(0.025, 0.001, 0.05);
-		ctrlAceleracao.limitarSaida(0, 1);
-		ctrlAceleracao.setLimitePID(0);
-		ctrlPouso.setAmostraTempo(50);
-		ctrlPouso.ajustarPID(0.5, 0.001, 0.1);
-		ctrlPouso.limitarSaida(0.75 / valorTWR, 1);
-		ctrlPouso.setLimitePID(-4);
+		suicidePID.setAmostraTempo(25);
+		suicidePID.ajustarPID(0.01, 0.001, 0.1);
+		suicidePID.limitarSaida(0, 1);
+		suicidePID.setLimitePID(0);
+		pousoPID.setAmostraTempo(25);
+		pousoPID.ajustarPID(0.1, 0.001, 0.2);
+		pousoPID.limitarSaida(0.5 / valorTWR, 1);
+		pousoPID.setLimitePID(0);
 	}
 
 	private void calcularParametros() throws RPCException, StreamException, IOException {
+
 		try {
 			float empuxo = 0f;
 			if (naveAtual.getAvailableThrust() == 0) {
@@ -180,14 +184,20 @@ public class SuicideBurn {
 			}
 			valorTWR = empuxo / (massaTotal.get() * acelGravidade);
 			acelMax = (valorTWR * acelGravidade) - acelGravidade;
-			duracaoDaQueima = Math.abs(velocidadeVertical.get()) / acelMax;
-			distanciaDaQueima = (Math.abs(velocidadeVertical.get()) * duracaoDaQueima
+			duracaoDaQueima = Math.abs(velVertical.get()) / acelMax;
+			distanciaDaQueima = (Math.abs(velVertical.get()) * duracaoDaQueima
 					+ 1 / 2 * acelMax * Math.pow(duracaoDaQueima, 2));
+			distanciaQueimaV2 = ((Math.abs(velVertical.get()) + Math.sqrt(2 * acelGravidade * altitude.get())) / 2)
+					* duracaoDaQueima;
 		} catch (Exception erro) {
 			valorTWR = 1;
 			duracaoDaQueima = 1;
 			distanciaDaQueima = 1;
 		}
+		GUI.setParametros("altitude", altitude.get());
+		GUI.setParametros("velVert", velVertical.get());
+		GUI.setParametros("velHorz", velHorizontal.get());
+		GUI.setParametros("periastro", distanciaQueimaV2);
 	}
 
 	private void decolagemDeTeste() throws StreamException, RPCException, IOException, InterruptedException {
@@ -203,7 +213,7 @@ public class SuicideBurn {
 			aceleracao(1);
 			while (altitude.get() < altitudePouso) {
 				naveAtual.getAutoPilot().setTargetPitch(90);
-				Thread.sleep(200);
+				Thread.sleep(300);
 			}
 			aceleracao(0);
 		} else {
@@ -218,17 +228,19 @@ public class SuicideBurn {
 	private void checarPouso() throws RPCException, IOException, InterruptedException {
 		if ((naveAtual.getSituation() == VesselSituation.LANDED)
 				|| (naveAtual.getSituation() == VesselSituation.SPLASHED) && (podePousar)) {
-			mensagem("Pouso finalizado.", 1f);
+			GUI.setStatus("Pouso finalizado.");
 			// System.out.println("Pouso finalizado.");
 			aceleracao(0);
 			naveAtual.getAutoPilot().disengage();
 			naveAtual.getControl().setSAS(true);
 			naveAtual.getControl().setRCS(true);
 			naveAtual.getControl().setBrakes(false);
-			podePousar = false;
+			podePousar = true;
 			executandoSuicideBurn = false;
-			//conexao.close();
 		}
 	}
 
+	public static void setAltSCR(int altitude) {
+		altitudeSCR = altitude;
+	}
 }

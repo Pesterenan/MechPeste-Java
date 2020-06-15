@@ -1,4 +1,5 @@
 package com.pesterenan;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,18 +29,17 @@ public class ScriptMillenium {
 	List<Part> listaDePecas;
 	Resources combustivelNoEstagio;
 	Stream<Float> combustivel;
-	
-	
+
 	float altInicioCurva = 600;
-	float altFimCurva = 60000;
+	float altFimCurva = 65000;
 	float altFinal = 80000;
 	private int estagioAtual = 0;
-	
+
 	public static void main(String[] args) throws RPCException, IOException, StreamException, InterruptedException {
 		SM = new ScriptMillenium();
 		SM.iniciar();
 	}
-	
+
 	public void iniciar() throws RPCException, IOException, StreamException, InterruptedException {
 		conexao = Connection.newInstance("Script Millenium");
 		centroEspacial = SpaceCenter.newInstance(conexao);
@@ -51,14 +51,15 @@ public class ScriptMillenium {
 		altitude = conexao.addStream(vooNave, "getMeanAltitude");
 		apoastro = conexao.addStream(naveAtual.getOrbit(), "getApoapsisAltitude");
 		listaDePecas = new ArrayList<Part>();
-		//Adicionar Pe�as com Tags � Lista:
+		// Adicionar Pe�as com Tags � Lista:
 		for (Part peca : naveAtual.getParts().getAll()) {
 			if (peca.getTag() != "") {
 				listaDePecas.add(peca);
-				System.out.println("PE�A ADICIONADA: " + peca.getName() + " TAG: " + peca.getTag());
+				// Paineis.setStatus(("PEÇA ADICIONADA: " + peca.getName() + " TAG: " +
+				// peca.getTag()).toString());
 			}
 		}
-		//Fazer Stream de Combust�vel com o Primeiro Est�gio:
+		// Fazer Stream de Combust�vel com o Primeiro Est�gio:
 		for (Part peca : listaDePecas) {
 			if (peca.getTag().equals("PRIMEIRO_ESTAGIO")) {
 				naveAtual = peca.getVessel();
@@ -69,14 +70,13 @@ public class ScriptMillenium {
 		if (!listaDePecas.isEmpty()) {
 			decolar();
 		}
-		
-		
+
 		conexao.close();
 	}
 
 	private void decolar() throws RPCException, StreamException, InterruptedException {
-		System.out.println("INICIANDO DECOLAGEM");
-		
+		// Paineis.setStatus("INICIANDO DECOLAGEM");
+
 //		//TROCAR DE NAVE
 //		for (Part peca : listaDePecas) {
 //			
@@ -85,15 +85,15 @@ public class ScriptMillenium {
 		naveAtual.getControl().setSAS(false); // desligar SAS
 		naveAtual.getControl().setRCS(false); // desligar RCS
 		naveAtual.getControl().setThrottle(1f); // acelerar ao máximo
-		System.out.println("DECOLAGEM!");
+		// Paineis.setStatus("DECOLAGEM!");
 		naveAtual.getControl().activateNextStage();
-		//Ligar Piloto e Mirar pra Cima:
+		// Ligar Piloto e Mirar pra Cima:
 		naveAtual.getAutoPilot().engage(); // ativa o piloto auto
 		naveAtual.getAutoPilot().targetPitchAndHeading(90, 90); // direção
-		
+
 		giroGravitacional();
 	}
-	
+
 	private void giroGravitacional() throws InterruptedException, RPCException, StreamException {
 		double anguloGiro = 0; // angulo de giro
 		while (true) { // loop while sempre funcionando até um break
@@ -109,30 +109,34 @@ public class ScriptMillenium {
 			checarCombustivel();
 			checarEstagio();
 			Thread.sleep(500);
-		if (apoastro.get() > altFinal * 0.8) {
-				System.out.println("Aproximando-se do apoastro alvo");
+			if (apoastro.get() > altFinal * 0.8) {
+				// Paineis.setStatus("Aproximando-se do apoastro alvo");
 				break;
 			}
 		}
 		// Desativa motores ao chegar no apoastro
-				naveAtual.getControl().setThrottle(0.25f); // mudar aceleração pra 25%
-				while (apoastro.get() < altFinal) {
-					System.out.println("Altitude do Apoastro:");
-					System.out.println(String.valueOf(apoastro.get()));
-					Thread.sleep(500);
-				}
+		naveAtual.getControl().setThrottle(0.25f); // mudar aceleração pra 25%
+		while (apoastro.get() < altFinal) {
+			// Paineis.setParametros("apoastro", apoastro.get());
+			Thread.sleep(500);
+		}
+		naveAtual.getControl().setThrottle(0.0f);
+		// Paineis.setStatus("Chegamos ao Apoastro Alvo");
+
 	}
+
 	private void checarCombustivel() throws StreamException, RPCException, InterruptedException {
-		System.out.println("Combust�vel Restante: " + combustivel.get());
+		// Paineis.setStatus("Combust�vel Restante: " + combustivel.get());
 		if (combustivel.get() < 1) {
-			System.out.println("Combust�vel Acabou!");
+			// Paineis.setStatus("Combust�vel Acabou!");
 			Thread.sleep(1500);
 			estagioAtual++;
 		}
 	}
+
 	private void checarEstagio() throws StreamException, RPCException, InterruptedException {
 		System.out.println("Est�gio Atual: " + estagioAtual);
-		if (estagioAtual == 1 ) {
+		if (estagioAtual == 1) {
 			naveAtual.getControl().setThrottle(0);
 			naveAtual.getAutoPilot().disengage();
 			naveAtual.getControl().activateNextStage();
@@ -143,14 +147,14 @@ public class ScriptMillenium {
 					centroEspacial.setActiveVessel(peca.getVessel());
 					combustivelNoEstagio = peca.getResources();
 					combustivel = conexao.addStream(combustivelNoEstagio, "amount", "Oxidizer");
-					System.out.println("Combust�vel Restante: " + combustivel.get());
-					
-					//Ativar o motor do Chewie
+					System.out.println("Combustível Restante: " + combustivel.get());
+
+					// Ativar o motor do Chewie
 					Thread.sleep(1000);
 					naveAtual.getAutoPilot().engage();
 					naveAtual.getControl().activateNextStage();
 					Thread.sleep(2000);
-					System.out.println("Igni��o do CHEWIE!");
+					// Paineis.setStatus("Ignição do CHEWIE!");
 					naveAtual.getControl().setThrottle(1f);
 				}
 			}
