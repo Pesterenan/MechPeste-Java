@@ -45,13 +45,15 @@ public class SuicideBurn {
 	double distanciaQueimaV2 = 0;
 
 	public SuicideBurn(Connection conexao) throws StreamException, RPCException, IOException, InterruptedException {
+
 		centroEspacial = SpaceCenter.newInstance(conexao);
 		naveAtual = centroEspacial.getActiveVessel();
 		new SuicideBurn(conexao, naveAtual);
 	}
 
-	public SuicideBurn(Connection conexao, Vessel naveAtual)
+	public SuicideBurn(Connection conexao, Vessel nave)
 			throws StreamException, RPCException, IOException, InterruptedException {
+		naveAtual = nave;
 		Flight parametrosDeVoo = naveAtual.flight(naveAtual.getOrbit().getBody().getReferenceFrame());
 		altitude = conexao.addStream(parametrosDeVoo, "getSurfaceAltitude");
 		velVertical = conexao.addStream(parametrosDeVoo, "getVerticalSpeed");
@@ -190,7 +192,7 @@ public class SuicideBurn {
 		// Decola a nave se estiver na pista, ou pousada. Se estiver voando, apenas
 		// corta a aceleração.
 		naveAtual.getAutoPilot().engage();
-		naveAtual.getAutoPilot().setReferenceFrame(naveAtual.getOrbit().getBody().getReferenceFrame());
+		naveAtual.getAutoPilot().setReferenceFrame(naveAtual.getSurfaceReferenceFrame());
 		VesselSituation situacao = naveAtual.getSituation();
 		if (situacao == VesselSituation.LANDED || situacao == VesselSituation.PRE_LAUNCH) {
 			if (situacao == VesselSituation.PRE_LAUNCH) {

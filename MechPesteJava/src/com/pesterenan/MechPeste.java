@@ -32,14 +32,16 @@ public class MechPeste implements PropertyChangeListener {
 	}
 
 	public static void iniciarConexao() {
-		try {
-			GUI.setStatus(Status.CONECTANDO.get());
-			conexao = Connection.newInstance("MechPeste");
-			GUI.setStatus(Status.CONECTADO.get());
-			GUI.botConectarVisivel(false);
-		} catch (IOException e) {
-			GUI.setStatus(Status.ERROCONEXAO.get());
-			GUI.botConectarVisivel(true);
+		if (conexao == null) {
+			try {
+				GUI.setStatus(Status.CONECTANDO.get());
+				conexao = Connection.newInstance("MechPeste");
+				GUI.setStatus(Status.CONECTADO.get());
+				GUI.botConectarVisivel(false);
+			} catch (IOException e) {
+				GUI.setStatus(Status.ERROCONEXAO.get());
+				GUI.botConectarVisivel(true);
+			}
 		}
 	}
 
@@ -98,6 +100,7 @@ public class MechPeste implements PropertyChangeListener {
 					GUI.setStatus(Status.PRONTO.get());
 					threadModulos = null;
 				} catch (Exception e) {
+					e.printStackTrace();
 					GUI.setStatus(Status.ERROCONEXAO.get());
 					GUI.botConectarVisivel(true);
 					threadModulos = null;
@@ -195,6 +198,7 @@ public class MechPeste implements PropertyChangeListener {
 			threadModulos.interrupt();
 			threadModulos = null;
 			conexao.close();
+			conexao = null;
 		}
 	}
 }

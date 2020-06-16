@@ -43,6 +43,7 @@ public class DecolagemOrbital {
 		centroEspacial = SpaceCenter.newInstance(conexao);
 		naveAtual = centroEspacial.getActiveVessel();
 		parametrosVoo = naveAtual.flight(naveAtual.getOrbit().getBody().getReferenceFrame());
+		naveAtual.getAutoPilot().setReferenceFrame(naveAtual.getSurfaceReferenceFrame());
 		manobras = new Manobras(conexao, false);
 		// Iniciar Streams:
 		tempoMissao = conexao.addStream(SpaceCenter.class, "getUT");
