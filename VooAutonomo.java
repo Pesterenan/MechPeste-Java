@@ -1,4 +1,4 @@
-package com.pesterenan;
+package com.pesterenan.funcoes;
 
 import javax.swing.SwingWorker;
 

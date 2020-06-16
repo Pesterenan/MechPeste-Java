@@ -1,10 +1,14 @@
-package com.pesterenan;
+package com.pesterenan.funcoes;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.javatuples.Triplet;
+
+import com.pesterenan.gui.GUI;
+import com.pesterenan.utils.ControlePID;
+import com.pesterenan.utils.Vetor;
 
 import krpc.client.Connection;
 import krpc.client.RPCException;
@@ -53,7 +57,7 @@ public class AutoRover {
 	ControlePID ctrlAceleracao = new ControlePID();
 	ControlePID ctrlDistancia = new ControlePID();
 	private static String alvoNome = "ALVO";
-	static boolean alvoOuMarcador = true;
+	public static boolean alvoOuMarcador = true;
 	Stream<Double> velocidade;
 
 	public AutoRover(Connection conexao) throws IOException, RPCException, InterruptedException, StreamException {
@@ -81,7 +85,7 @@ public class AutoRover {
 		ctrlDistancia.limitarSaida(-1, 1);
 	}
 
-	static void setAlvo(String alvo) {
+	public static void setAlvo(String alvo) {
 		alvoNome = alvo;
 		System.out.println(alvoNome);
 	}
