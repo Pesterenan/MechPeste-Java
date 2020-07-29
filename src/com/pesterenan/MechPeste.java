@@ -6,38 +6,42 @@ import java.io.IOException;
 
 import javax.swing.JFrame;
 
+import com.pesterenan.funcoes.AutoRover;
+import com.pesterenan.funcoes.DecolagemOrbital;
+import com.pesterenan.funcoes.Manobras;
+import com.pesterenan.funcoes.SuicideBurn;
+import com.pesterenan.gui.GUI;
+import com.pesterenan.gui.Status;
+
 import krpc.client.Connection;
 import krpc.client.RPCException;
 import krpc.client.StreamException;
-import krpc.client.services.SpaceCenter;
 
 public class MechPeste implements PropertyChangeListener {
-	protected static Connection conexao;
-	protected static SpaceCenter centroEspacial;
-	protected static MechPeste mp;
+	public static Connection conexao;
 	public static Thread threadModulos;
-	private JFrame gui;
+	private static JFrame gui;
 
 	public static void main(String[] args) throws StreamException, RPCException, IOException, InterruptedException {
-		mp = new MechPeste();
+		new MechPeste();
 	}
 
-	public MechPeste() throws InterruptedException, RPCException {
+	private MechPeste() {
 		gui = new GUI();
 		gui.addPropertyChangeListener(this);
-
-		iniciarConexao();
 	}
 
 	public static void iniciarConexao() {
-		try {
-			GUI.setStatus(Status.CONECTANDO.get());
-			conexao = Connection.newInstance("MechPeste");
-			centroEspacial = SpaceCenter.newInstance(conexao);
-			GUI.setStatus(Status.CONECTADO.get());
-		} catch (IOException e) {
-			GUI.setStatus(Status.ERROCONEXAO.get());
-			GUI.botConectarVisivel(true);
+		if (conexao == null) {
+			try {
+				GUI.setStatus(Status.CONECTANDO.get());
+				conexao = Connection.newInstance("MechPeste");
+				GUI.setStatus(Status.CONECTADO.get());
+				GUI.botConectarVisivel(false);
+			} catch (IOException e) {
+				GUI.setStatus(Status.ERROCONEXAO.get());
+				GUI.botConectarVisivel(true);
+			}
 		}
 	}
 
@@ -48,6 +52,7 @@ public class MechPeste implements PropertyChangeListener {
 			iniciarConexao();
 		}
 		if (threadModulos == null) {
+			iniciarConexao();
 			switch (evt.getPropertyName()) {
 			case GUI.decolagemOrbital:
 				rodarDecolagemOrbital();
@@ -58,6 +63,9 @@ public class MechPeste implements PropertyChangeListener {
 			case GUI.autoRover:
 				rodarAutoRover();
 				break;
+			case GUI.manobras:
+				rodarManobras();
+				break;
 			}
 		} else {
 			GUI.setStatus(Status.JAEXEC.get());
@@ -66,15 +74,16 @@ public class MechPeste implements PropertyChangeListener {
 	}
 
 	private void rodarDecolagemOrbital() {
-		GUI.setStatus(Status.EXECDECOLAGEM.get());
 		threadModulos = new Thread(new Runnable() {
 			public void run() {
 				try {
+					GUI.setStatus(Status.EXECDECOLAGEM.get());
 					new DecolagemOrbital(conexao);
 					GUI.setStatus(Status.PRONTO.get());
 					threadModulos = null;
 				} catch (Exception e) {
 					GUI.setStatus(Status.ERROCONEXAO.get());
+					GUI.botConectarVisivel(true);
 					threadModulos = null;
 				}
 			}
@@ -83,15 +92,17 @@ public class MechPeste implements PropertyChangeListener {
 	}
 
 	private void rodarSuicideBurn() {
-		GUI.setStatus(Status.EXECSUICIDE.get());
 		threadModulos = new Thread(new Runnable() {
 			public void run() {
 				try {
+					GUI.setStatus(Status.EXECSUICIDE.get());
 					new SuicideBurn(conexao);
 					GUI.setStatus(Status.PRONTO.get());
 					threadModulos = null;
-				} catch (StreamException | RPCException | IOException | InterruptedException | NullPointerException e) {
+				} catch (Exception e) {
+					e.printStackTrace();
 					GUI.setStatus(Status.ERROCONEXAO.get());
+					GUI.botConectarVisivel(true);
 					threadModulos = null;
 				}
 			}
@@ -100,15 +111,35 @@ public class MechPeste implements PropertyChangeListener {
 	}
 
 	private void rodarAutoRover() {
-		GUI.setStatus(Status.EXECROVER.get());
 		threadModulos = new Thread(new Runnable() {
 			public void run() {
 				try {
+					GUI.setStatus(Status.EXECROVER.get());
 					new AutoRover(conexao);
 					GUI.setStatus(Status.PRONTO.get());
 					threadModulos = null;
 				} catch (Exception e) {
+					e.printStackTrace();
 					GUI.setStatus(Status.ERROCONEXAO.get());
+					GUI.botConectarVisivel(true);
+					threadModulos = null;
+				}
+			}
+		});
+		threadModulos.start();
+	}
+
+	private void rodarManobras() {
+		threadModulos = new Thread(new Runnable() {
+			public void run() {
+				try {
+					GUI.setStatus(Status.EXECMANOBRAS.get());
+					new Manobras(conexao, true);
+					GUI.setStatus(Status.PRONTO.get());
+					threadModulos = null;
+				} catch (Exception e) {
+					GUI.setStatus(Status.ERROCONEXAO.get());
+					GUI.botConectarVisivel(true);
 					threadModulos = null;
 				}
 			}
@@ -163,5 +194,12 @@ public class MechPeste implements PropertyChangeListener {
 //			}
 //			break;
 //		}
-
+	public static void finalizarTarefa() throws IOException {
+		if (threadModulos.isAlive()) {
+			threadModulos.interrupt();
+			threadModulos = null;
+			conexao.close();
+			conexao = null;
+		}
+	}
 }
