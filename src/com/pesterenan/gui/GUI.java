@@ -321,9 +321,9 @@ public class GUI extends JFrame implements ActionListener {
 		altP = new JTextField("0.001");
 		altI = new JTextField("0.1");
 		altD = new JTextField("0.01");
-		velP = new JTextField("0.01");
-		velI = new JTextField("0.1");
-		velD = new JTextField("0.01");
+		velP = new JTextField("0.025");
+		velI = new JTextField("0.05");
+		velD = new JTextField("0.05");
 		checkPouso = new JCheckBox();
 		checkPouso.setSelected(true);
 		checkPouso.addActionListener(this);
@@ -613,15 +613,9 @@ public class GUI extends JFrame implements ActionListener {
 			double velPd = Double.parseDouble(velP.getText());
 			double velId = Double.parseDouble(velI.getText());
 			double velDd = Double.parseDouble(velD.getText());
-			float ajuste = 1.0f;
-			int altitude = 3000;
 			try {
 				SuicideBurn.setAjusteAltPID(altPd, altId, altDd);
 				SuicideBurn.setAjusteVelPID(velPd, velId, velDd);
-//				ajuste = Float.parseFloat(ajusteDePousoTextField.getText());
-//				Navegacao.setAjuste(ajuste);
-//				altitude = Integer.parseInt(altitudeSCRTextField.getText());
-//				SuicideBurn.setAltSCR(altitude);
 			} catch (NullPointerException | NumberFormatException npe) {
 				GUI.setStatus("Valor incorreto para ajuste. Recomendado 1.25");
 				return false;
@@ -666,7 +660,7 @@ public class GUI extends JFrame implements ActionListener {
 			segundaLinha.setText("Altitude: " + valor + "m");
 			break;
 		case "distancia":
-			segundaLinha.setText("Distancia: " + valor + "m");
+			segundaLinha.setText("Distancia para alvo: " + valor + "m");
 			break;
 		case "apoastro":
 			terceiraLinha.setText("Apoastro: " + valor + "m");
@@ -690,6 +684,13 @@ public class GUI extends JFrame implements ActionListener {
 			break;
 		case "velHorz":
 			sextaLinha.setText("Vel Horz.: " + valor + "m/s");
+			break;
+		case "tempoRestante":
+			int segTotais = (int) val;
+			int horas = segTotais / 3600;
+			int minutos = (segTotais % 3600) / 60;
+			int segundos = segTotais % 60;
+			sextaLinha.setText("Tempo Restante: " + String.format("%02d:%02d:%02d", horas, minutos, segundos));
 			break;
 
 		}

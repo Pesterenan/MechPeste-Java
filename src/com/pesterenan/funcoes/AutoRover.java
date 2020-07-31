@@ -56,7 +56,7 @@ public class AutoRover {
 	Vetor distParaAlvo;
 	int pontos;
 	private boolean carregando;
-	private double tempoDeMissao;
+	private double tempoRestante;
 	private double tempoAnterior;
 	private float kmsPercorridos;
 	private Stream<Double> tempoDoJogo;
@@ -86,7 +86,7 @@ public class AutoRover {
 		ctrlDirecao.ajustarPID(0.03, 0.05, 0.3);
 		ctrlDirecao.limitarSaida(-1, 1);
 		tempoAnterior = tempoDoJogo.get();
-		tempoDeMissao = 0;
+		tempoRestante = 0;
 		kmsPercorridos = 0;
 
 	}
@@ -173,7 +173,7 @@ public class AutoRover {
 
 		System.out.println("distParaAlvo" + distParaAlvo);
 
-		pontos = (int) distParaAlvo.Magnitude3d() / 100;
+		pontos = (int) distParaAlvo.Magnitude3d() / 1000;
 		System.out.println("pontos" + pontos);
 		Vetor ponto = distParaAlvo.divide((double) pontos);
 		System.out.println("ponto" + ponto);
@@ -212,7 +212,9 @@ public class AutoRover {
 						pontosASeguir.remove(0);
 					} else {
 						if (!listaDeMarcadoresASeguir.isEmpty()) {
-							alvoMarcador.remove();
+							if (!alvoMarcador.getHasContract()) {
+								alvoMarcador.remove();
+							}
 							listaDeMarcadoresASeguir.remove(alvoMarcador);
 							checarDistancia();
 						} else {
@@ -242,7 +244,7 @@ public class AutoRover {
 		// Calcular diferença de angulo entre o alvo e o rover
 		double diferencaAngulo = Math.abs(anguloAlvo - anguloRover);
 		GUI.setParametros("diferenca", diferencaAngulo);
-		if (velocidadeRover.get() > velocidadeCurva && diferencaAngulo < 25) {
+		if (velocidadeRover.get() > velocidadeCurva && diferencaAngulo < 20) {
 			try {
 				if (rover.getControl().getSpeedMode() == SpeedMode.TARGET) {
 					rover.getControl().setSpeedMode(SpeedMode.SURFACE);
@@ -256,7 +258,7 @@ public class AutoRover {
 		}
 
 		// Controlar a velocidade para fazer curvas
-		if (diferencaAngulo > 10) {
+		if (diferencaAngulo > 20) {
 			ctrlAceleracao.setLimitePID(velocidadeCurva);
 		} else {
 			ctrlAceleracao.setLimitePID(velocidadeMaxima);
@@ -292,15 +294,21 @@ public class AutoRover {
 	}
 
 	private void logarDados() throws IOException, RPCException, StreamException {
-		GUI.setParametros("distancia", posicaoAlvo.Magnitude3d());
+		if (buscandoMarcadores) {
+			distParaAlvo = posParaRover(posicionarMarcador(alvoMarcador));
+		} else {
+			distParaAlvo = posParaRover(new Vetor(naveAlvo.position(pontoRefSuperficie)));
+		}
+		double distanciaRestante = distParaAlvo.Magnitude3d();
 		double mudancaDeTempo = tempoDoJogo.get() - tempoAnterior;
 		if (mudancaDeTempo > 1) {
 			kmsPercorridos += (float) (mudancaDeTempo * velocidadeRover.get());
-			tempoDeMissao++;
+			tempoRestante = distanciaRestante / ((velocidadeMaxima + velocidadeRover.get()) / 2);
 			tempoAnterior = tempoDoJogo.get();
+			GUI.setParametros("distancia", distanciaRestante);
 			GUI.setParametros("distPercorrida", kmsPercorridos);
+			GUI.setParametros("tempoRestante", tempoRestante);
 		}
-		GUI.setParametros("velHorz", velocidadeRover.get());
 	}
 
 	private Vetor posicionarMarcador(Waypoint marcador) throws RPCException {

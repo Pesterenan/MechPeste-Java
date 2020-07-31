@@ -44,7 +44,7 @@ public class SuicideBurn {
 
 	private static double altP = 0.001, altI = 0.01, altD = 0.01;
 
-	private static double velP = 0.01, velI = 0.01, velD = 0.1;
+	private static double velP = 0.025, velI = 0.05, velD = 0.05;
 
 	public SuicideBurn(Connection conexao) throws StreamException, RPCException, IOException, InterruptedException {
 
@@ -155,13 +155,13 @@ public class SuicideBurn {
 		double duracaoDaQueima = Math.abs(velocidade.Magnitude()) / acelMaxima;
 		distanciaDaQueima = (Math.abs(velocidade.Magnitude()) * duracaoDaQueima)
 				+ (0.5 * (acelMaxima * Math.pow(duracaoDaQueima, 2)));
-//		distanciaDaQueima = (Math.abs(velVertical.get()) * duracaoDaQueima)
-//				+ (0.5 * (acelMaxima * Math.pow(duracaoDaQueima, 2)));
+
+		velocidadePID.ajustarPID(valorTEP * velP, velI, valorTEP * velD);
 		// Informa aos PIDs a altitude, limite e velocidade da nave
 		altitudePID.setEntradaPID(altitude.get() - distanciaDaQueima);
 		altitudePID.setLimitePID(0);
 		velocidadePID.setEntradaPID(velVertical.get());
-		velocidadePID.setLimitePID((altitude.get() + (distanciaDaQueima * 1.2)) / -10);
+		velocidadePID.setLimitePID((altitude.get() + (distanciaDaQueima)) / -10);
 		return distanciaDaQueima;
 	}
 
