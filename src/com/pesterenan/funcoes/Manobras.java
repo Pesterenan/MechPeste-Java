@@ -28,9 +28,9 @@ public class Manobras extends SwingWorker<String, String> {
 	private static Vessel naveAtual;
 	private Node noDeManobra;
 
-	public Manobras(Connection conexao, boolean executar)
+	public Manobras(Connection con, boolean executar)
 			throws RPCException, StreamException, IOException, InterruptedException {
-		Manobras.conexao = conexao;
+		conexao = con;
 		centroEspacial = SpaceCenter.newInstance(conexao);
 		naveAtual = centroEspacial.getActiveVessel();
 		if (executar) {

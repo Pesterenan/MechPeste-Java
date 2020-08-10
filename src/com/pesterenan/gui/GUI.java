@@ -89,20 +89,17 @@ public class GUI extends JFrame implements ActionListener {
 
 	// Entrada de Usuário
 	// Decolagem Orbital:
-	private JTextField apoastroFinalTextField;
-	private JTextField direcaoOrbitaTextField;
+	public static JTextField apoastroFinalTextField;
+	public static JTextField direcaoOrbitaTextField;
 	// Suicide Burn:
-	private JTextField ajusteDePousoTextField;
-	private JTextField altitudeSCRTextField;
+	public static JTextField altP, altI, altD;
+	public static JTextField velP, velI, velD;
 	private JCheckBox checkPouso;
 	// Auto Rover:
-	private JTextField nomeMarcadorTextField;
-	private JTextField velMaxTextField;
+	public static JTextField nomeMarcadorTextField;
+	public static JTextField velMaxTextField;
+
 	private String executarModulo = "";
-
-	private JTextField altP, altI, altD;
-
-	private JTextField velP, velI, velD;
 
 	public GUI() {
 		super("MechPeste - Pesterenan");
@@ -316,8 +313,6 @@ public class GUI extends JFrame implements ActionListener {
 
 	private JPanel painelSuicide() {
 		pnlConfigSuicideBurn = new JPanel();
-		ajusteDePousoTextField = new JTextField("1.2");
-		altitudeSCRTextField = new JTextField("3000");
 		altP = new JTextField("0.001");
 		altI = new JTextField("0.1");
 		altD = new JTextField("0.01");
@@ -607,17 +602,17 @@ public class GUI extends JFrame implements ActionListener {
 			}
 			return true;
 		case suicideBurn:
-			double altPd = Double.parseDouble(altP.getText());
-			double altId = Double.parseDouble(altI.getText());
-			double altDd = Double.parseDouble(altD.getText());
-			double velPd = Double.parseDouble(velP.getText());
-			double velId = Double.parseDouble(velI.getText());
-			double velDd = Double.parseDouble(velD.getText());
 			try {
+				double altPd = Double.parseDouble(altP.getText());
+				double altId = Double.parseDouble(altI.getText());
+				double altDd = Double.parseDouble(altD.getText());
+				double velPd = Double.parseDouble(velP.getText());
+				double velId = Double.parseDouble(velI.getText());
+				double velDd = Double.parseDouble(velD.getText());
 				SuicideBurn.setAjusteAltPID(altPd, altId, altDd);
 				SuicideBurn.setAjusteVelPID(velPd, velId, velDd);
 			} catch (NullPointerException | NumberFormatException npe) {
-				GUI.setStatus("Valor incorreto para ajuste. Recomendado 1.25");
+				GUI.setStatus("Valores incorretos para o PID.");
 				return false;
 			}
 			return true;

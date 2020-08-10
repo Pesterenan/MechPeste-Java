@@ -94,12 +94,15 @@ public class SuicideBurn {
 
 		// Loop principal de Suicide Burn:
 		while (executandoSuicideBurn) {
+
 			// Calcula os valores de aceleração e TWR do foguete:
 			atualizarParametros();
+
 			// Desce o trem de pouso da nave
 			if (altitude.get() < altitudeSCR) {
 				naveAtual.getControl().setGear(true);
 			}
+
 			// Aponta nave para o retrograde se a velocidade horizontal for maior que 1m/s
 			if (velHorizontal.get() > 1) {
 				navegacao.mirarRetrogrado();
@@ -108,11 +111,8 @@ public class SuicideBurn {
 			}
 
 			// Corrigir aceleração da nave:
-//			if (altitude.get() > altVooTeste) {
-//				aceleracao((float) altitudePID.computarPID());
-//			} else {
 			aceleracao((float) ((altitudePID.computarPID()) + (velocidadePID.computarPID())));
-//			}
+
 			checarPouso();
 			Thread.sleep(25);
 		}
@@ -135,8 +135,7 @@ public class SuicideBurn {
 		try {
 			distanciaDaQueima = calcularDistanciaDaQueima();
 		} catch (Exception erro) {
-			erro.printStackTrace();
-			GUI.setStatus("Erro ao calcular os dados para Suicide Burn.");
+			System.out.println("Erro ao calcular os dados para Suicide Burn.");
 		}
 		GUI.setParametros("nome", naveAtual.getName());
 		GUI.setParametros("altitude", altitude.get());
@@ -159,9 +158,15 @@ public class SuicideBurn {
 		velocidadePID.ajustarPID(valorTEP * velP, velI, valorTEP * velD);
 		// Informa aos PIDs a altitude, limite e velocidade da nave
 		altitudePID.setEntradaPID(altitude.get() - distanciaDaQueima);
-		altitudePID.setLimitePID(0);
+		altitudePID.setLimitePID(naveAtual.boundingBox(naveAtual.getReferenceFrame()).getValue1().getValue1());
 		velocidadePID.setEntradaPID(velVertical.get());
-		velocidadePID.setLimitePID((altitude.get() + (distanciaDaQueima)) / -10);
+		double velFinal = (altitude.get() + (distanciaDaQueima)) / -10;
+		if (velFinal <= -5) {
+			velocidadePID.setLimitePID(velFinal);
+		} else {
+			velFinal = -5;
+			velocidadePID.setLimitePID(velFinal);
+		}
 		return distanciaDaQueima;
 	}
 

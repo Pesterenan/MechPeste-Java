@@ -18,6 +18,7 @@ import krpc.client.services.SpaceCenter.Flight;
 import krpc.client.services.SpaceCenter.ReferenceFrame;
 import krpc.client.services.SpaceCenter.SASMode;
 import krpc.client.services.SpaceCenter.SolarPanel;
+import krpc.client.services.SpaceCenter.SolarPanelState;
 import krpc.client.services.SpaceCenter.SpeedMode;
 import krpc.client.services.SpaceCenter.Vessel;
 import krpc.client.services.SpaceCenter.Waypoint;
@@ -81,8 +82,8 @@ public class AutoRover {
 		velocidadeRover = conexao.addStream(parametrosRover, "getHorizontalSpeed");
 		tempoDoJogo = conexao.addStream(centroEspacial.getClass(), "getUT");
 		// AJUSTAR CONTROLES PID:
-		ctrlAceleracao.ajustarPID(0.5, 0.001, 0.01);
-		ctrlAceleracao.limitarSaida(-0.5, 1);
+		ctrlAceleracao.ajustarPID(0.5, 0.1, 0.01);
+		ctrlAceleracao.limitarSaida(0, 1);
 		ctrlDirecao.ajustarPID(0.03, 0.05, 0.3);
 		ctrlDirecao.limitarSaida(-1, 1);
 		tempoAnterior = tempoDoJogo.get();
@@ -127,20 +128,24 @@ public class AutoRover {
 		} else {
 			carregando = true;
 			acelerarRover(0);
+			rover.getControl().setLights(false);
 			rover.getControl().setBrakes(true);
 			rover.getControl().setWheelSteering(0.0f);
 			if (velocidadeRover.get() < 1 && rover.getControl().getBrakes()) {
 				Thread.sleep(1000);
 				GUI.setStatus("Carregando Baterias...");
+				double segCarga = 0;
 				List<SolarPanel> paineis = new ArrayList<SolarPanel>();
 				paineis = rover.getParts().getSolarPanels();
+				for (SolarPanel painel : paineis) {
+					segCarga += painel.getEnergyFlow();
+					if (painel.getState() == SolarPanelState.BROKEN) {
+						paineis.remove(painel);
+					}
+				}
 				if (paineis.isEmpty()) {
 					GUI.setStatus("Não há painéis solares para carregar as baterias.");
 					executandoAutoRover = false;
-				}
-				double segCarga = 0;
-				for (SolarPanel painel : paineis) {
-					segCarga += painel.getEnergyFlow();
 				}
 				segCarga = ((cargaTotal - cargaAtual) / segCarga);
 				System.out.println("Segundos de Carga: " + segCarga);
@@ -148,6 +153,7 @@ public class AutoRover {
 					segCarga = 3600;
 				}
 				centroEspacial.warpTo((centroEspacial.getUT() + segCarga), 10000, 4);
+				rover.getControl().setLights(true);
 			}
 		}
 		GUI.setParametros("carga", porcentagemCarga);
@@ -183,7 +189,6 @@ public class AutoRover {
 		for (int i = 1; i < pontos; i++) {
 			Vetor pontoSeguinte = (posicionarVetor(ponto.multiplica(i)));
 			pontosASeguir.add(pontoSeguinte);
-			System.out.println("PONTO A SEGUIR " + i + pontosASeguir.get(i - 1).toString());
 		}
 	}
 
@@ -192,9 +197,9 @@ public class AutoRover {
 			try {
 				definirVetorDirecao();
 				ctrlAceleracao.setEntradaPID(velocidadeRover.get());
+				checarTerreno();
 				logarDados();
 			} catch (Exception erro) {
-
 				GUI.setStatus("Sem alvo selecionado");
 				executandoAutoRover = false;
 			}
@@ -232,7 +237,7 @@ public class AutoRover {
 	}
 
 	private void acelerarRover(double arg) throws IOException, RPCException, StreamException {
-		if (velocidadeRover.get() < velocidadeMaxima) {
+		if (velocidadeRover.get() < (velocidadeMaxima * 1.01)) {
 			rover.getControl().setBrakes(false);
 			rover.getControl().setWheelThrottle((float) arg);
 		} else {
@@ -274,7 +279,7 @@ public class AutoRover {
 	private void definirVetorDirecao() throws IOException, RPCException {
 		// Definir posicao do Alvo, sendo ele um Waypoint, ou um Vessel
 		if (!pontosASeguir.isEmpty()) {
-			posicaoAlvo = posParaRover((posicionarPonto(pontosASeguir.get(0))));
+			posicaoAlvo = posParaRover(posicionarPonto(pontosASeguir.get(0)));
 		} else {
 			if (buscandoMarcadores) {
 				posicaoAlvo = posParaRover(posicionarMarcador(alvoMarcador));
@@ -293,6 +298,20 @@ public class AutoRover {
 		ctrlDirecao.setLimitePID(anguloAlvo * 0.5);
 	}
 
+	private void checarTerreno() throws RPCException {
+		Vetor dirEsq = new Vetor(rover.getParts().getRoot().direction(pontoRefRover)).soma(new Vetor(-0.2, 0.0, -1));
+		Vetor dirDir = new Vetor(rover.getParts().getRoot().direction(pontoRefRover)).soma(new Vetor(0.2, 0.0, -1));
+		double distEsq = centroEspacial.raycastDistance(rover.position(pontoRefRover), dirEsq.paraTriplet(),
+				pontoRefSuperficie);
+		double distDir = centroEspacial.raycastDistance(rover.position(pontoRefRover), dirDir.paraTriplet(),
+				pontoRefSuperficie);
+
+//		rover.getControl().setRoll((float) -(distEsq - distDir));
+//		System.out.println("distEsq " + distEsq);
+//		System.out.println("distDir " + distDir);
+//		System.out.println("difDeE  " + (distEsq - distDir));
+	}
+
 	private void logarDados() throws IOException, RPCException, StreamException {
 		if (buscandoMarcadores) {
 			distParaAlvo = posParaRover(posicionarMarcador(alvoMarcador));
@@ -303,11 +322,19 @@ public class AutoRover {
 		double mudancaDeTempo = tempoDoJogo.get() - tempoAnterior;
 		if (mudancaDeTempo > 1) {
 			kmsPercorridos += (float) (mudancaDeTempo * velocidadeRover.get());
-			tempoRestante = distanciaRestante / ((velocidadeMaxima + velocidadeRover.get()) / 2);
+			tempoRestante = distanciaRestante / velocidadeMaxima;
 			tempoAnterior = tempoDoJogo.get();
 			GUI.setParametros("distancia", distanciaRestante);
 			GUI.setParametros("distPercorrida", kmsPercorridos);
 			GUI.setParametros("tempoRestante", tempoRestante);
+//			double teste = centroEspacial
+//					.raycastDistance(
+//							new Triplet<Double, Double, Double>(0.0,
+//									rover.boundingBox(pontoRefRover).getValue1().getValue1(), 0.0),
+//							new Triplet<Double, Double, Double>(0.0, 1.0, 0.0), pontoRefRover);
+//
+//			System.out.println(teste);
+
 		}
 	}
 

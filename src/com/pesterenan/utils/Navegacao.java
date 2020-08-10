@@ -21,8 +21,8 @@ public class Navegacao {
 
 	private Vetor vetorDirecaoHorizontal = new Vetor(0, 0, 0);
 	private Triplet<Double, Double, Double> posicaoAlvo = new Triplet<Double, Double, Double>(0.0, 0.0, 0.0);
-	public int anguloInclinacaoMax = 80;
-	private static float ajuste = 1.2f;
+	public int anguloInclinacaoMax = 30;
+	private static float ajuste = 1.1f;
 
 	public Navegacao(SpaceCenter centro, Vessel nave)
 			throws IOException, RPCException, InterruptedException, StreamException {
