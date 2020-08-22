@@ -15,14 +15,10 @@ public class Navegacao {
 
 	static SpaceCenter centroEspacial;
 	private Vessel naveAtual;
-	private ReferenceFrame pontoRefOrbital;
-	private ReferenceFrame pontoRefSuperficie;
+	private ReferenceFrame pontoRefOrbital, pontoRefSuperficie;
 	private Flight parametrosDeVoo;
-
 	private Vetor vetorDirecaoHorizontal = new Vetor(0, 0, 0);
 	private Triplet<Double, Double, Double> posicaoAlvo = new Triplet<Double, Double, Double>(0.0, 0.0, 0.0);
-	public int anguloInclinacaoMax = 80;
-	private static float ajuste = 1.2f;
 
 	public Navegacao(SpaceCenter centro, Vessel nave)
 			throws IOException, RPCException, InterruptedException, StreamException {
@@ -44,7 +40,7 @@ public class Navegacao {
 		Vetor alinharDirecao = getElevacaoDirecaoDoVetor(vetorDirecaoHorizontal);
 
 		naveAtual.getAutoPilot().targetPitchAndHeading((float) alinharDirecao.y, (float) alinharDirecao.x);
-		naveAtual.getAutoPilot().setTargetRoll((float) alinharDirecao.x);
+		naveAtual.getAutoPilot().setTargetRoll((float) Vetor.anguloDirecao(alinharDirecao));
 	}
 
 	public void mirarAlvo(Vessel alvo) throws IOException, RPCException, InterruptedException, StreamException {
@@ -63,11 +59,7 @@ public class Navegacao {
 				centroEspacial.transformPosition(parametrosDeVoo.getVelocity(), pontoRefOrbital, pontoRefSuperficie));
 		Vetor vetorVelocidade = new Vetor(velocidade.y, velocidade.z, velocidade.x);
 		alvo = alvo.subtrai(vetorVelocidade);
-		return new Vetor(Vetor.anguloDirecao(alvo),
-				Math.max(anguloInclinacaoMax, (int) (90 - (alvo.Magnitude() * ajuste))), 0);
+		return new Vetor(Vetor.anguloDirecao(alvo), Math.max(30, (int) (90 - (alvo.Magnitude()))), 0);
 	}
 
-	public static void setAjuste(float ajusteNovo) {
-		ajuste = ajusteNovo;
-	}
 }

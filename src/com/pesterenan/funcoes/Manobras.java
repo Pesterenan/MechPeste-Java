@@ -10,6 +10,7 @@ import org.javatuples.Triplet;
 import com.pesterenan.MechPeste;
 import com.pesterenan.gui.GUI;
 import com.pesterenan.gui.Status;
+import com.pesterenan.utils.ControlePID;
 
 import krpc.client.Connection;
 import krpc.client.RPCException;
@@ -27,12 +28,16 @@ public class Manobras extends SwingWorker<String, String> {
 	private static SpaceCenter centroEspacial;
 	private static Vessel naveAtual;
 	private Node noDeManobra;
+	private ControlePID ctrlAcel;
 
-	public Manobras(Connection conexao, boolean executar)
+	public Manobras(Connection con, boolean executar)
 			throws RPCException, StreamException, IOException, InterruptedException {
-		Manobras.conexao = conexao;
+		conexao = con;
 		centroEspacial = SpaceCenter.newInstance(conexao);
 		naveAtual = centroEspacial.getActiveVessel();
+		ctrlAcel = new ControlePID();
+		ctrlAcel.ajustarPID(0.025, 0.01, 0.1);
+		ctrlAcel.limitarSaida(0.1, 1);
 		if (executar) {
 			executarProximaManobra();
 		}
@@ -49,7 +54,7 @@ public class Manobras extends SwingWorker<String, String> {
 		}
 		// Caso haja, calcular e executar
 		if (noDeManobra != null) {
-			firePropertyChange("altitude", 0, noDeManobra.getDeltaV());
+			GUI.setParametros("altitude", noDeManobra.getDeltaV());
 			System.out.println("DELTA-V DA MANOBRA: " + noDeManobra.getDeltaV());
 
 			double duracaoDaQueima = calcularTempoDeQueima(noDeManobra);
@@ -103,19 +108,18 @@ public class Manobras extends SwingWorker<String, String> {
 		while (inicioDaQueima > 0) {
 			inicioDaQueima = noDeManobra.getTimeTo() - (duracaoDaQueima / 2.0);
 			GUI.setStatus(String.format("Ignição em: %1$.1f segundos...", inicioDaQueima));
-			Thread.sleep(50);
+			Thread.sleep(100);
 		}
 		// Executar a manobra:
 		Stream<Triplet<Double, Double, Double>> queimaRestante = conexao.addStream(noDeManobra, "remainingBurnVector",
 				noDeManobra.getReferenceFrame());
 		GUI.setStatus("Executando manobra!");
+		ctrlAcel.setLimitePID(1);
 		while (noDeManobra != null) {
-			if (queimaRestante.get().getValue1() > 10
-					|| queimaRestante.get().getValue1() > (noDeManobra.getDeltaV() * 0.1)) {
-				naveAtual.getControl().setThrottle(1.0f);
-			} else if (queimaRestante.get().getValue1() > (0.5)) {
-				GUI.setStatus("Ajustando...");
-				naveAtual.getControl().setThrottle(0.15f);
+			ctrlAcel.setEntradaPID(-queimaRestante.get().getValue1());
+			if (queimaRestante.get().getValue1() > 1
+					|| queimaRestante.get().getValue1() > (noDeManobra.getDeltaV() * 0.01)) {
+				naveAtual.getControl().setThrottle((float) ctrlAcel.computarPID());
 			} else {
 				naveAtual.getControl().setThrottle(0.0f);
 				queimaRestante.remove();

@@ -14,7 +14,6 @@ import java.io.IOException;
 import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
-import javax.swing.JCheckBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -34,13 +33,8 @@ public class GUI extends JFrame implements ActionListener {
 	private static final long serialVersionUID = 6999337104582004411L;
 
 	// Botões dos módulos:
-	private JButton botSuicideBurn;
-	private JButton botDecolagem;
-	private JButton botAutoRover;
-	private JButton botManobras;
-	private JButton botVooAutonomo;
-	private JButton botIniciarCancelar;
-	private JButton botVoltar;
+	private JButton botSuicideBurn, botDecolagem, botAutoRover, botManobras, botVooAutonomo, botIniciarCancelar,
+			botVoltar;
 	private static JButton botConectar;
 	private ButtonGroup grupoRB = new ButtonGroup();
 	private JRadioButton alvoRB = new JRadioButton("Alvo");
@@ -50,12 +44,7 @@ public class GUI extends JFrame implements ActionListener {
 	protected static JLabel statusLabel;
 
 	// Labels de parâmetros:
-	private static JLabel primeiraLinha;
-	private static JLabel segundaLinha;
-	private static JLabel terceiraLinha;
-	private static JLabel quartaLinha;
-	private static JLabel quintaLinha;
-	private static JLabel sextaLinha;
+	private static JLabel primeiraLinha, segundaLinha, terceiraLinha, quartaLinha, quintaLinha, sextaLinha;
 	private JLabel iniciarFuncaoLabel;
 
 	// Propriedades da GUI:
@@ -64,45 +53,25 @@ public class GUI extends JFrame implements ActionListener {
 	private Dimension tamanhoMenu = new Dimension(150, 240);
 
 	// Painéis da GUI:
-	private JPanel pnlFuncoes;
-	private JPanel pnlStatus;
-	private JPanel pnlParametros;
-	private JPanel pnlIniciarFuncao;
-	private JPanel pnlConfigDecolagem;
-	private JPanel pnlConfigSuicideBurn;
-	private JPanel pnlConfigAutoRover;
-	private JPanel painelMenu;
-	private JPanel painelPrincipal;
+	private JPanel pnlFuncoes, pnlStatus, pnlParametros, pnlIniciarFuncao, pnlConfigDecolagem, pnlConfigSuicideBurn,
+			pnlConfigAutoRover, painelMenu, painelPrincipal;
 
 	// Strings de identificação de eventos:
 	private final String funcoes = "Funções";
 	private final String iniciarFuncao = "Iniciar Função";
-	public static final String parametros = "Parâmetros";
-	public static final String decolagemOrbital = "Decolagem Orbital";
-	public static final String suicideBurn = "Suicide Burn";
-	public static final String autoRover = "Auto Rover";
-	public static final String manobras = "Manobras";
-	public static final String conectar = "Conectar";
-	public static final String iniciar = "Iniciar";
-	public static final String voltar = "Voltar";
-	public static final String marcadorOuAlvo = "Marcador ou Alvo";
+	public static final String parametros = "Parâmetros", decolagemOrbital = "Decolagem Orbital",
+			suicideBurn = "Suicide Burn", autoRover = "Auto Rover", manobras = "Manobras", vooAutonomo = "Voo Autonomo",
+			conectar = "Conectar", iniciar = "Iniciar", voltar = "Voltar", marcadorOuAlvo = "Marcador ou Alvo";
 
 	// Entrada de Usuário
 	// Decolagem Orbital:
-	private JTextField apoastroFinalTextField;
-	private JTextField direcaoOrbitaTextField;
+	public static JTextField apoastroFinalTextField, direcaoOrbitaTextField;
 	// Suicide Burn:
-	private JTextField ajusteDePousoTextField;
-	private JTextField altitudeSCRTextField;
-	private JCheckBox checkPouso;
+	public static JTextField altP, altI, altD, velP, velI, velD;
 	// Auto Rover:
-	private JTextField nomeMarcadorTextField;
-	private JTextField velMaxTextField;
+	public static JTextField nomeMarcadorTextField, velMaxTextField;
+
 	private String executarModulo = "";
-
-	private JTextField altP, altI, altD;
-
-	private JTextField velP, velI, velD;
 
 	public GUI() {
 		super("MechPeste - Pesterenan");
@@ -234,8 +203,8 @@ public class GUI extends JFrame implements ActionListener {
 		quartaLinha = new JLabel("Periastro: ");
 		quintaLinha = new JLabel("Vel. Vertical: ");
 		sextaLinha = new JLabel("Vel. Horizontal:");
-		pnlParametros.setBorder(
-				BorderFactory.createCompoundBorder(bordaVazia, BorderFactory.createTitledBorder("Parâmetros de Voo:")));
+		pnlParametros.setBorder(BorderFactory.createCompoundBorder(bordaVazia,
+				BorderFactory.createTitledBorder("Parâmetros da Missão:")));
 
 		pnlParametros.setLayout(new GridBagLayout());
 		GridBagConstraints gc = new GridBagConstraints();
@@ -316,17 +285,12 @@ public class GUI extends JFrame implements ActionListener {
 
 	private JPanel painelSuicide() {
 		pnlConfigSuicideBurn = new JPanel();
-		ajusteDePousoTextField = new JTextField("1.2");
-		altitudeSCRTextField = new JTextField("3000");
-		altP = new JTextField("0.001");
-		altI = new JTextField("0.1");
-		altD = new JTextField("0.01");
+		altP = new JTextField("0.025");
+		altI = new JTextField("0.05");
+		altD = new JTextField("0.05");
 		velP = new JTextField("0.025");
 		velI = new JTextField("0.05");
 		velD = new JTextField("0.05");
-		checkPouso = new JCheckBox();
-		checkPouso.setSelected(true);
-		checkPouso.addActionListener(this);
 
 		pnlConfigSuicideBurn.setBorder(
 				BorderFactory.createCompoundBorder(bordaVazia, BorderFactory.createTitledBorder("Configurações:")));
@@ -382,13 +346,6 @@ public class GUI extends JFrame implements ActionListener {
 		gc.weighty = 1;
 		gc.gridy++;
 		pnlConfigSuicideBurn.add(new JLabel(), gc);
-
-		gc.gridy++;
-		gc.weighty = 0;
-		JPanel pouso = new JPanel();
-		pouso.add(new JLabel("Pousar depois do Burn? "), gc);
-		pouso.add(checkPouso);
-		pnlConfigSuicideBurn.add(pouso, gc);
 
 		gc.weighty = 1;
 		gc.gridx = 0;
@@ -525,6 +482,9 @@ public class GUI extends JFrame implements ActionListener {
 		case manobras:
 			iniciarFuncao(manobras);
 			break;
+		case vooAutonomo:
+
+			break;
 		case voltar:
 			CardLayout pp = (CardLayout) (painelPrincipal.getLayout());
 			pp.show(painelPrincipal, parametros);
@@ -562,10 +522,6 @@ public class GUI extends JFrame implements ActionListener {
 			CardLayout pp = (CardLayout) (painelPrincipal.getLayout());
 			pp.show(painelPrincipal, executarModulo);
 			botIniciarCancelar.setText("Iniciar");
-		}
-
-		if (e.getSource().equals(checkPouso)) {
-			SuicideBurn.podePousar = checkPouso.isSelected();
 		}
 	}
 
@@ -605,24 +561,38 @@ public class GUI extends JFrame implements ActionListener {
 				GUI.setStatus("A direcao tem que ser um número entre 0 e 359 graus.");
 				return false;
 			}
+			try {
+				String[] dados = { Arquivos.DO, String.valueOf(apoastro), String.valueOf(direcao) };
+				Arquivos.gravarDadosConfig(dados);
+			} catch (IOException e1) {
+				System.out.println("Erro ao gravar dados da Decolagem Orbital");
+			}
 			return true;
 		case suicideBurn:
-			double altPd = Double.parseDouble(altP.getText());
-			double altId = Double.parseDouble(altI.getText());
-			double altDd = Double.parseDouble(altD.getText());
-			double velPd = Double.parseDouble(velP.getText());
-			double velId = Double.parseDouble(velI.getText());
-			double velDd = Double.parseDouble(velD.getText());
 			try {
+				double altPd = Double.parseDouble(altP.getText());
+				double altId = Double.parseDouble(altI.getText());
+				double altDd = Double.parseDouble(altD.getText());
+				double velPd = Double.parseDouble(velP.getText());
+				double velId = Double.parseDouble(velI.getText());
+				double velDd = Double.parseDouble(velD.getText());
 				SuicideBurn.setAjusteAltPID(altPd, altId, altDd);
 				SuicideBurn.setAjusteVelPID(velPd, velId, velDd);
+				try {
+					String[] dados = { Arquivos.SB, String.valueOf(altPd), String.valueOf(altId), String.valueOf(altDd),
+							String.valueOf(velPd), String.valueOf(velId), String.valueOf(velDd), };
+					Arquivos.gravarDadosConfig(dados);
+				} catch (IOException e) {
+					System.out.println("Erro ao gravar dados do Suicide Burn");
+				}
 			} catch (NullPointerException | NumberFormatException npe) {
-				GUI.setStatus("Valor incorreto para ajuste. Recomendado 1.25");
+				GUI.setStatus("Valores incorretos para o PID.");
 				return false;
 			}
 			return true;
 		case autoRover:
-			String nomeMarcador = nomeMarcadorTextField.getText().trim();
+			String nomeMarcador = nomeMarcadorTextField.getText();
+			float velMaxima = 10;
 			if ((nomeMarcadorTextField.isEnabled()) && (nomeMarcador != null)) {
 				AutoRover.buscandoMarcadores = true;
 				AutoRover.setAlvo(nomeMarcador);
@@ -630,10 +600,17 @@ public class GUI extends JFrame implements ActionListener {
 				AutoRover.buscandoMarcadores = false;
 			}
 			try {
-				AutoRover.setVelMaxima(Float.parseFloat(velMaxTextField.getText()));
+				velMaxima = Float.parseFloat(velMaxTextField.getText());
+				AutoRover.setVelMaxima(velMaxima);
 			} catch (NullPointerException | NumberFormatException npe) {
 				GUI.setStatus("Valor inválido para velocidade. Utilizando 10m/s.");
 				AutoRover.setVelMaxima(10);
+			}
+			try {
+				String[] dados = { Arquivos.AR, nomeMarcador, String.valueOf(velMaxima) };
+				Arquivos.gravarDadosConfig(dados);
+			} catch (IOException e) {
+				System.out.println("Erro ao gravar dados do Auto-Rover");
 			}
 			return true;
 		case manobras:
@@ -644,6 +621,9 @@ public class GUI extends JFrame implements ActionListener {
 				return false;
 			}
 			return true;
+		case vooAutonomo: {
+			return true;
+		}
 		}
 
 		return false;
@@ -659,38 +639,47 @@ public class GUI extends JFrame implements ActionListener {
 		case "altitude":
 			segundaLinha.setText("Altitude: " + valor + "m");
 			break;
-		case "distancia":
-			segundaLinha.setText("Distancia para alvo: " + valor + "m");
+		case "carga":
+			segundaLinha.setText("Carga Elétrica: " + String.format("%1$.0f", val) + "%");
+			break;
+		case "distanciaDaQueima":
+			terceiraLinha.setText("Distância da Queima: " + valor + "m");
 			break;
 		case "apoastro":
 			terceiraLinha.setText("Apoastro: " + valor + "m");
 			break;
 		case "distPercorrida":
-			val /= 1000;
-			valor = String.format("%1$.1f", val);
-			terceiraLinha.setText("Distância Percorrida: " + valor + "km");
+			terceiraLinha.setText("Distância Percorrida: " + valor + "m");
 			break;
-		case "diferenca":
-			quartaLinha.setText("Ângulo para o Alvo: " + valor + "°");
+		case "distancia":
+			quartaLinha.setText("Distância Restante: " + valor + "m");
 			break;
 		case "periastro":
 			quartaLinha.setText("Periastro: " + valor + "m");
 			break;
+		case "valorTEP":
+			quartaLinha.setText("Valor TEP: " + valor);
+			break;
+		case "tempoDeMissao":
+			int segTotaisTdm = (int) val;
+			int horasTdm = segTotaisTdm / 3600;
+			int minutosTdm = (segTotaisTdm % 3600) / 60;
+			int segundosTdm = segTotaisTdm % 60;
+			quintaLinha
+					.setText("Tempo de Missão: " + String.format("%02d:%02d:%02d", horasTdm, minutosTdm, segundosTdm));
+			break;
 		case "velVert":
 			quintaLinha.setText("Vel Vert.: " + valor + "m/s");
-			break;
-		case "carga":
-			quintaLinha.setText("Carga Elétrica: " + String.format("%1$.0f", val) + "%");
 			break;
 		case "velHorz":
 			sextaLinha.setText("Vel Horz.: " + valor + "m/s");
 			break;
 		case "tempoRestante":
-			int segTotais = (int) val;
-			int horas = segTotais / 3600;
-			int minutos = (segTotais % 3600) / 60;
-			int segundos = segTotais % 60;
-			sextaLinha.setText("Tempo Restante: " + String.format("%02d:%02d:%02d", horas, minutos, segundos));
+			int segTotaisTr = (int) val;
+			int horasTr = segTotaisTr / 3600;
+			int minutosTr = (segTotaisTr % 3600) / 60;
+			int segundosTr = segTotaisTr % 60;
+			sextaLinha.setText("Tempo Restante: " + String.format("%02d:%02d:%02d", horasTr, minutosTr, segundosTr));
 			break;
 
 		}

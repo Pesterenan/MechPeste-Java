@@ -29,8 +29,7 @@ public class DecolagemOrbital {
 	Stream<Double> periastro;
 	double pressaoAtual;
 
-	private float altInicioCurva = 250;
-	private float altFimCurva = 80000;
+	private float altInicioCurva = 100;
 	public static float altApoastroFinal = 80000;
 	private int etapaAtual = 0;
 	private int inclinacao = 90;
@@ -38,7 +37,7 @@ public class DecolagemOrbital {
 	private double anguloGiro;
 	private static boolean executando = true;
 	private Manobras manobras;
-	ControlePID ctrlPressao = new ControlePID();
+	ControlePID ctrlAcel = new ControlePID();
 
 	public DecolagemOrbital(Connection conexao)
 			throws IOException, RPCException, InterruptedException, StreamException {
@@ -48,10 +47,10 @@ public class DecolagemOrbital {
 		parametrosVoo = naveAtual.flight(naveAtual.getOrbit().getBody().getReferenceFrame());
 		naveAtual.getAutoPilot().setReferenceFrame(naveAtual.getSurfaceReferenceFrame());
 		manobras = new Manobras(conexao, false);
-		ctrlPressao.setAmostraTempo(25);
-		ctrlPressao.setLimitePID(20);
-		ctrlPressao.ajustarPID(0.25, 0.01, 0.025);
-		ctrlPressao.limitarSaida(0.25, 1.0);
+		ctrlAcel.setAmostraTempo(50);
+		ctrlAcel.setLimitePID(20);
+		ctrlAcel.ajustarPID(0.25, 0.01, 0.025);
+		ctrlAcel.limitarSaida(0.1, 1.0);
 		// Iniciar Streams:
 		tempoMissao = conexao.addStream(SpaceCenter.class, "getUT");
 		altitude = conexao.addStream(parametrosVoo, "getMeanAltitude");
@@ -110,23 +109,23 @@ public class DecolagemOrbital {
 		double altitudeAtual = altitude.get();
 		double apoastroAtual = apoastro.get();
 		pressaoAtual = parametrosVoo.getDynamicPressure() / 1000;
-		System.out.println(pressaoAtual);
-		ctrlPressao.setEntradaPID(pressaoAtual);
-		System.out.println("PID: " + ctrlPressao.computarPID());
-		if (altitudeAtual > altInicioCurva && altitudeAtual < altFimCurva) {
-			double incremento = Math.sqrt((altitudeAtual - altInicioCurva) / (altFimCurva - altInicioCurva));
+		ctrlAcel.setEntradaPID(pressaoAtual);
+		if (altitudeAtual > altInicioCurva && altitudeAtual < altApoastroFinal) {
+			double incremento = Math.sqrt((altitudeAtual - altInicioCurva) / (altApoastroFinal - altInicioCurva));
 			double novoAnguloGiro = incremento * inclinacao;
 			if (Math.abs(novoAnguloGiro - anguloGiro) > 0.5) {
 				anguloGiro = novoAnguloGiro;
 				naveAtual.getAutoPilot().targetPitchAndHeading((float) (inclinacao - anguloGiro), direcao);
-				aceleracao((float) ctrlPressao.computarPID());
+				aceleracao((float) ctrlAcel.computarPID());
 				GUI.setStatus(String.format("Ângulo de Inclinação: %1$.1f °", anguloGiro));
 			}
 		}
 		// Diminuir aceleração ao chegar perto do apoastro
 		if (apoastroAtual > altApoastroFinal * 0.95) {
 			GUI.setStatus("Se aproximando do apoastro...");
-			aceleracao(0.25f); // mudar aceleração pra 25%
+			ctrlAcel.setEntradaPID(altitudeAtual);
+			ctrlAcel.setLimitePID(altApoastroFinal);
+			aceleracao((float) ctrlAcel.computarPID());
 		}
 		// Sair do giro ao chegar na altitude de apoastro:
 		if (apoastroAtual >= altApoastroFinal) {

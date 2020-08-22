@@ -2,6 +2,7 @@ package com.pesterenan.funcoes;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import com.pesterenan.MechPeste;
@@ -18,6 +19,7 @@ import krpc.client.services.SpaceCenter.Flight;
 import krpc.client.services.SpaceCenter.ReferenceFrame;
 import krpc.client.services.SpaceCenter.SASMode;
 import krpc.client.services.SpaceCenter.SolarPanel;
+import krpc.client.services.SpaceCenter.SolarPanelState;
 import krpc.client.services.SpaceCenter.SpeedMode;
 import krpc.client.services.SpaceCenter.Vessel;
 import krpc.client.services.SpaceCenter.Waypoint;
@@ -33,7 +35,6 @@ public class AutoRover {
 	static private SpaceCenter centroEspacial;
 	WaypointManager gerenciadorMarcadores;
 	List<Waypoint> listaDeMarcadoresASeguir = new ArrayList<Waypoint>();
-//	private List<Triplet<Double, Double, Double>> pontosASeguir = new ArrayList<Triplet<Double, Double, Double>>();
 	private List<Vetor> pontosASeguir = new ArrayList<Vetor>();
 	private static Vessel rover, naveAlvo;
 	Waypoint alvoMarcador;
@@ -56,10 +57,11 @@ public class AutoRover {
 	Vetor distParaAlvo;
 	int pontos;
 	private boolean carregando;
-	private double tempoRestante;
-	private double tempoAnterior;
-	private float kmsPercorridos;
 	private Stream<Double> tempoDoJogo;
+	private float kmsPercorridos;
+	private double tempoAnterior;
+	private double tempoDeMissao;
+	private double tempoRestante;
 
 	public AutoRover(Connection conexao) throws IOException, RPCException, InterruptedException, StreamException {
 		iniciarParametros(conexao);
@@ -81,8 +83,8 @@ public class AutoRover {
 		velocidadeRover = conexao.addStream(parametrosRover, "getHorizontalSpeed");
 		tempoDoJogo = conexao.addStream(centroEspacial.getClass(), "getUT");
 		// AJUSTAR CONTROLES PID:
-		ctrlAceleracao.ajustarPID(0.5, 0.001, 0.01);
-		ctrlAceleracao.limitarSaida(-0.5, 1);
+		ctrlAceleracao.ajustarPID(0.5, 0.1, 0.01);
+		ctrlAceleracao.limitarSaida(0, 1);
 		ctrlDirecao.ajustarPID(0.03, 0.05, 0.3);
 		ctrlDirecao.limitarSaida(-1, 1);
 		tempoAnterior = tempoDoJogo.get();
@@ -127,20 +129,26 @@ public class AutoRover {
 		} else {
 			carregando = true;
 			acelerarRover(0);
+			rover.getControl().setLights(false);
 			rover.getControl().setBrakes(true);
 			rover.getControl().setWheelSteering(0.0f);
 			if (velocidadeRover.get() < 1 && rover.getControl().getBrakes()) {
 				Thread.sleep(1000);
 				GUI.setStatus("Carregando Baterias...");
+				double segCarga = 0;
 				List<SolarPanel> paineis = new ArrayList<SolarPanel>();
 				paineis = rover.getParts().getSolarPanels();
+				for (Iterator<SolarPanel> iter = paineis.iterator(); iter.hasNext();) {
+					SolarPanel painel = iter.next();
+					if (painel.getState() == SolarPanelState.BROKEN) {
+						iter.remove();
+					} else {
+						segCarga += painel.getEnergyFlow();
+					}
+				}
 				if (paineis.isEmpty()) {
 					GUI.setStatus("Não há painéis solares para carregar as baterias.");
 					executandoAutoRover = false;
-				}
-				double segCarga = 0;
-				for (SolarPanel painel : paineis) {
-					segCarga += painel.getEnergyFlow();
 				}
 				segCarga = ((cargaTotal - cargaAtual) / segCarga);
 				System.out.println("Segundos de Carga: " + segCarga);
@@ -148,6 +156,8 @@ public class AutoRover {
 					segCarga = 3600;
 				}
 				centroEspacial.warpTo((centroEspacial.getUT() + segCarga), 10000, 4);
+				tempoAnterior = tempoDoJogo.get();
+				rover.getControl().setLights(true);
 			}
 		}
 		GUI.setParametros("carga", porcentagemCarga);
@@ -183,7 +193,6 @@ public class AutoRover {
 		for (int i = 1; i < pontos; i++) {
 			Vetor pontoSeguinte = (posicionarVetor(ponto.multiplica(i)));
 			pontosASeguir.add(pontoSeguinte);
-			System.out.println("PONTO A SEGUIR " + i + pontosASeguir.get(i - 1).toString());
 		}
 	}
 
@@ -192,9 +201,9 @@ public class AutoRover {
 			try {
 				definirVetorDirecao();
 				ctrlAceleracao.setEntradaPID(velocidadeRover.get());
+				checarTerreno();
 				logarDados();
 			} catch (Exception erro) {
-
 				GUI.setStatus("Sem alvo selecionado");
 				executandoAutoRover = false;
 			}
@@ -232,7 +241,7 @@ public class AutoRover {
 	}
 
 	private void acelerarRover(double arg) throws IOException, RPCException, StreamException {
-		if (velocidadeRover.get() < velocidadeMaxima) {
+		if (velocidadeRover.get() < (velocidadeMaxima * 1.01)) {
 			rover.getControl().setBrakes(false);
 			rover.getControl().setWheelThrottle((float) arg);
 		} else {
@@ -243,7 +252,6 @@ public class AutoRover {
 	private void pilotarRover() throws IOException, RPCException, StreamException {
 		// Calcular diferença de angulo entre o alvo e o rover
 		double diferencaAngulo = Math.abs(anguloAlvo - anguloRover);
-		GUI.setParametros("diferenca", diferencaAngulo);
 		if (velocidadeRover.get() > velocidadeCurva && diferencaAngulo < 20) {
 			try {
 				if (rover.getControl().getSpeedMode() == SpeedMode.TARGET) {
@@ -274,7 +282,7 @@ public class AutoRover {
 	private void definirVetorDirecao() throws IOException, RPCException {
 		// Definir posicao do Alvo, sendo ele um Waypoint, ou um Vessel
 		if (!pontosASeguir.isEmpty()) {
-			posicaoAlvo = posParaRover((posicionarPonto(pontosASeguir.get(0))));
+			posicaoAlvo = posParaRover(posicionarPonto(pontosASeguir.get(0)));
 		} else {
 			if (buscandoMarcadores) {
 				posicaoAlvo = posParaRover(posicionarMarcador(alvoMarcador));
@@ -293,6 +301,22 @@ public class AutoRover {
 		ctrlDirecao.setLimitePID(anguloAlvo * 0.5);
 	}
 
+	private void checarTerreno() throws RPCException {
+//		Vetor dirEsq = new Vetor(rover.direction(pontoRefRover)).soma(new Vetor(-0.8, 0.1, 0.0));
+//		Vetor dirDir = new Vetor(rover.direction(pontoRefRover)).soma(new Vetor(-0.8, -0.1, 0.0));
+//		double distEsq = centroEspacial.raycastDistance(
+//				new Vetor(rover.position(pontoRefSuperficie)).soma(new Vetor(0, 0, 100)).paraTriplet(),
+//				dirEsq.paraTriplet(), pontoRefSuperficie);
+//		double distDir = centroEspacial.raycastDistance(
+//				new Vetor(rover.position(pontoRefSuperficie)).soma(new Vetor(0, 0, 100)).paraTriplet(),
+//				dirDir.paraTriplet(), pontoRefSuperficie);
+//
+////		rover.getControl().setRoll((float) -(distEsq - distDir));
+//		System.out.println("distEsq " + distEsq);
+//		System.out.println("distDir " + distDir);
+//		System.out.println("difDeE  " + (distEsq - distDir));
+	}
+
 	private void logarDados() throws IOException, RPCException, StreamException {
 		if (buscandoMarcadores) {
 			distParaAlvo = posParaRover(posicionarMarcador(alvoMarcador));
@@ -303,11 +327,13 @@ public class AutoRover {
 		double mudancaDeTempo = tempoDoJogo.get() - tempoAnterior;
 		if (mudancaDeTempo > 1) {
 			kmsPercorridos += (float) (mudancaDeTempo * velocidadeRover.get());
-			tempoRestante = distanciaRestante / ((velocidadeMaxima + velocidadeRover.get()) / 2);
+			tempoRestante = distanciaRestante / velocidadeMaxima;
+			tempoDeMissao += mudancaDeTempo;
 			tempoAnterior = tempoDoJogo.get();
 			GUI.setParametros("distancia", distanciaRestante);
 			GUI.setParametros("distPercorrida", kmsPercorridos);
 			GUI.setParametros("tempoRestante", tempoRestante);
+			GUI.setParametros("tempoDeMissao", tempoDeMissao);
 		}
 	}
 

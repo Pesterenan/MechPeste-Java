@@ -179,23 +179,6 @@ public class Vetor {
 		return direcao;
 	}
 
-//	public static float somaAngulo3d(Vetor vetor) {
-//		float direcao;
-//
-//		direcao = (float) (Math.toDegrees(Math.atan2(vetor.y, vetor.x)));
-////		direcao = (float) (Math.toDegrees(Math.atan2(vetor.y, vetor.x)));
-////		direcao = (float) ((vetor.x + vetor.y + vetor.z));
-//
-//		return direcao;
-//	}
-//
-//	public static Vetor anguloDirecao3d(Vetor vetor) {
-//		double anguloX = ((Math.acos(vetor.x / vetor.Magnitude3d())));
-//		double anguloY = ((Math.asin(vetor.y / vetor.Magnitude3d())));
-//		double anguloZ = ((Math.acos(vetor.z / vetor.Magnitude3d())));
-//		return new Vetor(anguloX, anguloY, anguloZ);
-//	}
-
 	/**
 	 * Calcula o Vetor da direção do ponto de origem até o alvo.
 	 * 
