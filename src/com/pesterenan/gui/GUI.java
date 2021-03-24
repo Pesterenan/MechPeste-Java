@@ -36,9 +36,13 @@ public class GUI extends JFrame implements ActionListener {
 	private JButton botSuicideBurn, botDecolagem, botAutoRover, botManobras, botVooAutonomo, botIniciarCancelar,
 			botVoltar;
 	private static JButton botConectar;
-	private ButtonGroup grupoRB = new ButtonGroup();
+	private ButtonGroup grupoRBAutoRover = new ButtonGroup();
 	private JRadioButton alvoRB = new JRadioButton("Alvo");
 	private JRadioButton marcadorRB = new JRadioButton("Marcador", true);
+
+	private ButtonGroup grupoRBDev = new ButtonGroup();
+	private JRadioButton roverRB = new JRadioButton("Rover");
+	private JRadioButton superficieRB = new JRadioButton("Superficie", true);
 
 	// Barra de Status:
 	protected static JLabel statusLabel;
@@ -54,14 +58,15 @@ public class GUI extends JFrame implements ActionListener {
 
 	// Painéis da GUI:
 	private JPanel pnlFuncoes, pnlStatus, pnlParametros, pnlIniciarFuncao, pnlConfigDecolagem, pnlConfigSuicideBurn,
-			pnlConfigAutoRover, painelMenu, painelPrincipal;
+			pnlConfigAutoRover, pnlDev, painelMenu, painelPrincipal;
 
 	// Strings de identificação de eventos:
 	private final String funcoes = "Funções";
 	private final String iniciarFuncao = "Iniciar Função";
 	public static final String parametros = "Parâmetros", decolagemOrbital = "Decolagem Orbital",
 			suicideBurn = "Suicide Burn", autoRover = "Auto Rover", manobras = "Manobras", vooAutonomo = "Voo Autonomo",
-			conectar = "Conectar", iniciar = "Iniciar", voltar = "Voltar", marcadorOuAlvo = "Marcador ou Alvo";
+			conectar = "Conectar", iniciar = "Iniciar", voltar = "Voltar", marcadorOuAlvo = "Marcador ou Alvo",
+			dev = "Dev", roverOuSuperficie = "Rover ou Superficie";
 
 	// Entrada de Usuário
 	// Decolagem Orbital:
@@ -87,6 +92,7 @@ public class GUI extends JFrame implements ActionListener {
 		pnlConfigSuicideBurn = painelSuicide();
 		pnlConfigAutoRover = painelAutoRover();
 		pnlStatus = painelStatus();
+		pnlDev = painelDev();
 
 		painelMenu = new JPanel();
 		painelMenu.setLayout(new CardLayout());
@@ -99,6 +105,7 @@ public class GUI extends JFrame implements ActionListener {
 		painelPrincipal.add(pnlConfigDecolagem, decolagemOrbital);
 		painelPrincipal.add(pnlConfigSuicideBurn, suicideBurn);
 		painelPrincipal.add(pnlConfigAutoRover, autoRover);
+		painelPrincipal.add(pnlDev, dev);
 
 		add(painelMenu, BorderLayout.WEST);
 		add(painelPrincipal, BorderLayout.CENTER);
@@ -107,6 +114,41 @@ public class GUI extends JFrame implements ActionListener {
 		setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		setResizable(false);
 		setVisible(true);
+	}
+
+	private JPanel painelDev() {
+		pnlDev = new JPanel();
+		JLabel pontoRef = new JLabel("Ponto de Referencia");
+
+		roverRB.addActionListener(this);
+		roverRB.setActionCommand(roverOuSuperficie);
+		superficieRB.addActionListener(this);
+		superficieRB.setActionCommand(roverOuSuperficie);
+		grupoRBDev.add(roverRB);
+		grupoRBDev.add(superficieRB);
+		JPanel grupoRBPanel = new JPanel();
+		grupoRBPanel.setBorder(BorderFactory.createEtchedBorder());
+		grupoRBPanel.add(roverRB);
+		grupoRBPanel.add(superficieRB);
+
+		pnlDev.setBorder(BorderFactory.createCompoundBorder(bordaVazia,
+				BorderFactory.createTitledBorder("Parâmetros da Missão:")));
+
+		pnlDev.setLayout(new GridBagLayout());
+		GridBagConstraints gc = new GridBagConstraints();
+		gc.weightx = 1;
+		gc.weighty = 1;
+		gc.gridx = 0;
+		gc.gridy = GridBagConstraints.RELATIVE;
+
+		gc.anchor = GridBagConstraints.LINE_START;
+		pnlDev.add(pontoRef, gc);
+
+		gc.anchor = GridBagConstraints.LINE_START;
+		pnlDev.add(grupoRBPanel, gc);
+
+		pnlDev.setVisible(true);
+		return pnlDev;
 	}
 
 	public JPanel painelIniciarFuncao() {
@@ -190,6 +232,7 @@ public class GUI extends JFrame implements ActionListener {
 		gc.anchor = GridBagConstraints.LINE_START;
 		pnlFuncoes.add(botVooAutonomo, gc);
 		botVooAutonomo.addActionListener(this);
+		botVooAutonomo.setActionCommand(dev);
 
 		pnlFuncoes.setVisible(true);
 		return pnlFuncoes;
@@ -369,8 +412,8 @@ public class GUI extends JFrame implements ActionListener {
 		marcadorRB.setActionCommand(marcadorOuAlvo);
 		alvoRB.addActionListener(this);
 		alvoRB.setActionCommand(marcadorOuAlvo);
-		grupoRB.add(alvoRB);
-		grupoRB.add(marcadorRB);
+		grupoRBAutoRover.add(alvoRB);
+		grupoRBAutoRover.add(marcadorRB);
 		JPanel grupoRBPanel = new JPanel();
 		grupoRBPanel.setBorder(BorderFactory.createEtchedBorder());
 		grupoRBPanel.add(marcadorRB);
@@ -482,8 +525,8 @@ public class GUI extends JFrame implements ActionListener {
 		case manobras:
 			iniciarFuncao(manobras);
 			break;
-		case vooAutonomo:
-
+		case dev:
+			iniciarFuncao(dev);
 			break;
 		case voltar:
 			CardLayout pp = (CardLayout) (painelPrincipal.getLayout());
@@ -499,6 +542,16 @@ public class GUI extends JFrame implements ActionListener {
 			} else {
 				System.out.println("ALVO");
 				nomeMarcadorTextField.setEnabled(false);
+			}
+			break;
+
+		case roverOuSuperficie:
+			if (roverRB.isSelected()) {
+				System.out.println("ROVER");
+
+			} else {
+				System.out.println("SUPERFICIE");
+
 			}
 			break;
 		}
@@ -622,6 +675,9 @@ public class GUI extends JFrame implements ActionListener {
 			}
 			return true;
 		case vooAutonomo: {
+			return true;
+		}
+		case dev: {
 			return true;
 		}
 		}

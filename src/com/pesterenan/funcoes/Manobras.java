@@ -117,8 +117,7 @@ public class Manobras extends SwingWorker<String, String> {
 		ctrlAcel.setLimitePID(1);
 		while (noDeManobra != null) {
 			ctrlAcel.setEntradaPID(-queimaRestante.get().getValue1());
-			if (queimaRestante.get().getValue1() > 1
-					|| queimaRestante.get().getValue1() > (noDeManobra.getDeltaV() * 0.01)) {
+			if (queimaRestante.get().getValue1() > 0) {
 				naveAtual.getControl().setThrottle((float) ctrlAcel.computarPID());
 			} else {
 				naveAtual.getControl().setThrottle(0.0f);

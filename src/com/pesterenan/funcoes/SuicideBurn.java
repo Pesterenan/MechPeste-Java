@@ -87,7 +87,7 @@ public class SuicideBurn {
 				naveAtual.getControl().setGear(true);
 			}
 			// Aponta nave para o retrograde se a velocidade horizontal for maior que 1m/s
-			if (velHorizontal.get() > 2) {
+			if (velHorizontal.get() > 1) {
 				navegacao.mirarRetrogrado();
 			} else {
 				naveAtual.getAutoPilot().setTargetPitch(90);

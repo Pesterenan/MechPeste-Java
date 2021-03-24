@@ -10,6 +10,7 @@ import com.pesterenan.funcoes.AutoRover;
 import com.pesterenan.funcoes.DecolagemOrbital;
 import com.pesterenan.funcoes.Manobras;
 import com.pesterenan.funcoes.SuicideBurn;
+import com.pesterenan.funcoes.VooAutonomo;
 import com.pesterenan.gui.Arquivos;
 import com.pesterenan.gui.GUI;
 import com.pesterenan.gui.Status;
@@ -71,6 +72,9 @@ public class MechPeste implements PropertyChangeListener {
 				break;
 			case GUI.manobras:
 				rodarManobras();
+				break;
+			case GUI.dev:
+				rodarDev();
 				break;
 			}
 		} else {
@@ -168,6 +172,27 @@ public class MechPeste implements PropertyChangeListener {
 		threadModulos.start();
 	}
 
+	private void rodarDev() {
+		threadModulos = new Thread(new Runnable() {
+			public void run() {
+				try {
+					new VooAutonomo(conexao);
+					GUI.setStatus(Status.PRONTO.get());
+					threadModulos = null;
+				} catch (Exception e) {
+					try {
+						Arquivos.criarLogDeErros(e.getStackTrace());
+					} catch (IOException e1) {
+					}
+					GUI.setStatus(Status.ERROMANOBRAS.get());
+					GUI.botConectarVisivel(true);
+					threadModulos = null;
+				}
+			}
+		});
+		threadModulos.start();
+	}
+
 //		case "botSuicideMulti":
 //			Vessel naveAtual = null;
 //			try {
@@ -196,25 +221,6 @@ public class MechPeste implements PropertyChangeListener {
 //			}
 //			break;
 
-//		case "botVooAutonomo":
-//			GUI.setStatus(Status.EXECSUICIDE.get());
-//			if (t_VooAutonomo == null) {
-//				t_VooAutonomo = new Thread(new Runnable() {
-//					@Override
-//					public void run() {
-//						try {
-//							new VooAutonomo(conexao);
-//						} catch (StreamException | RPCException e) {
-//							GUI.setStatus(Status.ERROCONEXAO.get());
-//						}
-//					}
-//				});
-//				t_VooAutonomo.start();
-//			} else {
-//				GUI.setStatus(Status.JAEXEC.get());
-//			}
-//			break;
-//		}
 	public static void finalizarTarefa() throws IOException {
 		if (threadModulos.isAlive()) {
 			threadModulos.interrupt();

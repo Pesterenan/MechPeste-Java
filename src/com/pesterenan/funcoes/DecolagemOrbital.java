@@ -23,10 +23,7 @@ public class DecolagemOrbital {
 	private static Vessel naveAtual;
 	private Flight parametrosVoo;
 
-	Stream<Double> tempoMissao;
-	Stream<Double> altitude;
-	Stream<Double> apoastro;
-	Stream<Double> periastro;
+	Stream<Double> tempoMissao, altitude, altitudeSup, apoastro, periastro;
 	double pressaoAtual;
 
 	private float altInicioCurva = 100;
@@ -47,12 +44,13 @@ public class DecolagemOrbital {
 		parametrosVoo = naveAtual.flight(naveAtual.getOrbit().getBody().getReferenceFrame());
 		naveAtual.getAutoPilot().setReferenceFrame(naveAtual.getSurfaceReferenceFrame());
 		manobras = new Manobras(conexao, false);
-		ctrlAcel.setAmostraTempo(50);
+		ctrlAcel.setAmostraTempo(25);
 		ctrlAcel.setLimitePID(20);
 		ctrlAcel.ajustarPID(0.25, 0.01, 0.025);
 		ctrlAcel.limitarSaida(0.1, 1.0);
 		// Iniciar Streams:
 		tempoMissao = conexao.addStream(SpaceCenter.class, "getUT");
+		altitudeSup = conexao.addStream(parametrosVoo, "getSurfaceAltitude");
 		altitude = conexao.addStream(parametrosVoo, "getMeanAltitude");
 		apoastro = conexao.addStream(naveAtual.getOrbit(), "getApoapsisAltitude");
 		periastro = conexao.addStream(naveAtual.getOrbit(), "getPeriapsisAltitude");
@@ -106,7 +104,7 @@ public class DecolagemOrbital {
 	}
 
 	private void giroGravitacional() throws RPCException, StreamException, InterruptedException {
-		double altitudeAtual = altitude.get();
+		double altitudeAtual = altitudeSup.get();
 		double apoastroAtual = apoastro.get();
 		pressaoAtual = parametrosVoo.getDynamicPressure() / 1000;
 		ctrlAcel.setEntradaPID(pressaoAtual);
@@ -115,6 +113,7 @@ public class DecolagemOrbital {
 			double novoAnguloGiro = incremento * inclinacao;
 			if (Math.abs(novoAnguloGiro - anguloGiro) > 0.5) {
 				anguloGiro = novoAnguloGiro;
+				naveAtual.getAutoPilot().setTargetRoll(direcao - 90);
 				naveAtual.getAutoPilot().targetPitchAndHeading((float) (inclinacao - anguloGiro), direcao);
 				aceleracao((float) ctrlAcel.computarPID());
 				GUI.setStatus(String.format("Ângulo de Inclinação: %1$.1f °", anguloGiro));

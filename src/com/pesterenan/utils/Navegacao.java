@@ -40,7 +40,9 @@ public class Navegacao {
 		Vetor alinharDirecao = getElevacaoDirecaoDoVetor(vetorDirecaoHorizontal);
 
 		naveAtual.getAutoPilot().targetPitchAndHeading((float) alinharDirecao.y, (float) alinharDirecao.x);
-		naveAtual.getAutoPilot().setTargetRoll((float) Vetor.anguloDirecao(alinharDirecao));
+		if (naveAtual.flight(pontoRefSuperficie).getHorizontalSpeed() > 5) {
+			naveAtual.getAutoPilot().setTargetRoll((float) alinharDirecao.z);
+		}
 	}
 
 	public void mirarAlvo(Vessel alvo) throws IOException, RPCException, InterruptedException, StreamException {
@@ -51,7 +53,9 @@ public class Navegacao {
 		Vetor alinharDirecao = getElevacaoDirecaoDoVetor(vetorDirecaoHorizontal);
 
 		naveAtual.getAutoPilot().targetPitchAndHeading((float) alinharDirecao.y, (float) alinharDirecao.x);
-		// naveAtual.getAutoPilot().setTargetRoll((float) alinharDirecao.x);
+		if (naveAtual.flight(pontoRefSuperficie).getHorizontalSpeed() > 5) {
+			naveAtual.getAutoPilot().setTargetRoll((float) alinharDirecao.z);
+		}
 	}
 
 	private Vetor getElevacaoDirecaoDoVetor(Vetor alvo) throws RPCException, IOException, StreamException {
@@ -59,7 +63,8 @@ public class Navegacao {
 				centroEspacial.transformPosition(parametrosDeVoo.getVelocity(), pontoRefOrbital, pontoRefSuperficie));
 		Vetor vetorVelocidade = new Vetor(velocidade.y, velocidade.z, velocidade.x);
 		alvo = alvo.subtrai(vetorVelocidade);
-		return new Vetor(Vetor.anguloDirecao(alvo), Math.max(30, (int) (90 - (alvo.Magnitude()))), 0);
+		return new Vetor(Vetor.anguloDirecao(alvo), Math.max(30, (int) (90 - (alvo.Magnitude()))),
+				Vetor.anguloDirecao(velocidade));
 	}
 
 }
