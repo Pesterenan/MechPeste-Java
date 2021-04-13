@@ -16,6 +16,7 @@ import krpc.client.Connection;
 import krpc.client.RPCException;
 import krpc.client.Stream;
 import krpc.client.StreamException;
+import krpc.client.services.Drawing;
 import krpc.client.services.SpaceCenter;
 import krpc.client.services.SpaceCenter.Engine;
 import krpc.client.services.SpaceCenter.Node;
@@ -29,12 +30,17 @@ public class Manobras extends SwingWorker<String, String> {
 	private static Vessel naveAtual;
 	private Node noDeManobra;
 	private ControlePID ctrlAcel;
+	private Drawing desenhos;
+	private float deltaV = 100;
 
 	public Manobras(Connection con, boolean executar)
 			throws RPCException, StreamException, IOException, InterruptedException {
 		conexao = con;
 		centroEspacial = SpaceCenter.newInstance(conexao);
 		naveAtual = centroEspacial.getActiveVessel();
+		desenhos = Drawing.newInstance(conexao);
+		desenhos.addDirection(naveAtual.direction(naveAtual.getReferenceFrame()), naveAtual.getReferenceFrame(), deltaV,
+				true);
 		ctrlAcel = new ControlePID();
 		ctrlAcel.ajustarPID(0.025, 0.01, 0.1);
 		ctrlAcel.limitarSaida(0.1, 1);
@@ -55,6 +61,7 @@ public class Manobras extends SwingWorker<String, String> {
 		// Caso haja, calcular e executar
 		if (noDeManobra != null) {
 			GUI.setParametros("altitude", noDeManobra.getDeltaV());
+			deltaV = (float) noDeManobra.getDeltaV();
 			System.out.println("DELTA-V DA MANOBRA: " + noDeManobra.getDeltaV());
 
 			double duracaoDaQueima = calcularTempoDeQueima(noDeManobra);
@@ -116,8 +123,9 @@ public class Manobras extends SwingWorker<String, String> {
 		GUI.setStatus("Executando manobra!");
 		ctrlAcel.setLimitePID(1);
 		while (noDeManobra != null) {
+			deltaV = (float) noDeManobra.getDeltaV();
 			ctrlAcel.setEntradaPID(-queimaRestante.get().getValue1());
-			if (queimaRestante.get().getValue1() > 0) {
+			if (queimaRestante.get().getValue1() > 1) {
 				naveAtual.getControl().setThrottle((float) ctrlAcel.computarPID());
 			} else {
 				naveAtual.getControl().setThrottle(0.0f);

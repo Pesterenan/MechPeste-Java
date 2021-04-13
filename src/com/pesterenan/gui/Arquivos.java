@@ -48,12 +48,12 @@ public class Arquivos {
 		escritor.write("apoastro=80000\n");
 		escritor.write("inclinacao=90\n");
 		escritor.write(SB + "\n");
-		escritor.write("altp=0.025\n");
-		escritor.write("alti=0.05\n");
-		escritor.write("altd=0.05\n");
+		escritor.write("altp=0.01\n");
+		escritor.write("alti=0.01\n");
+		escritor.write("altd=0.01\n");
 		escritor.write("velp=0.025\n");
 		escritor.write("veli=0.05\n");
-		escritor.write("veld=0.05\n");
+		escritor.write("veld=0.1\n");
 		escritor.write(AR + "\n");
 		escritor.write("marcador=ALVO\n");
 		escritor.write("velocidade=10\n");

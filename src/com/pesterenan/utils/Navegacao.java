@@ -40,9 +40,9 @@ public class Navegacao {
 		Vetor alinharDirecao = getElevacaoDirecaoDoVetor(vetorDirecaoHorizontal);
 
 		naveAtual.getAutoPilot().targetPitchAndHeading((float) alinharDirecao.y, (float) alinharDirecao.x);
-		if (naveAtual.flight(pontoRefSuperficie).getHorizontalSpeed() > 5) {
-			naveAtual.getAutoPilot().setTargetRoll((float) alinharDirecao.z);
-		}
+//		if (naveAtual.flight(pontoRefSuperficie).getHorizontalSpeed() > 10) {
+//			naveAtual.getAutoPilot().setTargetRoll((float) alinharDirecao.z);
+//		}
 	}
 
 	public void mirarAlvo(Vessel alvo) throws IOException, RPCException, InterruptedException, StreamException {
@@ -53,7 +53,7 @@ public class Navegacao {
 		Vetor alinharDirecao = getElevacaoDirecaoDoVetor(vetorDirecaoHorizontal);
 
 		naveAtual.getAutoPilot().targetPitchAndHeading((float) alinharDirecao.y, (float) alinharDirecao.x);
-		if (naveAtual.flight(pontoRefSuperficie).getHorizontalSpeed() > 5) {
+		if (naveAtual.flight(pontoRefSuperficie).getHorizontalSpeed() > 10) {
 			naveAtual.getAutoPilot().setTargetRoll((float) alinharDirecao.z);
 		}
 	}

@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import org.javatuples.Triplet;
+
 import com.pesterenan.MechPeste;
 import com.pesterenan.gui.GUI;
 import com.pesterenan.utils.ControlePID;
@@ -14,6 +16,7 @@ import krpc.client.Connection;
 import krpc.client.RPCException;
 import krpc.client.Stream;
 import krpc.client.StreamException;
+import krpc.client.services.Drawing;
 import krpc.client.services.SpaceCenter;
 import krpc.client.services.SpaceCenter.Flight;
 import krpc.client.services.SpaceCenter.ReferenceFrame;
@@ -36,9 +39,12 @@ public class AutoRover {
 	WaypointManager gerenciadorMarcadores;
 	List<Waypoint> listaDeMarcadoresASeguir = new ArrayList<Waypoint>();
 	private List<Vetor> pontosASeguir = new ArrayList<Vetor>();
+	private List<Triplet<Double, Double, Double>> pontosVertices = new ArrayList<Triplet<Double, Double, Double>>();
 	private static Vessel rover, naveAlvo;
 	Waypoint alvoMarcador;
-	private ReferenceFrame pontoRefRover, pontoRefOrbital, pontoRefSuperficie;
+	private ReferenceFrame pontoRefRover;
+	private ReferenceFrame pontoRefOrbital;
+	private ReferenceFrame pontoRefSuperficie;
 	Flight parametrosRover;
 	Vetor posicaoRover, posicaoAnguloRover, posicaoAlvo, direcaoRover, direcaoTrajeto;
 	double anguloAlvo = 0, anguloRover = 0;
@@ -46,6 +52,7 @@ public class AutoRover {
 	static float velocidadeMaxima = 6;
 	float velocidadeCurva = 3;
 	ControlePID ctrlDirecao = new ControlePID(), ctrlAceleracao = new ControlePID();
+	ControlePID ctrlRolagem = new ControlePID(), ctrlArfagem = new ControlePID();
 	private static String nomeMarcador = "ALVO";
 	public static boolean buscandoMarcadores = true;
 	private boolean executandoAutoRover = true;
@@ -62,6 +69,8 @@ public class AutoRover {
 	private double tempoAnterior;
 	private double tempoDeMissao;
 	private double tempoRestante;
+
+	private Drawing desenhos;
 
 	public AutoRover(Connection conexao) throws IOException, RPCException, InterruptedException, StreamException {
 		iniciarParametros(conexao);
@@ -82,15 +91,23 @@ public class AutoRover {
 		parametrosRover = rover.flight(pontoRefOrbital);
 		velocidadeRover = conexao.addStream(parametrosRover, "getHorizontalSpeed");
 		tempoDoJogo = conexao.addStream(centroEspacial.getClass(), "getUT");
+		desenhos = Drawing.newInstance(conexao);
+
 		// AJUSTAR CONTROLES PID:
 		ctrlAceleracao.ajustarPID(0.5, 0.1, 0.01);
 		ctrlAceleracao.limitarSaida(0, 1);
 		ctrlDirecao.ajustarPID(0.03, 0.05, 0.3);
 		ctrlDirecao.limitarSaida(-1, 1);
+		ctrlRolagem.ajustarPID(0.5, 0.015, 0.5);
+		ctrlRolagem.limitarSaida(-1, 1);
+		ctrlArfagem.ajustarPID(0.5, 0.015, 0.5);
+		ctrlArfagem.limitarSaida(-1, 1);
+		ctrlRolagem.setLimitePID(0);
+		ctrlArfagem.setLimitePID(0);
 		tempoAnterior = tempoDoJogo.get();
 		tempoRestante = 0;
 		kmsPercorridos = 0;
-
+		antiTombamento();
 	}
 
 	private void definirAlvo() throws IOException, RPCException {
@@ -180,20 +197,31 @@ public class AutoRover {
 	}
 
 	private void fazerListaDoCaminho() throws IOException, RPCException {
-
+		// posição ultimo ponto
 		System.out.println("distParaAlvo" + distParaAlvo);
-
+		// dividir distancia até ponto por 1000 para gerar pontos intermediarios
 		pontos = (int) distParaAlvo.Magnitude3d() / 1000;
 		System.out.println("pontos" + pontos);
+		// dividir distancia final por pontos para conseguir distancia do segmento
 		Vetor ponto = distParaAlvo.divide((double) pontos);
 		System.out.println("ponto" + ponto);
 		System.out.println();
+		// adicionar ponto na lista
 		pontosASeguir.add(posicionarVetor(ponto));
 		System.out.println(pontosASeguir.get(0));
 		for (int i = 1; i < pontos; i++) {
 			Vetor pontoSeguinte = (posicionarVetor(ponto.multiplica(i)));
 			pontosASeguir.add(pontoSeguinte);
+			if (i > 1) {
+				Vetor pontoAnterior = (posicionarVetor(ponto.multiplica(i - 1)));
+				desenhos.addLine(posicionarPonto(pontoAnterior).paraTriplet(),
+						posicionarPonto(pontoSeguinte).paraTriplet(), pontoRefSuperficie, true);
+			}
 		}
+		for (int j = 1; j < pontosASeguir.size(); j++) {
+			pontosVertices.add(posicionarVetor(pontosASeguir.get(j)).paraTriplet());
+		}
+		desenhos.addPolygon(pontosVertices, pontoRefSuperficie, true);
 	}
 
 	private void controlarRover() throws IOException, RPCException, InterruptedException, StreamException {
@@ -201,7 +229,7 @@ public class AutoRover {
 			try {
 				definirVetorDirecao();
 				ctrlAceleracao.setEntradaPID(velocidadeRover.get());
-				checarTerreno();
+				antiTombamento();
 				logarDados();
 			} catch (Exception erro) {
 				GUI.setStatus("Sem alvo selecionado");
@@ -301,20 +329,55 @@ public class AutoRover {
 		ctrlDirecao.setLimitePID(anguloAlvo * 0.5);
 	}
 
-	private void checarTerreno() throws RPCException {
-//		Vetor dirEsq = new Vetor(rover.direction(pontoRefRover)).soma(new Vetor(-0.8, 0.1, 0.0));
-//		Vetor dirDir = new Vetor(rover.direction(pontoRefRover)).soma(new Vetor(-0.8, -0.1, 0.0));
-//		double distEsq = centroEspacial.raycastDistance(
-//				new Vetor(rover.position(pontoRefSuperficie)).soma(new Vetor(0, 0, 100)).paraTriplet(),
-//				dirEsq.paraTriplet(), pontoRefSuperficie);
-//		double distDir = centroEspacial.raycastDistance(
-//				new Vetor(rover.position(pontoRefSuperficie)).soma(new Vetor(0, 0, 100)).paraTriplet(),
-//				dirDir.paraTriplet(), pontoRefSuperficie);
-//
-////		rover.getControl().setRoll((float) -(distEsq - distDir));
-//		System.out.println("distEsq " + distEsq);
-//		System.out.println("distDir " + distDir);
-//		System.out.println("difDeE  " + (distEsq - distDir));
+	private void antiTombamento() throws RPCException {
+
+		// Vetores direção para Ponto de Ref Rover:
+		// Vetor ( -ESQ/DIR , -TRAS/FRENTE , -CIMA/BAIXO)
+
+		Vetor dirEsq = new Vetor(rover.direction(pontoRefRover)).soma(new Vetor(-0.2, -1.0, 0.8));
+		Vetor dirDir = new Vetor(rover.direction(pontoRefRover)).soma(new Vetor(0.2, -1.0, 0.8));
+		Vetor dirTras = new Vetor(rover.direction(pontoRefRover)).soma(new Vetor(0.0, -1.2, 0.8));
+		Vetor dirFrente = new Vetor(rover.direction(pontoRefRover)).soma(new Vetor(0.0, -0.8, 0.8));
+
+		// BOUNDING BOX: ( ESQ, TRAS, CIMA / DIR, FRENTE, BAIXO)
+		double distEsq = centroEspacial.raycastDistance(
+				new Vetor(rover.boundingBox(pontoRefRover).getValue0().getValue0(), 0,
+						rover.boundingBox(pontoRefRover).getValue0().getValue2()).paraTriplet(),
+				dirEsq.paraTriplet(), pontoRefRover);
+		double distDir = centroEspacial.raycastDistance(
+				new Vetor(rover.boundingBox(pontoRefRover).getValue1().getValue0(), 0,
+						rover.boundingBox(pontoRefRover).getValue0().getValue2()).paraTriplet(),
+				dirDir.paraTriplet(), pontoRefRover);
+		double distTras = centroEspacial.raycastDistance(
+				new Vetor(0, rover.boundingBox(pontoRefRover).getValue0().getValue1(),
+						rover.boundingBox(pontoRefRover).getValue0().getValue2()).paraTriplet(),
+				dirTras.paraTriplet(), pontoRefRover);
+		double distFrente = centroEspacial.raycastDistance(
+				new Vetor(0, rover.boundingBox(pontoRefRover).getValue1().getValue1(),
+						rover.boundingBox(pontoRefRover).getValue0().getValue2()).paraTriplet(),
+				dirFrente.paraTriplet(), pontoRefRover);
+
+		double difED = distEsq - distDir;
+		if (Double.compare(difED, Double.NaN) == 0) {
+			difED = 0;
+		} else if (Double.compare(difED, Double.NEGATIVE_INFINITY) == 0) {
+			difED = -20;
+		} else if (Double.compare(difED, Double.POSITIVE_INFINITY) == 0) {
+			difED = 20;
+		}
+
+		double difFT = distFrente - distTras;
+		if (Double.compare(difFT, Double.NaN) == 0) {
+			difFT = 0;
+		} else if (Double.compare(difFT, Double.NEGATIVE_INFINITY) == 0) {
+			difFT = -20;
+		} else if (Double.compare(difFT, Double.POSITIVE_INFINITY) == 0) {
+			difFT = 20;
+		}
+		ctrlRolagem.setEntradaPID(difED);
+		ctrlArfagem.setEntradaPID(difFT);
+		rover.getControl().setRoll((float) (ctrlRolagem.computarPID()));
+		rover.getControl().setPitch((float) (ctrlArfagem.computarPID()));
 	}
 
 	private void logarDados() throws IOException, RPCException, StreamException {
@@ -364,4 +427,5 @@ public class AutoRover {
 	public static void setVelMaxima(float velMax) {
 		velocidadeMaxima = velMax;
 	}
+
 }

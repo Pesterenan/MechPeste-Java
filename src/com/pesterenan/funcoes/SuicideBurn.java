@@ -27,8 +27,8 @@ public class SuicideBurn {
 	private ControlePID altitudePID = new ControlePID(), velocidadePID = new ControlePID();
 	boolean executandoSuicideBurn = false;
 	double valorTEP = 1.0, distanciaDaQueima = 0.0, duracaoDaQueima = 0.0, acelMaxima = 0.0;
-	private static double altP = 0.025, altI = 0.05, altD = 0.05;
-	private static double velP = 0.025, velI = 0.05, velD = 0.05;
+	private static double altP = 0.01, altI = 0.01, altD = 0.01;
+	private static double velP = 0.025, velI = 0.05, velD = 0.1;
 
 	public SuicideBurn(Connection conexao) throws StreamException, RPCException, IOException, InterruptedException {
 		centroEspacial = SpaceCenter.newInstance(conexao);
@@ -55,7 +55,7 @@ public class SuicideBurn {
 	}
 
 	private void executarSuicideBurn() throws RPCException, StreamException, IOException, InterruptedException {
-		naveAtual.getControl().setRCS(false);
+		naveAtual.getControl().setRCS(true);
 		naveAtual.getAutoPilot().engage();
 		naveAtual.getAutoPilot().setReferenceFrame(naveAtual.getSurfaceReferenceFrame());
 		aceleracao(0.0f);

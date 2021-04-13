@@ -91,11 +91,13 @@ public class MechPeste implements PropertyChangeListener {
 					new DecolagemOrbital(conexao);
 					GUI.setStatus(Status.PRONTO.get());
 					threadModulos = null;
+				} catch (InterruptedException sleep) {
 				} catch (Exception e) {
 					try {
 						Arquivos.criarLogDeErros(e.getStackTrace());
 					} catch (IOException e1) {
 					}
+					e.printStackTrace();
 					GUI.setStatus(Status.ERRODECOLAGEM.get());
 					GUI.botConectarVisivel(true);
 					threadModulos = null;
@@ -113,6 +115,7 @@ public class MechPeste implements PropertyChangeListener {
 					new SuicideBurn(conexao);
 					GUI.setStatus(Status.PRONTO.get());
 					threadModulos = null;
+				} catch (InterruptedException sleep) {
 				} catch (Exception e) {
 					try {
 						Arquivos.criarLogDeErros(e.getStackTrace());
@@ -136,11 +139,14 @@ public class MechPeste implements PropertyChangeListener {
 					new AutoRover(conexao);
 					GUI.setStatus(Status.PRONTO.get());
 					threadModulos = null;
+
+				} catch (InterruptedException sleep) {
 				} catch (Exception e) {
 					try {
 						Arquivos.criarLogDeErros(e.getStackTrace());
 					} catch (IOException e1) {
 					}
+					e.printStackTrace();
 					GUI.setStatus(Status.ERROROVER.get());
 					GUI.botConectarVisivel(true);
 					threadModulos = null;
@@ -158,11 +164,13 @@ public class MechPeste implements PropertyChangeListener {
 					new Manobras(conexao, true);
 					GUI.setStatus(Status.PRONTO.get());
 					threadModulos = null;
+				} catch (InterruptedException sleep) {
 				} catch (Exception e) {
 					try {
 						Arquivos.criarLogDeErros(e.getStackTrace());
 					} catch (IOException e1) {
 					}
+					e.printStackTrace();
 					GUI.setStatus(Status.ERROMANOBRAS.get());
 					GUI.botConectarVisivel(true);
 					threadModulos = null;

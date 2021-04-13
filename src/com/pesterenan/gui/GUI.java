@@ -18,23 +18,27 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
+import javax.swing.JSlider;
 import javax.swing.JTextField;
+import javax.swing.SwingConstants;
 import javax.swing.WindowConstants;
 import javax.swing.border.BevelBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 import com.pesterenan.MechPeste;
 import com.pesterenan.funcoes.AutoRover;
 import com.pesterenan.funcoes.DecolagemOrbital;
 import com.pesterenan.funcoes.SuicideBurn;
 
-public class GUI extends JFrame implements ActionListener {
+public class GUI extends JFrame implements ActionListener, ChangeListener {
 	private static final long serialVersionUID = 6999337104582004411L;
 
 	// Botões dos módulos:
-	private JButton botSuicideBurn, botDecolagem, botAutoRover, botManobras, botVooAutonomo, botIniciarCancelar,
-			botVoltar;
+	private JButton botSuicideBurn, botDecolagem, botAutoRover, botManobras, botVooAutonomo, botIniciar, botCancelar,
+			botVoltar, botMApoastro, botMPeriastro;
 	private static JButton botConectar;
 	private ButtonGroup grupoRBAutoRover = new ButtonGroup();
 	private JRadioButton alvoRB = new JRadioButton("Alvo");
@@ -58,15 +62,15 @@ public class GUI extends JFrame implements ActionListener {
 
 	// Painéis da GUI:
 	private JPanel pnlFuncoes, pnlStatus, pnlParametros, pnlIniciarFuncao, pnlConfigDecolagem, pnlConfigSuicideBurn,
-			pnlConfigAutoRover, pnlDev, painelMenu, painelPrincipal;
+			pnlConfigAutoRover, pnlManobras, pnlDev, painelMenu, painelPrincipal;
 
 	// Strings de identificação de eventos:
 	private final String funcoes = "Funções";
 	private final String iniciarFuncao = "Iniciar Função";
 	public static final String parametros = "Parâmetros", decolagemOrbital = "Decolagem Orbital",
 			suicideBurn = "Suicide Burn", autoRover = "Auto Rover", manobras = "Manobras", vooAutonomo = "Voo Autonomo",
-			conectar = "Conectar", iniciar = "Iniciar", voltar = "Voltar", marcadorOuAlvo = "Marcador ou Alvo",
-			dev = "Dev", roverOuSuperficie = "Rover ou Superficie";
+			conectar = "Conectar", iniciar = "Iniciar", cancelar = "Cancelar", voltar = "Voltar",
+			marcadorOuAlvo = "Marcador ou Alvo", dev = "Dev", roverOuSuperficie = "Rover ou Superficie";
 
 	// Entrada de Usuário
 	// Decolagem Orbital:
@@ -77,6 +81,12 @@ public class GUI extends JFrame implements ActionListener {
 	public static JTextField nomeMarcadorTextField, velMaxTextField;
 
 	private String executarModulo = "";
+
+	private String circApoastro;
+
+	private String circPeriastro;
+
+	private JSlider sliderX = new JSlider(SwingConstants.HORIZONTAL, 0, 10, 1);
 
 	public GUI() {
 		super("MechPeste - Pesterenan");
@@ -91,6 +101,7 @@ public class GUI extends JFrame implements ActionListener {
 		pnlConfigDecolagem = painelDecolagem();
 		pnlConfigSuicideBurn = painelSuicide();
 		pnlConfigAutoRover = painelAutoRover();
+		pnlManobras = painelManobras();
 		pnlStatus = painelStatus();
 		pnlDev = painelDev();
 
@@ -105,6 +116,7 @@ public class GUI extends JFrame implements ActionListener {
 		painelPrincipal.add(pnlConfigDecolagem, decolagemOrbital);
 		painelPrincipal.add(pnlConfigSuicideBurn, suicideBurn);
 		painelPrincipal.add(pnlConfigAutoRover, autoRover);
+		painelPrincipal.add(pnlManobras, manobras);
 		painelPrincipal.add(pnlDev, dev);
 
 		add(painelMenu, BorderLayout.WEST);
@@ -116,10 +128,44 @@ public class GUI extends JFrame implements ActionListener {
 		setVisible(true);
 	}
 
+	private JPanel painelManobras() {
+		pnlManobras = new JPanel();
+		JLabel circularizar = new JLabel("Circularizar órbita no:");
+		botMApoastro = new JButton("Apoastro");
+		botMApoastro.addActionListener(this);
+		botMApoastro.setActionCommand(circApoastro);
+		botMPeriastro = new JButton("Periastro");
+		botMPeriastro.addActionListener(this);
+		botMPeriastro.setActionCommand(circPeriastro);
+
+		pnlManobras.setBorder(BorderFactory.createCompoundBorder(bordaVazia,
+				BorderFactory.createTitledBorder("Parâmetros da Missão:")));
+
+		pnlManobras.setLayout(new GridBagLayout());
+		GridBagConstraints gc = new GridBagConstraints();
+		gc.weightx = 1;
+		gc.weighty = 1;
+		gc.gridx = 0;
+		gc.gridy = GridBagConstraints.RELATIVE;
+		pnlManobras.add(circularizar, gc);
+		JPanel botAP = new JPanel();
+		gc.gridx = 0;
+		botAP.add(botMApoastro, gc);
+		gc.gridx = 0;
+		botAP.add(botMPeriastro, gc);
+		gc.gridx = 0;
+		gc.gridy = GridBagConstraints.RELATIVE;
+
+		pnlManobras.add(botAP, gc);
+
+		pnlManobras.setVisible(true);
+		return pnlManobras;
+	}
+
 	private JPanel painelDev() {
 		pnlDev = new JPanel();
 		JLabel pontoRef = new JLabel("Ponto de Referencia");
-
+		sliderX.addChangeListener(this);
 		roverRB.addActionListener(this);
 		roverRB.setActionCommand(roverOuSuperficie);
 		superficieRB.addActionListener(this);
@@ -147,6 +193,9 @@ public class GUI extends JFrame implements ActionListener {
 		gc.anchor = GridBagConstraints.LINE_START;
 		pnlDev.add(grupoRBPanel, gc);
 
+		gc.anchor = GridBagConstraints.LINE_START;
+		pnlDev.add(sliderX, gc);
+
 		pnlDev.setVisible(true);
 		return pnlDev;
 	}
@@ -168,16 +217,21 @@ public class GUI extends JFrame implements ActionListener {
 
 		gc.weighty = 0.1;
 		gc.anchor = GridBagConstraints.LINE_END;
-		botIniciarCancelar = new JButton(iniciar);
-		botIniciarCancelar.addActionListener(this);
-		botIniciarCancelar.setActionCommand(iniciar);
+		botIniciar = new JButton(iniciar);
+		botIniciar.addActionListener(this);
+		botIniciar.setActionCommand(iniciar);
+		botCancelar = new JButton(cancelar);
+		botCancelar.setVisible(false);
+		botCancelar.addActionListener(this);
+		botCancelar.setActionCommand(cancelar);
 
 		gc.anchor = GridBagConstraints.LINE_END;
 		botVoltar = new JButton(voltar);
 		botVoltar.addActionListener(this);
 		botVoltar.setActionCommand(voltar);
 
-		pnlIniciarFuncao.add(botIniciarCancelar, gc);
+		pnlIniciarFuncao.add(botIniciar, gc);
+		pnlIniciarFuncao.add(botCancelar, gc);
 		pnlIniciarFuncao.add(botVoltar, gc);
 		pnlIniciarFuncao.setVisible(true);
 		return pnlIniciarFuncao;
@@ -284,6 +338,7 @@ public class GUI extends JFrame implements ActionListener {
 		apoastroFinalTextField = new JTextField("80000", 5);
 		JLabel direcaoDeOrbitaLabel = new JLabel("Direção de Inclinação de Órbita: ");
 		direcaoOrbitaTextField = new JTextField("90", 5);
+		JLabel dicasDirecao = new JLabel("0: Norte, 90: Leste, 180: Sul, 270: Oeste");
 
 		pnlConfigDecolagem.setBorder(
 				BorderFactory.createCompoundBorder(bordaVazia, BorderFactory.createTitledBorder("Configurações:")));
@@ -322,15 +377,21 @@ public class GUI extends JFrame implements ActionListener {
 		gc.gridy++;
 		pnlConfigDecolagem.add(new JLabel(), gc);
 
+		gc.weighty = 0;
+		gc.gridy++;
+		gc.fill = GridBagConstraints.LINE_START;
+		gc.gridheight = GridBagConstraints.REMAINDER;
+		pnlConfigDecolagem.add(dicasDirecao, gc);
+
 		pnlConfigDecolagem.setVisible(true);
 		return pnlConfigDecolagem;
 	}
 
 	private JPanel painelSuicide() {
 		pnlConfigSuicideBurn = new JPanel();
-		altP = new JTextField("0.025");
-		altI = new JTextField("0.05");
-		altD = new JTextField("0.05");
+		altP = new JTextField("0.01");
+		altI = new JTextField("0.01");
+		altD = new JTextField("0.01");
 		velP = new JTextField("0.025");
 		velI = new JTextField("0.05");
 		velD = new JTextField("0.05");
@@ -507,6 +568,13 @@ public class GUI extends JFrame implements ActionListener {
 	}
 
 	@Override
+	public void stateChanged(ChangeEvent e) {
+		if (e.getSource().equals(sliderX)) {
+			System.out.println(sliderX.getValue() * 0.1);
+		}
+	}
+
+	@Override
 	public void actionPerformed(ActionEvent e) {
 		// Mudar paineis e validar dados de acordo com os cliques nos menus:
 		switch (e.getActionCommand()) {
@@ -547,23 +615,31 @@ public class GUI extends JFrame implements ActionListener {
 
 		case roverOuSuperficie:
 			if (roverRB.isSelected()) {
-				System.out.println("ROVER");
 
 			} else {
-				System.out.println("SUPERFICIE");
 
 			}
 			break;
 		}
 
-		if (e.getSource().equals(botIniciarCancelar) && botIniciarCancelar.getText().equals("Iniciar")) {
+		if (e.getSource().equals(botIniciar)) {
+			System.out.println("Clicou em Iniciar");
 			if (validarDados(executarModulo)) {
 				CardLayout pp = (CardLayout) (painelPrincipal.getLayout());
 				firePropertyChange(executarModulo, 0, 1);
 				pp.show(painelPrincipal, parametros);
-				botIniciarCancelar.setText("Cancelar");
+				botCancelar.setVisible(true);
+				botIniciar.setVisible(false);
+
 			}
-		} else {
+		}
+		if (e.getSource().equals(botCancelar)) {
+			System.out.println("Clicou em Cancelar");
+			botCancelar.setVisible(false);
+			botIniciar.setVisible(true);
+			if (executarModulo == decolagemOrbital) {
+				DecolagemOrbital.setAbortar(true);
+			}
 			if (MechPeste.threadModulos != null) {
 				try {
 					MechPeste.finalizarTarefa();
@@ -574,8 +650,8 @@ public class GUI extends JFrame implements ActionListener {
 			}
 			CardLayout pp = (CardLayout) (painelPrincipal.getLayout());
 			pp.show(painelPrincipal, executarModulo);
-			botIniciarCancelar.setText("Iniciar");
 		}
+
 	}
 
 	private void iniciarFuncao(String modulo) {
@@ -602,10 +678,10 @@ public class GUI extends JFrame implements ActionListener {
 				GUI.setStatus("Os campos só aceitam números inteiros.");
 				return false;
 			}
-			if (apoastro >= 10000) {
+			if (apoastro >= 1000) {
 				DecolagemOrbital.setAltApoastro(apoastro);
 			} else {
-				GUI.setStatus("O apoastro tem que ser maior ou igual a 10000 metros.");
+				GUI.setStatus("O apoastro tem que ser maior ou igual a 1000 metros.");
 				return false;
 			}
 			if (direcao >= 0 && direcao < 360) {
