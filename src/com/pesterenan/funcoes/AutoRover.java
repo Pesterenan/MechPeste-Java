@@ -16,7 +16,6 @@ import krpc.client.Connection;
 import krpc.client.RPCException;
 import krpc.client.Stream;
 import krpc.client.StreamException;
-import krpc.client.services.Drawing;
 import krpc.client.services.SpaceCenter;
 import krpc.client.services.SpaceCenter.Flight;
 import krpc.client.services.SpaceCenter.ReferenceFrame;
@@ -70,7 +69,6 @@ public class AutoRover {
 	private double tempoDeMissao;
 	private double tempoRestante;
 
-	private Drawing desenhos;
 
 	public AutoRover(Connection conexao) throws IOException, RPCException, InterruptedException, StreamException {
 		iniciarParametros(conexao);
@@ -91,8 +89,7 @@ public class AutoRover {
 		parametrosRover = rover.flight(pontoRefOrbital);
 		velocidadeRover = conexao.addStream(parametrosRover, "getHorizontalSpeed");
 		tempoDoJogo = conexao.addStream(centroEspacial.getClass(), "getUT");
-		desenhos = Drawing.newInstance(conexao);
-
+	
 		// AJUSTAR CONTROLES PID:
 		ctrlAceleracao.ajustarPID(0.5, 0.1, 0.01);
 		ctrlAceleracao.limitarSaida(0, 1);
@@ -214,14 +211,11 @@ public class AutoRover {
 			pontosASeguir.add(pontoSeguinte);
 			if (i > 1) {
 				Vetor pontoAnterior = (posicionarVetor(ponto.multiplica(i - 1)));
-				desenhos.addLine(posicionarPonto(pontoAnterior).paraTriplet(),
-						posicionarPonto(pontoSeguinte).paraTriplet(), pontoRefSuperficie, true);
 			}
 		}
 		for (int j = 1; j < pontosASeguir.size(); j++) {
 			pontosVertices.add(posicionarVetor(pontosASeguir.get(j)).paraTriplet());
 		}
-		desenhos.addPolygon(pontosVertices, pontoRefSuperficie, true);
 	}
 
 	private void controlarRover() throws IOException, RPCException, InterruptedException, StreamException {
