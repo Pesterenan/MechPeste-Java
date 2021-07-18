@@ -29,7 +29,6 @@ public class Manobras extends SwingWorker<String, String> {
 	private static Vessel naveAtual;
 	private Node noDeManobra;
 	private ControlePID ctrlAcel;
-	private double deltaV = 20;
 
 	public Manobras(Connection con, boolean executar)
 			throws RPCException, StreamException, IOException, InterruptedException {
@@ -56,7 +55,6 @@ public class Manobras extends SwingWorker<String, String> {
 		// Caso haja, calcular e executar
 		if (noDeManobra != null) {
 			GUI.setParametros("altitude", noDeManobra.getDeltaV());
-			deltaV = (float) noDeManobra.getDeltaV();
 			System.out.println("DELTA-V DA MANOBRA: " + noDeManobra.getDeltaV());
 
 			double duracaoDaQueima = calcularTempoDeQueima(noDeManobra);
@@ -118,7 +116,6 @@ public class Manobras extends SwingWorker<String, String> {
 		GUI.setStatus("Executando manobra!");
 		ctrlAcel.setLimitePID(1);
 		while (noDeManobra != null) {
-			deltaV = (float) noDeManobra.getDeltaV();
 			ctrlAcel.setEntradaPID(-queimaRestante.get().getValue1());
 			if (queimaRestante.get().getValue1() > 1) {
 				naveAtual.getControl().setThrottle((float) ctrlAcel.computarPID());

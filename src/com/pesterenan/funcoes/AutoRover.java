@@ -209,9 +209,6 @@ public class AutoRover {
 		for (int i = 1; i < pontos; i++) {
 			Vetor pontoSeguinte = (posicionarVetor(ponto.multiplica(i)));
 			pontosASeguir.add(pontoSeguinte);
-			if (i > 1) {
-				Vetor pontoAnterior = (posicionarVetor(ponto.multiplica(i - 1)));
-			}
 		}
 		for (int j = 1; j < pontosASeguir.size(); j++) {
 			pontosVertices.add(posicionarVetor(pontosASeguir.get(j)).paraTriplet());
