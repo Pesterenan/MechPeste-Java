@@ -30,20 +30,20 @@ public class Arquivos {
 				escritor.close();
 				System.out.println("Arquivo de config criado.");
 			} else {
-				System.out.println("Arquivo de config jÃ¡ existe");
+				System.out.println("Arquivo de config já existe");
 				leitor = new Scanner(config);
 				buscarConfiguracoes();
 				leitor.close();
 			}
 
 		} catch (IOException e) {
-			System.out.println("Erro ao criar arquivo de configuraÃ§Ã£o.");
+			System.out.println("Erro ao criar arquivo de configuração.");
 			e.printStackTrace();
 		}
 	}
 
 	private void criarArquivoConfig() throws IOException {
-		escritor.write("[MechPeste - ConfiguraÃ§Ãµes]\n");
+		escritor.write("[MechPeste - Configurações]\n");
 		escritor.write(DO + "\n");
 		escritor.write("apoastro=80000\n");
 		escritor.write("inclinacao=90\n");
@@ -87,7 +87,7 @@ public class Arquivos {
 	}
 
 	public static void criarLogDeErros(StackTraceElement[] elementos) throws IOException {
-		SimpleDateFormat formatar = new SimpleDateFormat("dd-MM-yy 'Ã s' HH:mm:ss");
+		SimpleDateFormat formatar = new SimpleDateFormat("dd-MM-yy às HH:mm:ss");
 		Date data = new Date(System.currentTimeMillis());
 		logErros = new File("mp_erros.log");
 		logErros.createNewFile();
