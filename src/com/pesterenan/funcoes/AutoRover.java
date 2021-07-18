@@ -27,13 +27,13 @@ import krpc.client.services.SpaceCenter.Vessel;
 import krpc.client.services.SpaceCenter.Waypoint;
 import krpc.client.services.SpaceCenter.WaypointManager;
 
-// M√≥dulo de Piloto autom√°tico de Rovers
+// MÛdulo de Piloto autom·tico de Rovers
 // Autor: Renan Torres <pesterenan@gmail.com>
 // Data: 14/02/2019
 
 public class AutoRover {
 	private static final int DISTANCIA_DE_PROCURA = 4400000;
-	// Declara√ß√£o de vari√°veis:
+	// DeclaraÁ„o de vari·veis:
 	static private SpaceCenter centroEspacial;
 	WaypointManager gerenciadorMarcadores;
 	List<Waypoint> listaDeMarcadoresASeguir = new ArrayList<Waypoint>();
@@ -80,7 +80,7 @@ public class AutoRover {
 		centroEspacial = SpaceCenter.newInstance(conexao);
 		gerenciadorMarcadores = centroEspacial.getWaypointManager();
 		rover = centroEspacial.getActiveVessel();
-		// REFERENCIA PARA BUSCAR ANGULO DE DIRE√á√ÉO DO ROVER:
+		// REFERENCIA PARA BUSCAR ANGULO DE DIRE«√O DO ROVER:
 		pontoRefRover = rover.getReferenceFrame();
 		// REFERENCIA PARA VELOCIDADE DO ROVER:
 		pontoRefOrbital = rover.getOrbit().getBody().getReferenceFrame();
@@ -116,20 +116,20 @@ public class AutoRover {
 			}
 			if (listaDeMarcadoresASeguir.isEmpty()) {
 				executandoAutoRover = false;
-				GUI.setStatus("Sem alvos dispon√≠veis");
+				GUI.setStatus("Sem alvos disponÌveis");
 			} else {
 				checarDistancia();
 			}
 		} else {
 			try {
 				naveAlvo = centroEspacial.getTargetVessel();
-				GUI.setStatus("Est√° indo na dire√ß√£o de: " + naveAlvo.getName());
+				GUI.setStatus("Est· indo na direÁ„o de: " + naveAlvo.getName());
 				GUI.setParametros("nome", naveAlvo.getName());
 				distParaAlvo = new Vetor(naveAlvo.position(pontoRefSuperficie));
 				fazerListaDoCaminho();
 			} catch (NullPointerException e) {
 				executandoAutoRover = false;
-				GUI.setStatus("Sem alvos dispon√≠veis");
+				GUI.setStatus("Sem alvos disponÌveis");
 			}
 		}
 	}
@@ -161,7 +161,7 @@ public class AutoRover {
 					}
 				}
 				if (paineis.isEmpty()) {
-					GUI.setStatus("N√£o h√° pain√©is solares para carregar as baterias.");
+					GUI.setStatus("N„o h· painÈis solares para carregar as baterias.");
 					executandoAutoRover = false;
 				}
 				segCarga = ((cargaTotal - cargaAtual) / segCarga);
@@ -188,15 +188,15 @@ public class AutoRover {
 		}
 		distParaAlvo = (posicionarMarcador(alvoMarcador));
 		fazerListaDoCaminho();
-		GUI.setStatus("Localizado marcador mais pr√≥ximo: " + alvoMarcador.getName());
+		GUI.setStatus("Localizado marcador mais prÛximo: " + alvoMarcador.getName());
 		GUI.setParametros("nome", alvoMarcador.getName());
 
 	}
 
 	private void fazerListaDoCaminho() throws IOException, RPCException {
-		// posi√ß√£o ultimo ponto
+		// posiÁ„o ultimo ponto
 		System.out.println("distParaAlvo" + distParaAlvo);
-		// dividir distancia at√© ponto por 1000 para gerar pontos intermediarios
+		// dividir distancia atÈ ponto por 1000 para gerar pontos intermediarios
 		pontos = (int) distParaAlvo.Magnitude3d() / 1000;
 		System.out.println("pontos" + pontos);
 		// dividir distancia final por pontos para conseguir distancia do segmento
@@ -272,7 +272,7 @@ public class AutoRover {
 	}
 
 	private void pilotarRover() throws IOException, RPCException, StreamException {
-		// Calcular diferen√ßa de angulo entre o alvo e o rover
+		// Calcular diferenÁa de angulo entre o alvo e o rover
 		double diferencaAngulo = Math.abs(anguloAlvo - anguloRover);
 		if (velocidadeRover.get() > velocidadeCurva && diferencaAngulo < 20) {
 			try {
@@ -325,7 +325,7 @@ public class AutoRover {
 
 	private void antiTombamento() throws RPCException {
 
-		// Vetores dire√ß√£o para Ponto de Ref Rover:
+		// Vetores direÁ„o para Ponto de Ref Rover:
 		// Vetor ( -ESQ/DIR , -TRAS/FRENTE , -CIMA/BAIXO)
 
 		Vetor dirEsq = new Vetor(rover.direction(pontoRefRover)).soma(new Vetor(-0.2, -1.0, 0.8));

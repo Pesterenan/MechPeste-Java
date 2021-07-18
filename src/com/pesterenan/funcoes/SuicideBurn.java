@@ -18,7 +18,7 @@ import krpc.client.services.SpaceCenter.Vessel;
 
 public class SuicideBurn {
 
-	private static final int ALTITUDE_SUICIDEBURN = 10000, ALTITUDE_TREM_DE_POUSO = 1000;
+	private static final int ALTITUDE_SUICIDEBURN = 10000, ALTITUDE_TREM_DE_POUSO = 500;
 	private static SpaceCenter centroEspacial;
 	private Vessel naveAtual;
 	private Stream<Double> altitude, velVertical, velHorizontal;
@@ -80,19 +80,21 @@ public class SuicideBurn {
 		}
 		// Loop principal de Suicide Burn:
 		while (executandoSuicideBurn) {
-			// Calcula os valores de acelera√ß√£o e TWR do foguete:
+			// Calcula os valores de aceleraÁ„o e TWR do foguete:
 			atualizarParametros();
 			// Desce o trem de pouso da nave
 			if (altitude.get() < ALTITUDE_TREM_DE_POUSO) {
 				naveAtual.getControl().setGear(true);
 			}
 			// Aponta nave para o retrograde se a velocidade horizontal for maior que 1m/s
-			if (velHorizontal.get() > 1) {
+			if (velHorizontal.get() > 3) {
+				naveAtual.getControl().setRCS(true);
 				navegacao.mirarRetrogrado();
 			} else {
+				naveAtual.getControl().setRCS(false);
 				naveAtual.getAutoPilot().setTargetPitch(90);
 			}
-			// Corrigir acelera√ß√£o da nave:
+			// Corrigir aceleraÁ„o da nave:
 			aceleracao((float) ((altitudePID.computarPID()) + (velocidadePID.computarPID())));
 			checarPouso();
 			Thread.sleep(25);
@@ -140,7 +142,7 @@ public class SuicideBurn {
 	 * Informa aos PIDs de altitude e velocidade, os limites e velocidade da nave,
 	 * utilizando a distancia da queima para ajustar velocidade limite.
 	 * 
-	 * @param distanciaDaQueima - A dist√¢ncia calculada para a queima
+	 * @param distanciaDaQueima - A dist‚ncia calculada para a queima
 	 * @throws RPCException
 	 * @throws StreamException
 	 */

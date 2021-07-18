@@ -42,7 +42,7 @@ public class DecolagemOrbital {
 			throws IOException, RPCException, InterruptedException, StreamException {
 		iniciarScript(conexao);
 // Loop principal de subida
-		while (executando) { // loop while sempre funcionando atÃ© um break
+		while (executando) { // loop while sempre funcionando até um break
 			switch (etapaAtual) {
 			case 0:
 				decolar();
@@ -123,10 +123,10 @@ public class DecolagemOrbital {
 				anguloGiro = novoAnguloGiro;
 				naveAtual.getAutoPilot().targetPitchAndHeading((float) (inclinacao - anguloGiro), direcao);
 				aceleracao((float) ctrlAcel.computarPID());
-				GUI.setStatus(String.format("Ã‚ngulo de InclinaÃ§Ã£o: %1$.1f Â°", anguloGiro));
+				GUI.setStatus(String.format("Ângulo de Inclinação: %1$.1f °", anguloGiro));
 			}
 		}
-		// Diminuir aceleraÃ§Ã£o ao chegar perto do apoastro
+		// Diminuir aceleração ao chegar perto do apoastro
 		if (apoastroAtual > altApoastroFinal * 0.95) {
 			GUI.setStatus("Se aproximando do apoastro...");
 			ctrlAcel.setEntradaPID(apoastroAtual);
@@ -136,7 +136,7 @@ public class DecolagemOrbital {
 		// Sair do giro ao chegar na altitude de apoastro:
 		if (apoastroAtual >= altApoastroFinal) {
 			naveAtual.getControl().setSAS(true);
-			GUI.setStatus("Apoastro alcanÃ§ado.");
+			GUI.setStatus("Apoastro alcançado.");
 			aceleracao(0.0f);
 			Thread.sleep(25);
 			etapaAtual = 2;
@@ -146,11 +146,11 @@ public class DecolagemOrbital {
 	private void planejarOrbita() throws RPCException, StreamException, InterruptedException, IOException {
 		GUI.setStatus("Esperando sair da atmosfera.");
 		if (altitude.get() > (altApoastroFinal * 0.8)) {
-			GUI.setStatus("Planejando Manobra de circularizaÃ§Ã£o...");
+			GUI.setStatus("Planejando Manobra de circularização...");
 			Node noDeManobra = manobras.circularizarApoastro();
 			double duracaoDaQueima = manobras.calcularTempoDeQueima(noDeManobra);
 			manobras.orientarNave(noDeManobra);
-			GUI.setStatus("Executando Manobra de circularizaÃ§Ã£o...");
+			GUI.setStatus("Executando Manobra de circularização...");
 			manobras.executarQueima(noDeManobra, duracaoDaQueima);
 			naveAtual.getAutoPilot().disengage();
 			naveAtual.getControl().setSAS(true);
