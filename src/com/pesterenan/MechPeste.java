@@ -22,16 +22,16 @@ import krpc.client.StreamException;
 public class MechPeste implements PropertyChangeListener {
 	public static Connection conexao;
 	public static Thread threadModulos;
-	private static JFrame gui;
 
 	public static void main(String[] args) throws StreamException, RPCException, IOException, InterruptedException {
 		new MechPeste();
 	}
 
 	private MechPeste() {
-		gui = new GUI();
+		GUI gui = new GUI();
 		gui.addPropertyChangeListener(this);
 		new Arquivos();
+		iniciarConexao();
 	}
 
 	public static void iniciarConexao() {
@@ -59,175 +59,48 @@ public class MechPeste implements PropertyChangeListener {
 			iniciarConexao();
 		}
 		if (threadModulos == null) {
-			iniciarConexao();
-			switch (evt.getPropertyName()) {
-			case GUI.decolagemOrbital:
-				rodarDecolagemOrbital();
-				break;
-			case GUI.suicideBurn:
-				rodarSuicideBurn();
-				break;
-			case GUI.autoRover:
-				rodarAutoRover();
-				break;
-			case GUI.manobras:
-				rodarManobras();
-				break;
-			case GUI.dev:
-				rodarDev();
-				break;
+			if (conexao == null) {
+				iniciarConexao();
+			} else {
+				threadModulos = new Thread(new Runnable() {
+					public void run() {
+						try {
+							switch (evt.getPropertyName()) {
+							case GUI.decolagemOrbital:
+								GUI.setStatus(Status.EXECDECOLAGEM.get());
+								new DecolagemOrbital(conexao);
+								break;
+							case GUI.suicideBurn:
+								GUI.setStatus(Status.EXECSUICIDE.get());
+								new SuicideBurn(conexao);
+								break;
+							case GUI.autoRover:
+								GUI.setStatus(Status.EXECROVER.get());
+								new AutoRover(conexao);
+								break;
+							case GUI.manobras:
+								GUI.setStatus(Status.EXECMANOBRAS.get());
+								new Manobras(conexao, true);
+								break;
+							default:
+								GUI.setStatus(Status.PRONTO.get());
+								threadModulos = null;
+							}
+						} catch (Exception e) {
+							try {
+								Arquivos.criarLogDeErros(e.getStackTrace());
+							} catch (IOException e1) {
+							}
+							e.printStackTrace();
+							GUI.setStatus(Status.ERRODECOLAGEM.get());
+							GUI.botConectarVisivel(true);
+							threadModulos = null;
+						}
+					}
+				});
 			}
-		} else {
-			GUI.setStatus(Status.JAEXEC.get());
 		}
-
 	}
-
-	private void rodarDecolagemOrbital() {
-		threadModulos = new Thread(new Runnable() {
-			public void run() {
-				try {
-					GUI.setStatus(Status.EXECDECOLAGEM.get());
-					new DecolagemOrbital(conexao);
-					GUI.setStatus(Status.PRONTO.get());
-					threadModulos = null;
-				} catch (InterruptedException sleep) {
-				} catch (Exception e) {
-					try {
-						Arquivos.criarLogDeErros(e.getStackTrace());
-					} catch (IOException e1) {
-					}
-					e.printStackTrace();
-					GUI.setStatus(Status.ERRODECOLAGEM.get());
-					GUI.botConectarVisivel(true);
-					threadModulos = null;
-				}
-			}
-		});
-		threadModulos.start();
-	}
-
-	private void rodarSuicideBurn() {
-		threadModulos = new Thread(new Runnable() {
-			public void run() {
-				try {
-					GUI.setStatus(Status.EXECSUICIDE.get());
-					new SuicideBurn(conexao);
-					GUI.setStatus(Status.PRONTO.get());
-					threadModulos = null;
-				} catch (InterruptedException sleep) {
-				} catch (Exception e) {
-					try {
-						Arquivos.criarLogDeErros(e.getStackTrace());
-					} catch (IOException e1) {
-					}
-					e.printStackTrace();
-					GUI.setStatus(Status.ERROSUICIDE.get());
-					GUI.botConectarVisivel(true);
-					threadModulos = null;
-				}
-			}
-		});
-		threadModulos.start();
-	}
-
-	private void rodarAutoRover() {
-		threadModulos = new Thread(new Runnable() {
-			public void run() {
-				try {
-					GUI.setStatus(Status.EXECROVER.get());
-					new AutoRover(conexao);
-					GUI.setStatus(Status.PRONTO.get());
-					threadModulos = null;
-
-				} catch (InterruptedException sleep) {
-				} catch (Exception e) {
-					try {
-						Arquivos.criarLogDeErros(e.getStackTrace());
-					} catch (IOException e1) {
-					}
-					e.printStackTrace();
-					GUI.setStatus(Status.ERROROVER.get());
-					GUI.botConectarVisivel(true);
-					threadModulos = null;
-				}
-			}
-		});
-		threadModulos.start();
-	}
-
-	private void rodarManobras() {
-		threadModulos = new Thread(new Runnable() {
-			public void run() {
-				try {
-					GUI.setStatus(Status.EXECMANOBRAS.get());
-					new Manobras(conexao, true);
-					GUI.setStatus(Status.PRONTO.get());
-					threadModulos = null;
-				} catch (InterruptedException sleep) {
-				} catch (Exception e) {
-					try {
-						Arquivos.criarLogDeErros(e.getStackTrace());
-					} catch (IOException e1) {
-					}
-					e.printStackTrace();
-					GUI.setStatus(Status.ERROMANOBRAS.get());
-					GUI.botConectarVisivel(true);
-					threadModulos = null;
-				}
-			}
-		});
-		threadModulos.start();
-	}
-
-	private void rodarDev() {
-		threadModulos = new Thread(new Runnable() {
-			public void run() {
-				try {
-					new VooAutonomo(conexao);
-					GUI.setStatus(Status.PRONTO.get());
-					threadModulos = null;
-				} catch (Exception e) {
-					try {
-						Arquivos.criarLogDeErros(e.getStackTrace());
-					} catch (IOException e1) {
-					}
-					GUI.setStatus(Status.ERROMANOBRAS.get());
-					GUI.botConectarVisivel(true);
-					threadModulos = null;
-				}
-			}
-		});
-		threadModulos.start();
-	}
-
-//		case "botSuicideMulti":
-//			Vessel naveAtual = null;
-//			try {
-//				naveAtual = SpaceCenter.newInstance(conexao).getActiveVessel();
-//			} catch (RPCException e2) {
-//				GUI.setStatus(Status.ERROCONEXAO.get());
-//			}
-//			try {
-//				for (Vessel nave : centroEspacial.getVessels()) {
-//					if (nave.getName().contains(naveAtual.getName())) {
-//						new Thread(new Runnable() {
-//							@Override
-//							public void run() {
-//								try {
-//									System.out.println("Executando Suicide Burn para: " + nave.getName());
-//									new SuicideBurn(conexao, nave);
-//								} catch (StreamException | RPCException | IOException | InterruptedException e) {
-//									GUI.setStatus(Status.ERROCONEXAO.get());
-//								}
-//							}
-//						}).start();
-//					}
-//				}
-//			} catch (RPCException e1) {
-//				GUI.setStatus(Status.ERROCONEXAO.get());
-//			}
-//			break;
 
 	public static void finalizarTarefa() throws IOException {
 		if (threadModulos.isAlive()) {

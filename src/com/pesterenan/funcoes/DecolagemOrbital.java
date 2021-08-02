@@ -58,10 +58,9 @@ public class DecolagemOrbital {
 				etapaAtual = 0;
 				executando = false;
 				break;
-			default:
-				if (abortar) {
-					finalizarScript();
-				}
+			}
+			if (abortar) {
+				finalizarScript();
 			}
 
 			atualizarParametros();
