@@ -4,16 +4,14 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.IOException;
 
-import javax.swing.JFrame;
-
 import com.pesterenan.funcoes.AutoRover;
 import com.pesterenan.funcoes.DecolagemOrbital;
 import com.pesterenan.funcoes.Manobras;
 import com.pesterenan.funcoes.SuicideBurn;
-import com.pesterenan.funcoes.VooAutonomo;
 import com.pesterenan.gui.Arquivos;
 import com.pesterenan.gui.GUI;
 import com.pesterenan.gui.Status;
+import com.pesterenan.model.Nave;
 
 import krpc.client.Connection;
 import krpc.client.RPCException;
@@ -42,9 +40,11 @@ public class MechPeste implements PropertyChangeListener {
 				GUI.setStatus(Status.CONECTADO.get());
 				GUI.botConectarVisivel(false);
 			} catch (IOException e) {
+				System.err.print("Erro ao se conectar ao jogo: " + e.getLocalizedMessage());
 				try {
 					Arquivos.criarLogDeErros(e.getStackTrace());
 				} catch (IOException e1) {
+					System.err.print("Erro ao criar log de Erros: " + e1.getMessage());
 				}
 				GUI.setStatus(Status.ERROCONEXAO.get());
 				GUI.botConectarVisivel(true);
@@ -62,6 +62,7 @@ public class MechPeste implements PropertyChangeListener {
 			if (conexao == null) {
 				iniciarConexao();
 			} else {
+				Nave naveAtual = new Nave(conexao);
 				threadModulos = new Thread(new Runnable() {
 					public void run() {
 						try {
@@ -98,6 +99,7 @@ public class MechPeste implements PropertyChangeListener {
 						}
 					}
 				});
+				threadModulos.start();
 			}
 		}
 	}
@@ -106,8 +108,6 @@ public class MechPeste implements PropertyChangeListener {
 		if (threadModulos.isAlive()) {
 			threadModulos.interrupt();
 			threadModulos = null;
-			conexao.close();
-			conexao = null;
 		}
 	}
 }

@@ -5,26 +5,23 @@ import java.io.IOException;
 import com.pesterenan.MechPeste;
 import com.pesterenan.gui.GUI;
 import com.pesterenan.gui.Status;
+import com.pesterenan.model.Nave;
 import com.pesterenan.utils.ControlePID;
 
 import krpc.client.Connection;
 import krpc.client.RPCException;
-import krpc.client.Stream;
 import krpc.client.StreamException;
 import krpc.client.services.SpaceCenter;
-import krpc.client.services.SpaceCenter.Flight;
 import krpc.client.services.SpaceCenter.Node;
-import krpc.client.services.SpaceCenter.Vessel;
 import krpc.client.services.SpaceCenter.VesselSituation;
 
-public class DecolagemOrbital {
+public class DecolagemOrbital extends Nave {
 
-	private static SpaceCenter centroEspacial;
-	private static Vessel naveAtual;
-	private Flight parametrosVoo;
+	public DecolagemOrbital(Connection conexao) {
+		super(conexao);
+	}
 
 	// Streams de conexao com a nave:
-	Stream<Double> tempoMissao, altitude, altitudeSup, apoastro, periastro;
 	double pressaoAtual;
 	// Parametros de voo:
 	private float altInicioCurva = 100;
@@ -38,11 +35,11 @@ public class DecolagemOrbital {
 	private Manobras manobras;
 	ControlePID ctrlAcel = new ControlePID();
 
-	public DecolagemOrbital(Connection conexao)
+	public void decolagemOrbital(Connection conexao)
 			throws IOException, RPCException, InterruptedException, StreamException {
 		iniciarScript(conexao);
 // Loop principal de subida
-		while (executando) { // loop while sempre funcionando até um break
+		while (executando) { // loop while sempre funcionando atï¿½ um break
 			switch (etapaAtual) {
 			case 0:
 				decolar();
@@ -122,10 +119,10 @@ public class DecolagemOrbital {
 				anguloGiro = novoAnguloGiro;
 				naveAtual.getAutoPilot().targetPitchAndHeading((float) (inclinacao - anguloGiro), direcao);
 				aceleracao((float) ctrlAcel.computarPID());
-				GUI.setStatus(String.format("Ângulo de Inclinação: %1$.1f °", anguloGiro));
+				GUI.setStatus(String.format("ï¿½ngulo de Inclinaï¿½ï¿½o: %1$.1f ï¿½", anguloGiro));
 			}
 		}
-		// Diminuir aceleração ao chegar perto do apoastro
+		// Diminuir aceleraï¿½ï¿½o ao chegar perto do apoastro
 		if (apoastroAtual > altApoastroFinal * 0.95) {
 			GUI.setStatus("Se aproximando do apoastro...");
 			ctrlAcel.setEntradaPID(apoastroAtual);
@@ -135,7 +132,7 @@ public class DecolagemOrbital {
 		// Sair do giro ao chegar na altitude de apoastro:
 		if (apoastroAtual >= altApoastroFinal) {
 			naveAtual.getControl().setSAS(true);
-			GUI.setStatus("Apoastro alcançado.");
+			GUI.setStatus("Apoastro alcanï¿½ado.");
 			aceleracao(0.0f);
 			Thread.sleep(25);
 			etapaAtual = 2;
@@ -145,11 +142,11 @@ public class DecolagemOrbital {
 	private void planejarOrbita() throws RPCException, StreamException, InterruptedException, IOException {
 		GUI.setStatus("Esperando sair da atmosfera.");
 		if (altitude.get() > (altApoastroFinal * 0.8)) {
-			GUI.setStatus("Planejando Manobra de circularização...");
+			GUI.setStatus("Planejando Manobra de circularizaï¿½ï¿½o...");
 			Node noDeManobra = manobras.circularizarApoastro();
 			double duracaoDaQueima = manobras.calcularTempoDeQueima(noDeManobra);
 			manobras.orientarNave(noDeManobra);
-			GUI.setStatus("Executando Manobra de circularização...");
+			GUI.setStatus("Executando Manobra de circularizaï¿½ï¿½o...");
 			manobras.executarQueima(noDeManobra, duracaoDaQueima);
 			naveAtual.getAutoPilot().disengage();
 			naveAtual.getControl().setSAS(true);
