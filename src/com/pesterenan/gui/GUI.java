@@ -637,16 +637,11 @@ public class GUI extends JFrame implements ActionListener, ChangeListener {
 			System.out.println("Clicou em Cancelar");
 			botCancelar.setVisible(false);
 			botIniciar.setVisible(true);
-			if (executarModulo == decolagemOrbital) {
+			switch (executarModulo) {
+			case decolagemOrbital:
 				DecolagemOrbital.setAbortar(true);
-			}
-			if (MechPeste.threadModulos != null) {
-				try {
-					MechPeste.finalizarTarefa();
-					MechPeste.iniciarConexao();
-				} catch (IOException e1) {
-					botConectarVisivel(true);
-				}
+//			case suicideBurn:
+//				SuicideBurn.setAbortar(true);
 			}
 			CardLayout pp = (CardLayout) (painelPrincipal.getLayout());
 			pp.show(painelPrincipal, executarModulo);

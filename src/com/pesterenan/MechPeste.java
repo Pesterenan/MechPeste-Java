@@ -18,8 +18,9 @@ import krpc.client.RPCException;
 import krpc.client.StreamException;
 
 public class MechPeste implements PropertyChangeListener {
-	public static Connection conexao;
-	public static Thread threadModulos;
+	private static Connection conexao;
+	private static Thread threadModulos;
+	private Nave naveAtual;
 
 	public static void main(String[] args) throws StreamException, RPCException, IOException, InterruptedException {
 		new MechPeste();
@@ -33,18 +34,18 @@ public class MechPeste implements PropertyChangeListener {
 	}
 
 	public static void iniciarConexao() {
-		if (conexao == null) {
+		if (getConexao() == null) {
 			try {
 				GUI.setStatus(Status.CONECTANDO.get());
-				conexao = Connection.newInstance("MechPeste");
+				setConexao(Connection.newInstance("MechPeste"));
 				GUI.setStatus(Status.CONECTADO.get());
 				GUI.botConectarVisivel(false);
 			} catch (IOException e) {
-				System.err.print("Erro ao se conectar ao jogo: " + e.getLocalizedMessage());
+				System.err.println("Erro ao se conectar ao jogo: " + e.getMessage());
 				try {
 					Arquivos.criarLogDeErros(e.getStackTrace());
 				} catch (IOException e1) {
-					System.err.print("Erro ao criar log de Erros: " + e1.getMessage());
+					System.err.println("Erro ao criar log de Erros: " + e1.getMessage());
 				}
 				GUI.setStatus(Status.ERROCONEXAO.get());
 				GUI.botConectarVisivel(true);
@@ -55,59 +56,77 @@ public class MechPeste implements PropertyChangeListener {
 	@Override
 	public void propertyChange(PropertyChangeEvent evt) {
 		if (evt.getPropertyName().equals(GUI.conectar)) {
-			GUI.botConectarVisivel(false);
 			iniciarConexao();
 		}
-		if (threadModulos == null) {
-			if (conexao == null) {
-				iniciarConexao();
-			} else {
-				Nave naveAtual = new Nave(conexao);
-				threadModulos = new Thread(new Runnable() {
-					public void run() {
-						try {
-							switch (evt.getPropertyName()) {
-							case GUI.decolagemOrbital:
-								GUI.setStatus(Status.EXECDECOLAGEM.get());
-								new DecolagemOrbital(conexao);
-								break;
-							case GUI.suicideBurn:
-								GUI.setStatus(Status.EXECSUICIDE.get());
-								new SuicideBurn(conexao);
-								break;
-							case GUI.autoRover:
-								GUI.setStatus(Status.EXECROVER.get());
-								new AutoRover(conexao);
-								break;
-							case GUI.manobras:
-								GUI.setStatus(Status.EXECMANOBRAS.get());
-								new Manobras(conexao, true);
-								break;
-							default:
-								GUI.setStatus(Status.PRONTO.get());
-								threadModulos = null;
-							}
-						} catch (Exception e) {
-							try {
-								Arquivos.criarLogDeErros(e.getStackTrace());
-							} catch (IOException e1) {
-							}
-							e.printStackTrace();
-							GUI.setStatus(Status.ERRODECOLAGEM.get());
-							GUI.botConectarVisivel(true);
-							threadModulos = null;
+		if (getThreadModulos() == null) {
+			iniciarConexao();
+			System.out.println("chamou");
+			setThreadModulos(new Thread(new Runnable() {
+				public void run() {
+					naveAtual = new Nave(getConexao());
+					try {
+						switch (evt.getPropertyName()) {
+						case GUI.decolagemOrbital:
+							GUI.setStatus(Status.EXECDECOLAGEM.get());
+							naveAtual.decolagemOrbital();
+							break;
+						case GUI.suicideBurn:
+							GUI.setStatus(Status.EXECSUICIDE.get());
+							naveAtual.suicideBurn();
+							break;
+						case GUI.autoRover:
+							GUI.setStatus(Status.EXECROVER.get());
+							new AutoRover(getConexao());
+							naveAtual.autoRover();
+							break;
+						case GUI.manobras:
+							GUI.setStatus(Status.EXECMANOBRAS.get());
+							new Manobras(getConexao(), true);
+							naveAtual.manobras();
+							break;							
 						}
+					} catch (Exception e) {
+						try {
+							Arquivos.criarLogDeErros(e.getStackTrace());
+						} catch (IOException e1) {
+						}
+						e.printStackTrace();
+						GUI.setStatus(Status.ERRODECOLAGEM.get());
+						GUI.botConectarVisivel(true);
+						setThreadModulos(null);
 					}
-				});
-				threadModulos.start();
-			}
+					finally {
+						GUI.setStatus(Status.PRONTO.get());
+						setThreadModulos(null);
+					}
+				}
+			}));
+			getThreadModulos().start();
+
 		}
 	}
 
 	public static void finalizarTarefa() throws IOException {
-		if (threadModulos.isAlive()) {
-			threadModulos.interrupt();
-			threadModulos = null;
+		if (getThreadModulos().isAlive()) {
+			getThreadModulos().interrupt();
+			setThreadModulos(null);
 		}
 	}
+
+	public static Connection getConexao() {
+		return conexao;
+	}
+
+	public static void setConexao(Connection conexao) {
+		MechPeste.conexao = conexao;
+	}
+
+	public static Thread getThreadModulos() {
+		return threadModulos;
+	}
+
+	public static void setThreadModulos(Thread threadModulos) {
+		MechPeste.threadModulos = threadModulos;
+	}
+
 }

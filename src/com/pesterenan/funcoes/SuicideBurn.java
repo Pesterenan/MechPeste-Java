@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import com.pesterenan.MechPeste;
 import com.pesterenan.gui.GUI;
+import com.pesterenan.model.Nave;
 import com.pesterenan.utils.ControlePID;
 import com.pesterenan.utils.Navegacao;
 import com.pesterenan.utils.Vetor;
@@ -16,10 +17,9 @@ import krpc.client.services.SpaceCenter;
 import krpc.client.services.SpaceCenter.Flight;
 import krpc.client.services.SpaceCenter.Vessel;
 
-public class SuicideBurn {
+public class SuicideBurn extends Nave{
 
 	private static final int ALTITUDE_SUICIDEBURN = 10000, ALTITUDE_TREM_DE_POUSO = 500;
-	private static SpaceCenter centroEspacial;
 	private Vessel naveAtual;
 	private Stream<Double> altitude, velVertical, velHorizontal;
 	private Stream<Float> massaTotal;
@@ -31,13 +31,14 @@ public class SuicideBurn {
 	private static double velP = 0.025, velI = 0.05, velD = 0.1;
 
 	public SuicideBurn(Connection conexao) throws StreamException, RPCException, IOException, InterruptedException {
-		centroEspacial = SpaceCenter.newInstance(conexao);
+		super(conexao);
 		naveAtual = centroEspacial.getActiveVessel();
 		new SuicideBurn(conexao, naveAtual);
 	}
 
 	public SuicideBurn(Connection conexao, Vessel nave)
 			throws StreamException, RPCException, IOException, InterruptedException {
+		super(conexao);
 		naveAtual = nave;
 		Flight parametrosDeVoo = naveAtual.flight(naveAtual.getOrbit().getBody().getReferenceFrame());
 		altitude = conexao.addStream(parametrosDeVoo, "getSurfaceAltitude");

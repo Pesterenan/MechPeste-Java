@@ -3,6 +3,7 @@ package com.pesterenan.model;
 import java.io.IOException;
 
 import com.pesterenan.funcoes.DecolagemOrbital;
+import com.pesterenan.funcoes.SuicideBurn;
 
 import krpc.client.Connection;
 import krpc.client.RPCException;
@@ -13,22 +14,46 @@ import krpc.client.services.SpaceCenter.Flight;
 import krpc.client.services.SpaceCenter.Vessel;
 
 public class Nave {
-	protected Connection conexao;
-	protected static SpaceCenter centroEspacial;
-	protected static Vessel naveAtual;
-	protected Flight parametrosVoo;
+	protected static Connection conexao;
+	
 
+	protected static SpaceCenter centroEspacial;
+	protected Vessel naveAtual;
+	protected Flight parametrosVoo;
+	
 	protected Stream<Double> tempoMissao, altitude, altitudeSup, apoastro, periastro;
 
-	public Nave(Connection conexao) {
+	public Nave(Connection con) {
 		try {
-			this.conexao = conexao;
-			this.centroEspacial = SpaceCenter.newInstance(conexao);
+			Nave.conexao = con;
+			Nave.centroEspacial = SpaceCenter.newInstance(conexao);
 			this.naveAtual = centroEspacial.getActiveVessel();
-			DecolagemOrbital dO = new DecolagemOrbital(conexao);
-			dO.decolagemOrbital(conexao);
-		} catch (RPCException | IOException | InterruptedException | StreamException e) {
+			
+		} catch (RPCException e) {
 			System.err.println("Erro" + e.getMessage());
 		}
 	}
-}
+
+	public void decolagemOrbital() throws RPCException, StreamException, IOException, InterruptedException {
+		new DecolagemOrbital(conexao);
+	}
+
+	public void suicideBurn() throws StreamException, RPCException, IOException, InterruptedException {
+		new SuicideBurn(conexao);
+	}
+
+	public void autoRover() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	public void manobras() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	public static Connection getConexao() {
+		return conexao;
+	}
+	}
+

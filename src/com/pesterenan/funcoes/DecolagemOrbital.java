@@ -17,29 +17,31 @@ import krpc.client.services.SpaceCenter.VesselSituation;
 
 public class DecolagemOrbital extends Nave {
 
-	public DecolagemOrbital(Connection conexao) {
-		super(conexao);
-	}
-
 	// Streams de conexao com a nave:
 	double pressaoAtual;
 	// Parametros de voo:
 	private float altInicioCurva = 100;
 	public static float altApoastroFinal = 80000;
+
 	private static int direcao = 90;
 	private int inclinacao = 90;
 	private int etapaAtual = 0;
 	private double anguloGiro = 0;
-	private static boolean executando = true;
+	private boolean executando = true;
 	private static boolean abortar = false;
 	private Manobras manobras;
 	ControlePID ctrlAcel = new ControlePID();
 
-	public void decolagemOrbital(Connection conexao)
-			throws IOException, RPCException, InterruptedException, StreamException {
-		iniciarScript(conexao);
+	public DecolagemOrbital(Connection conexao)
+			throws RPCException, StreamException, IOException, InterruptedException {
+		super(conexao);
+		decolagem();
+	}
+
+	public void decolagem() throws RPCException, StreamException, IOException, InterruptedException {
+		iniciarScript(super.getConexao());
 // Loop principal de subida
-		while (executando) { // loop while sempre funcionando at� um break
+		while (isExecutando()) { // loop while sempre funcionando at� um break
 			switch (etapaAtual) {
 			case 0:
 				decolar();
@@ -53,7 +55,7 @@ public class DecolagemOrbital extends Nave {
 			case 3:
 				GUI.setStatus(Status.PRONTO.get());
 				etapaAtual = 0;
-				executando = false;
+				setExecutando(false);
 				break;
 			}
 			if (abortar) {
@@ -66,11 +68,18 @@ public class DecolagemOrbital extends Nave {
 		finalizarScript();
 	}
 
+	public boolean isExecutando() {
+		return this.executando;
+	}
+
+	public void setExecutando(boolean executando) {
+		this.executando = executando;
+	}
+
 	private void iniciarScript(Connection conexao)
 			throws RPCException, StreamException, IOException, InterruptedException {
 		// Iniciar Conexão:
-		centroEspacial = SpaceCenter.newInstance(conexao);
-		naveAtual = centroEspacial.getActiveVessel();
+
 		parametrosVoo = naveAtual.flight(naveAtual.getOrbit().getBody().getReferenceFrame());
 		naveAtual.getAutoPilot().setReferenceFrame(naveAtual.getSurfaceReferenceFrame());
 		manobras = new Manobras(conexao, false);
@@ -94,7 +103,7 @@ public class DecolagemOrbital extends Nave {
 		naveAtual.getControl().setRCS(false); // desligar RCS
 		// Ligar Piloto Automatico e Mirar a Direção:
 		naveAtual.getAutoPilot().engage(); // ativa o piloto auto
-		naveAtual.getAutoPilot().targetPitchAndHeading(inclinacao, direcao); // direção
+		naveAtual.getAutoPilot().targetPitchAndHeading(inclinacao, getDirecao()); // direção
 		GUI.setStatus("Lançamento!");
 		if (naveAtual.getSituation().equals(VesselSituation.PRE_LAUNCH)) {
 			aceleracao(1.0f); // acelerar ao máximo
@@ -111,26 +120,26 @@ public class DecolagemOrbital extends Nave {
 		double apoastroAtual = apoastro.get();
 		pressaoAtual = parametrosVoo.getDynamicPressure() / 1000;
 		ctrlAcel.setEntradaPID(pressaoAtual);
-		if (altitudeAtual > altInicioCurva && altitudeAtual < altApoastroFinal) {
-			double progresso = (altitudeAtual - altInicioCurva) / (altApoastroFinal - altInicioCurva);
+		if (altitudeAtual > altInicioCurva && altitudeAtual < getAltApoastroFinal()) {
+			double progresso = (altitudeAtual - altInicioCurva) / (getAltApoastroFinal() - altInicioCurva);
 			double incrementoCircular = Math.sqrt(1 - Math.pow(progresso - 1, 2));
 			double novoAnguloGiro = incrementoCircular * inclinacao;
 			if (Math.abs(novoAnguloGiro - anguloGiro) > 0.1) {
 				anguloGiro = novoAnguloGiro;
-				naveAtual.getAutoPilot().targetPitchAndHeading((float) (inclinacao - anguloGiro), direcao);
+				naveAtual.getAutoPilot().targetPitchAndHeading((float) (inclinacao - anguloGiro), getDirecao());
 				aceleracao((float) ctrlAcel.computarPID());
 				GUI.setStatus(String.format("�ngulo de Inclina��o: %1$.1f �", anguloGiro));
 			}
 		}
 		// Diminuir acelera��o ao chegar perto do apoastro
-		if (apoastroAtual > altApoastroFinal * 0.95) {
+		if (apoastroAtual > getAltApoastroFinal() * 0.95) {
 			GUI.setStatus("Se aproximando do apoastro...");
 			ctrlAcel.setEntradaPID(apoastroAtual);
-			ctrlAcel.setLimitePID(altApoastroFinal);
+			ctrlAcel.setLimitePID(getAltApoastroFinal());
 			aceleracao((float) ctrlAcel.computarPID());
 		}
 		// Sair do giro ao chegar na altitude de apoastro:
-		if (apoastroAtual >= altApoastroFinal) {
+		if (apoastroAtual >= getAltApoastroFinal()) {
 			naveAtual.getControl().setSAS(true);
 			GUI.setStatus("Apoastro alcan�ado.");
 			aceleracao(0.0f);
@@ -141,7 +150,7 @@ public class DecolagemOrbital extends Nave {
 
 	private void planejarOrbita() throws RPCException, StreamException, InterruptedException, IOException {
 		GUI.setStatus("Esperando sair da atmosfera.");
-		if (altitude.get() > (altApoastroFinal * 0.8)) {
+		if (altitude.get() > (getAltApoastroFinal() * 0.8)) {
 			GUI.setStatus("Planejando Manobra de circulariza��o...");
 			Node noDeManobra = manobras.circularizarApoastro();
 			double duracaoDaQueima = manobras.calcularTempoDeQueima(noDeManobra);
@@ -167,13 +176,8 @@ public class DecolagemOrbital extends Nave {
 	}
 
 	private void finalizarScript() throws RPCException, IOException {
-		tempoMissao.remove();
-		altitude.remove();
-		apoastro.remove();
-		periastro.remove();
-		executando = false;
-		abortar = false;
-		MechPeste.finalizarTarefa();
+		setExecutando(false);
+		setAbortar(false);
 	}
 
 	public static void setAltApoastro(float apoastroFinal) {
@@ -186,12 +190,17 @@ public class DecolagemOrbital extends Nave {
 
 	}
 
-	public static void setExecutar(boolean estado) {
-		executando = estado;
-	}
-
 	public static void setAbortar(boolean estado) {
 		abortar = estado;
 		System.out.println("Voo abortado");
 	}
+
+	public static float getAltApoastroFinal() {
+		return altApoastroFinal;
+	}
+
+	public static int getDirecao() {
+		return direcao;
+	}
+
 }
