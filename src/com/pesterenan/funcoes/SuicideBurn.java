@@ -17,12 +17,10 @@ import krpc.client.services.SpaceCenter;
 import krpc.client.services.SpaceCenter.Flight;
 import krpc.client.services.SpaceCenter.Vessel;
 
-public class SuicideBurn extends Nave{
+public class SuicideBurn extends Nave {
 
 	private static final int ALTITUDE_SUICIDEBURN = 10000, ALTITUDE_TREM_DE_POUSO = 500;
-	private Vessel naveAtual;
-	private Stream<Double> altitude, velVertical, velHorizontal;
-	private Stream<Float> massaTotal;
+	
 	private float acelGravidade;
 	private ControlePID altitudePID = new ControlePID(), velocidadePID = new ControlePID();
 	boolean executandoSuicideBurn = false;
@@ -30,21 +28,16 @@ public class SuicideBurn extends Nave{
 	private static double altP = 0.01, altI = 0.01, altD = 0.01;
 	private static double velP = 0.025, velI = 0.05, velD = 0.1;
 
-	public SuicideBurn(Connection conexao) throws StreamException, RPCException, IOException, InterruptedException {
-		super(conexao);
+	public SuicideBurn(Connection con) throws StreamException, RPCException, IOException, InterruptedException {
+		super(con);
 		naveAtual = centroEspacial.getActiveVessel();
-		new SuicideBurn(conexao, naveAtual);
+		new SuicideBurn(con,naveAtual);
 	}
 
-	public SuicideBurn(Connection conexao, Vessel nave)
+	public SuicideBurn(Connection con, Vessel nave)
 			throws StreamException, RPCException, IOException, InterruptedException {
-		super(conexao);
+		super(con);
 		naveAtual = nave;
-		Flight parametrosDeVoo = naveAtual.flight(naveAtual.getOrbit().getBody().getReferenceFrame());
-		altitude = conexao.addStream(parametrosDeVoo, "getSurfaceAltitude");
-		velVertical = conexao.addStream(parametrosDeVoo, "getVerticalSpeed");
-		velHorizontal = conexao.addStream(parametrosDeVoo, "getHorizontalSpeed");
-		massaTotal = conexao.addStream(naveAtual, "getMass");
 		acelGravidade = naveAtual.getOrbit().getBody().getSurfaceGravity();
 
 		iniciarPIDs();
@@ -173,10 +166,6 @@ public class SuicideBurn extends Nave{
 			naveAtual.getControl().setRCS(true);
 			naveAtual.getControl().setBrakes(false);
 			executandoSuicideBurn = false;
-			altitude.remove();
-			velVertical.remove();
-			velHorizontal.remove();
-			massaTotal.remove();
 		default:
 			break;
 		}

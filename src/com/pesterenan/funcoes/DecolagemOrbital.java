@@ -32,14 +32,14 @@ public class DecolagemOrbital extends Nave {
 	private Manobras manobras;
 	ControlePID ctrlAcel = new ControlePID();
 
-	public DecolagemOrbital(Connection conexao)
+	public DecolagemOrbital(Connection con)
 			throws RPCException, StreamException, IOException, InterruptedException {
-		super(conexao);
+		super(con);
 		decolagem();
 	}
 
 	public void decolagem() throws RPCException, StreamException, IOException, InterruptedException {
-		iniciarScript(super.getConexao());
+		iniciarScript();
 // Loop principal de subida
 		while (isExecutando()) { // loop while sempre funcionando at� um break
 			switch (etapaAtual) {
@@ -76,23 +76,15 @@ public class DecolagemOrbital extends Nave {
 		this.executando = executando;
 	}
 
-	private void iniciarScript(Connection conexao)
+	private void iniciarScript()
 			throws RPCException, StreamException, IOException, InterruptedException {
 		// Iniciar Conexão:
-
-		parametrosVoo = naveAtual.flight(naveAtual.getOrbit().getBody().getReferenceFrame());
 		naveAtual.getAutoPilot().setReferenceFrame(naveAtual.getSurfaceReferenceFrame());
-		manobras = new Manobras(conexao, false);
+		manobras = new Manobras(getConexao(), false);
 		ctrlAcel.setAmostraTempo(25);
 		ctrlAcel.setLimitePID(20);
 		ctrlAcel.ajustarPID(0.25, 0.01, 0.025);
 		ctrlAcel.limitarSaida(0.1, 1.0);
-		// Iniciar Streams:
-		tempoMissao = conexao.addStream(SpaceCenter.class, "getUT");
-		altitudeSup = conexao.addStream(parametrosVoo, "getSurfaceAltitude");
-		altitude = conexao.addStream(parametrosVoo, "getMeanAltitude");
-		apoastro = conexao.addStream(naveAtual.getOrbit(), "getApoapsisAltitude");
-		periastro = conexao.addStream(naveAtual.getOrbit(), "getPeriapsisAltitude");
 		GUI.setParametros("nome", naveAtual.getName());
 
 	}
@@ -118,7 +110,7 @@ public class DecolagemOrbital extends Nave {
 	private void giroGravitacional() throws RPCException, StreamException, InterruptedException {
 		double altitudeAtual = altitudeSup.get();
 		double apoastroAtual = apoastro.get();
-		pressaoAtual = parametrosVoo.getDynamicPressure() / 1000;
+		pressaoAtual = parametrosDeVoo.getDynamicPressure() / 1000;
 		ctrlAcel.setEntradaPID(pressaoAtual);
 		if (altitudeAtual > altInicioCurva && altitudeAtual < getAltApoastroFinal()) {
 			double progresso = (altitudeAtual - altInicioCurva) / (getAltApoastroFinal() - altInicioCurva);
