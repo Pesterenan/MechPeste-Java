@@ -3,39 +3,27 @@ package com.pesterenan.funcoes;
 import java.io.IOException;
 import java.util.List;
 
-import javax.swing.SwingWorker;
-
 import org.javatuples.Triplet;
 
 import com.pesterenan.MechPeste;
 import com.pesterenan.gui.GUI;
 import com.pesterenan.gui.Status;
+import com.pesterenan.model.Nave;
 import com.pesterenan.utils.ControlePID;
 
-import krpc.client.Connection;
 import krpc.client.RPCException;
 import krpc.client.Stream;
 import krpc.client.StreamException;
-import krpc.client.services.SpaceCenter;
 import krpc.client.services.SpaceCenter.Engine;
 import krpc.client.services.SpaceCenter.Node;
-import krpc.client.services.SpaceCenter.Vessel;
 
-public class Manobras extends SwingWorker<String, String> {
+public class Manobras extends Nave {
 
-	private final static float CONST_GRAV = 9.81f;
-	private static Connection conexao;
-	private static SpaceCenter centroEspacial;
-	private static Vessel naveAtual;
 	private Node noDeManobra;
-	private ControlePID ctrlAcel;
+	private ControlePID ctrlAcel = new ControlePID();
 
-	public Manobras(Connection con, boolean executar)
-			throws RPCException, StreamException, IOException, InterruptedException {
-		conexao = con;
-		centroEspacial = SpaceCenter.newInstance(conexao);
-		naveAtual = centroEspacial.getActiveVessel();
-		ctrlAcel = new ControlePID();
+	public Manobras(boolean executar) throws RPCException, StreamException, IOException, InterruptedException {
+		super(getConexao());
 		ctrlAcel.ajustarPID(0.025, 0.01, 0.1);
 		ctrlAcel.limitarSaida(0.1, 1);
 		if (executar) {
@@ -44,12 +32,13 @@ public class Manobras extends SwingWorker<String, String> {
 	}
 
 	private void executarProximaManobra() throws RPCException, StreamException, IOException, InterruptedException {
-		// Procurar se há manobras para executar
+		// Procurar se hï¿½ manobras para executar
 		GUI.setStatus("Buscando Manobras...");
 		try {
 			noDeManobra = naveAtual.getControl().getNodes().get(0);
 		} catch (IndexOutOfBoundsException e) {
-			GUI.setStatus("Não há Manobras disponíveis");
+			GUI.setStatus("NÃ£o hÃ¡ Manobras disponÃ­veis.");
+			System.err.println("NÃ£o hÃ¡ Manobras disponÃ­veis.");
 			MechPeste.finalizarTarefa();
 		}
 		// Caso haja, calcular e executar
@@ -58,7 +47,7 @@ public class Manobras extends SwingWorker<String, String> {
 			System.out.println("DELTA-V DA MANOBRA: " + noDeManobra.getDeltaV());
 
 			double duracaoDaQueima = calcularTempoDeQueima(noDeManobra);
-			orientarNave(noDeManobra);
+			orientarNaveParaNoDeManobra(noDeManobra);
 			executarQueima(noDeManobra, duracaoDaQueima);
 
 			naveAtual.getAutoPilot().disengage();
@@ -71,15 +60,15 @@ public class Manobras extends SwingWorker<String, String> {
 	}
 
 	public double calcularTempoDeQueima(Node noDeManobra) throws RPCException {
-		// Calcular tempo de queima (equação de foguete)
+		// Calcular tempo de queima (equaï¿½ï¿½o de foguete)
 		List<Engine> motores = naveAtual.getParts().getEngines();
 		for (Engine motor : motores) {
 			if (motor.getPart().getStage() == naveAtual.getControl().getCurrentStage() && motor.getActive() == false) {
 				motor.setActive(true);
 			}
 		}
-		double empuxoTotal = naveAtual.getAvailableThrust(); // pegar empuxo disponível
-		double isp = naveAtual.getSpecificImpulse() * CONST_GRAV; // pegar isp e multiplicar à constante grav
+		double empuxoTotal = naveAtual.getAvailableThrust(); // pegar empuxo disponï¿½vel
+		double isp = naveAtual.getSpecificImpulse() * CONST_GRAV; // pegar isp e multiplicar ï¿½ constante grav
 		double massaTotal = naveAtual.getMass(); // pegar massa atual
 		double massaSeca = massaTotal / Math.exp(noDeManobra.getRemainingDeltaV() / isp); // pegar massa seca
 		double taxaDeQueima = empuxoTotal / isp; // taxa de fluxo, empuxo / isp
@@ -88,31 +77,36 @@ public class Manobras extends SwingWorker<String, String> {
 		return duracaoDaQueima;
 	}
 
-	public void orientarNave(Node noDeManobra) throws RPCException {
-		GUI.setStatus("Orientando nave para a queima de circularização...");
-		naveAtual.getAutoPilot().setReferenceFrame(noDeManobra.getReferenceFrame());
-		naveAtual.getAutoPilot().setTargetDirection(new Triplet<Double, Double, Double>(0.0, 1.0, 0.0));
-		naveAtual.getAutoPilot().engage();
-		naveAtual.getAutoPilot().wait_();
+	public void orientarNaveParaNoDeManobra(Node noDeManobra) {
+		GUI.setStatus("Orientando nave para o nÃ³ de Manobra...");
+		try {
+			naveAtual.getAutoPilot().setReferenceFrame(noDeManobra.getReferenceFrame());
+			naveAtual.getAutoPilot().setTargetDirection(new Triplet<Double, Double, Double>(0.0, 1.0, 0.0));
+			naveAtual.getAutoPilot().engage();
+			naveAtual.getAutoPilot().wait_();
+		} catch (RPCException e) {
+			System.err.println("NÃ£o foi possÃ­vel orientar a nave para a manobra:\n\t" + e.getMessage());
+		}
 	}
 
 	public void executarQueima(Node noDeManobra, double duracaoDaQueima)
 			throws RPCException, InterruptedException, StreamException {
-		double inicioDaQueima = 1;
+		double inicioDaQueima = noDeManobra.getTimeTo();
 		// Caso estiver muito distante da manobra, dar Warp:
-		if (noDeManobra.getTimeTo() + duracaoDaQueima > 120) {
-			centroEspacial.warpTo((centroEspacial.getUT() + noDeManobra.getTimeTo() - duracaoDaQueima - 10), 100000, 4);
+		if (inicioDaQueima + duracaoDaQueima > 90) {
+			centroEspacial.warpTo((centroEspacial.getUT() + inicioDaQueima - duracaoDaQueima - 10), 100000, 4);
 		}
-		// Mostrar tempo de ignição:
-		GUI.setStatus("Duração da queima: " + duracaoDaQueima + " segundos.");
+		// Mostrar tempo de igniÃ§Ã£o:
+		GUI.setStatus("DuraÃ§Ã£o da queima: " + duracaoDaQueima + " segundos.");
 		while (inicioDaQueima > 0) {
 			inicioDaQueima = noDeManobra.getTimeTo() - (duracaoDaQueima / 2.0);
-			GUI.setStatus(String.format("Ignição em: %1$.1f segundos...", inicioDaQueima));
+			inicioDaQueima = inicioDaQueima > 0.0 ? inicioDaQueima : 0.0;
+			GUI.setStatus(String.format("IgniÃ§Ã£o em: %1$.1f segundos...", inicioDaQueima));
 			Thread.sleep(100);
 		}
 		// Executar a manobra:
-		Stream<Triplet<Double, Double, Double>> queimaRestante = conexao.addStream(noDeManobra, "remainingBurnVector",
-				noDeManobra.getReferenceFrame());
+		Stream<Triplet<Double, Double, Double>> queimaRestante = getConexao().addStream(noDeManobra,
+				"remainingBurnVector", noDeManobra.getReferenceFrame());
 		GUI.setStatus("Executando manobra!");
 		ctrlAcel.setLimitePID(1);
 		while (noDeManobra != null) {
@@ -129,7 +123,7 @@ public class Manobras extends SwingWorker<String, String> {
 	}
 
 	public Node circularizarApoastro() throws RPCException {
-		// Planejar circularização usando equação vis-viva
+		// Planejar circularizaï¿½ï¿½o usando equaï¿½ï¿½o vis-viva
 		double parGrav = naveAtual.getOrbit().getBody().getGravitationalParameter(); // parametro G do corpo
 		double apo = naveAtual.getOrbit().getApoapsis(); // apoastro da orbita
 		double sma = naveAtual.getOrbit().getSemiMajorAxis(); // semieixo da orbita
@@ -140,11 +134,6 @@ public class Manobras extends SwingWorker<String, String> {
 		Node noDeManobra = naveAtual.getControl()
 				.addNode(centroEspacial.getUT() + naveAtual.getOrbit().getTimeToApoapsis(), (float) deltaV, 0, 0);
 		return noDeManobra;
-	}
-
-	@Override
-	protected String doInBackground() throws Exception {
-		return null;
 	}
 
 }

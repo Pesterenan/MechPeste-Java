@@ -2,7 +2,6 @@ package com.pesterenan.funcoes;
 
 import java.io.IOException;
 
-import com.pesterenan.MechPeste;
 import com.pesterenan.gui.GUI;
 import com.pesterenan.gui.Status;
 import com.pesterenan.model.Nave;
@@ -11,7 +10,6 @@ import com.pesterenan.utils.ControlePID;
 import krpc.client.Connection;
 import krpc.client.RPCException;
 import krpc.client.StreamException;
-import krpc.client.services.SpaceCenter;
 import krpc.client.services.SpaceCenter.Node;
 import krpc.client.services.SpaceCenter.VesselSituation;
 
@@ -32,8 +30,7 @@ public class DecolagemOrbital extends Nave {
 	private Manobras manobras;
 	ControlePID ctrlAcel = new ControlePID();
 
-	public DecolagemOrbital(Connection con)
-			throws RPCException, StreamException, IOException, InterruptedException {
+	public DecolagemOrbital(Connection con) throws RPCException, StreamException, IOException, InterruptedException {
 		super(con);
 		decolagem();
 	}
@@ -76,11 +73,10 @@ public class DecolagemOrbital extends Nave {
 		this.executando = executando;
 	}
 
-	private void iniciarScript()
-			throws RPCException, StreamException, IOException, InterruptedException {
+	private void iniciarScript() throws RPCException, StreamException, IOException, InterruptedException {
 		// Iniciar Conexão:
 		naveAtual.getAutoPilot().setReferenceFrame(naveAtual.getSurfaceReferenceFrame());
-		manobras = new Manobras(getConexao(), false);
+		manobras = new Manobras(false);
 		ctrlAcel.setAmostraTempo(25);
 		ctrlAcel.setLimitePID(20);
 		ctrlAcel.ajustarPID(0.25, 0.01, 0.025);
@@ -146,7 +142,7 @@ public class DecolagemOrbital extends Nave {
 			GUI.setStatus("Planejando Manobra de circulariza��o...");
 			Node noDeManobra = manobras.circularizarApoastro();
 			double duracaoDaQueima = manobras.calcularTempoDeQueima(noDeManobra);
-			manobras.orientarNave(noDeManobra);
+			manobras.orientarNaveParaNoDeManobra(noDeManobra);
 			GUI.setStatus("Executando Manobra de circulariza��o...");
 			manobras.executarQueima(noDeManobra, duracaoDaQueima);
 			naveAtual.getAutoPilot().disengage();

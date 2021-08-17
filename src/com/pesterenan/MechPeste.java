@@ -5,9 +5,7 @@ import java.beans.PropertyChangeListener;
 import java.io.IOException;
 
 import com.pesterenan.funcoes.AutoRover;
-import com.pesterenan.funcoes.DecolagemOrbital;
 import com.pesterenan.funcoes.Manobras;
-import com.pesterenan.funcoes.SuicideBurn;
 import com.pesterenan.gui.Arquivos;
 import com.pesterenan.gui.GUI;
 import com.pesterenan.gui.Status;
@@ -41,11 +39,11 @@ public class MechPeste implements PropertyChangeListener {
 				GUI.setStatus(Status.CONECTADO.get());
 				GUI.botConectarVisivel(false);
 			} catch (IOException e) {
-				System.err.println("Erro ao se conectar ao jogo: " + e.getMessage());
+				System.err.println("Erro ao se conectar ao jogo:\n\t" + e.getMessage());
 				try {
 					Arquivos.criarLogDeErros(e.getStackTrace());
 				} catch (IOException e1) {
-					System.err.println("Erro ao criar log de Erros: " + e1.getMessage());
+					System.err.println("Erro ao criar log de Erros:\n\t" + e1.getMessage());
 				}
 				GUI.setStatus(Status.ERROCONEXAO.get());
 				GUI.botConectarVisivel(true);
@@ -81,9 +79,9 @@ public class MechPeste implements PropertyChangeListener {
 							break;
 						case GUI.manobras:
 							GUI.setStatus(Status.EXECMANOBRAS.get());
-							new Manobras(getConexao(), true);
+							new Manobras(true);
 							naveAtual.manobras();
-							break;							
+							break;
 						}
 					} catch (Exception e) {
 						try {
@@ -94,8 +92,7 @@ public class MechPeste implements PropertyChangeListener {
 						GUI.setStatus(Status.ERRODECOLAGEM.get());
 						GUI.botConectarVisivel(true);
 						setThreadModulos(null);
-					}
-					finally {
+					} finally {
 						GUI.setStatus(Status.PRONTO.get());
 						setThreadModulos(null);
 					}
