@@ -16,11 +16,12 @@ import krpc.client.services.SpaceCenter.Flight;
 import krpc.client.services.SpaceCenter.Vessel;
 
 public class Nave {
-	private Connection conexao;
+	private static Connection conexao;
 
 	protected static SpaceCenter centroEspacial;
 	protected Vessel naveAtual;
 	protected Flight parametrosDeVoo;
+	public final static float CONST_GRAV = 9.81f;
 
 	protected Stream<Double> altitude, altitudeSup, apoastro, periastro;
 	protected Stream<Double> velVertical, tempoMissao, velHorizontal;
@@ -33,7 +34,7 @@ public class Nave {
 			this.naveAtual = centroEspacial.getActiveVessel();
 			iniciarTelemetria();
 		} catch (RPCException | StreamException e) {
-			System.err.println("Erro" + e.getMessage());
+			System.err.println("Erro\n\t\t" + e.getMessage());
 		}
 	}
 
@@ -63,15 +64,15 @@ public class Nave {
 	}
 
 	public void manobras() throws RPCException, StreamException, IOException, InterruptedException {
-		new Manobras(getConexao(), true);
+		new Manobras(true);
 	}
 
-	public Connection getConexao() {
-		return this.conexao;
+	public static Connection getConexao() {
+		return conexao;
 	}
 
 	private void setConexao(Connection con) {
-		this.conexao = con;
+		conexao = con;
 
 	}
 }

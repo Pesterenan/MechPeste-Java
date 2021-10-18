@@ -11,16 +11,13 @@ import com.pesterenan.utils.Vetor;
 
 import krpc.client.Connection;
 import krpc.client.RPCException;
-import krpc.client.Stream;
 import krpc.client.StreamException;
-import krpc.client.services.SpaceCenter;
-import krpc.client.services.SpaceCenter.Flight;
 import krpc.client.services.SpaceCenter.Vessel;
 
 public class SuicideBurn extends Nave {
 
 	private static final int ALTITUDE_SUICIDEBURN = 10000, ALTITUDE_TREM_DE_POUSO = 500;
-	
+
 	private float acelGravidade;
 	private ControlePID altitudePID = new ControlePID(), velocidadePID = new ControlePID();
 	boolean executandoSuicideBurn = false;
@@ -30,7 +27,8 @@ public class SuicideBurn extends Nave {
 
 	public SuicideBurn(Connection con) throws StreamException, RPCException, IOException, InterruptedException {
 		super(con);
-		new SuicideBurn(con,naveAtual);
+		naveAtual = centroEspacial.getActiveVessel();
+		new SuicideBurn(con, naveAtual);
 	}
 
 	public SuicideBurn(Connection con, Vessel nave)
@@ -71,7 +69,7 @@ public class SuicideBurn extends Nave {
 		}
 		// Loop principal de Suicide Burn:
 		while (executandoSuicideBurn) {
-			// Calcula os valores de aceleração e TWR do foguete:
+			// Calcula os valores de aceleraï¿½ï¿½o e TWR do foguete:
 			atualizarParametros();
 			// Desce o trem de pouso da nave
 			if (altitude.get() < ALTITUDE_TREM_DE_POUSO) {
@@ -85,7 +83,7 @@ public class SuicideBurn extends Nave {
 				naveAtual.getControl().setRCS(false);
 				naveAtual.getAutoPilot().setTargetPitch(90);
 			}
-			// Corrigir aceleração da nave:
+			// Corrigir aceleraï¿½ï¿½o da nave:
 			aceleracao((float) ((altitudePID.computarPID()) + (velocidadePID.computarPID())));
 			checarPouso();
 			Thread.sleep(25);
@@ -133,7 +131,7 @@ public class SuicideBurn extends Nave {
 	 * Informa aos PIDs de altitude e velocidade, os limites e velocidade da nave,
 	 * utilizando a distancia da queima para ajustar velocidade limite.
 	 * 
-	 * @param distanciaDaQueima - A distância calculada para a queima
+	 * @param distanciaDaQueima - A distï¿½ncia calculada para a queima
 	 * @throws RPCException
 	 * @throws StreamException
 	 */
