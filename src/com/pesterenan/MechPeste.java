@@ -5,11 +5,10 @@ import java.beans.PropertyChangeListener;
 import java.io.IOException;
 
 import com.pesterenan.funcoes.AutoRover;
-import com.pesterenan.funcoes.DecolagemOrbital;
 import com.pesterenan.funcoes.Manobras;
-import com.pesterenan.funcoes.SuicideBurn;
 import com.pesterenan.gui.Arquivos;
 import com.pesterenan.gui.GUI;
+import com.pesterenan.gui.MainGui;
 import com.pesterenan.gui.Status;
 import com.pesterenan.model.Nave;
 
@@ -27,6 +26,7 @@ public class MechPeste implements PropertyChangeListener {
 	}
 
 	private MechPeste() {
+//		new MainGui();
 		GUI gui = new GUI();
 		gui.addPropertyChangeListener(this);
 		new Arquivos();
@@ -60,7 +60,6 @@ public class MechPeste implements PropertyChangeListener {
 		}
 		if (getThreadModulos() == null) {
 			iniciarConexao();
-			System.out.println("chamou");
 			setThreadModulos(new Thread(new Runnable() {
 				public void run() {
 					naveAtual = new Nave(getConexao());
@@ -97,7 +96,11 @@ public class MechPeste implements PropertyChangeListener {
 					}
 					finally {
 						GUI.setStatus(Status.PRONTO.get());
-						setThreadModulos(null);
+						try {
+							finalizarTarefa();
+						} catch (IOException e) {
+							System.err.println("Deu erro! :D " + e.getMessage());
+						}
 					}
 				}
 			}));

@@ -30,7 +30,6 @@ public class SuicideBurn extends Nave {
 
 	public SuicideBurn(Connection con) throws StreamException, RPCException, IOException, InterruptedException {
 		super(con);
-		naveAtual = centroEspacial.getActiveVessel();
 		new SuicideBurn(con,naveAtual);
 	}
 
@@ -43,8 +42,6 @@ public class SuicideBurn extends Nave {
 		iniciarPIDs();
 		atualizarParametros();
 		executarSuicideBurn();
-
-		MechPeste.finalizarTarefa();
 
 	}
 

@@ -3,13 +3,12 @@ package com.pesterenan.funcoes;
 import java.io.IOException;
 import java.util.List;
 
-import javax.swing.SwingWorker;
-
 import org.javatuples.Triplet;
 
 import com.pesterenan.MechPeste;
 import com.pesterenan.gui.GUI;
 import com.pesterenan.gui.Status;
+import com.pesterenan.model.Nave;
 import com.pesterenan.utils.ControlePID;
 
 import krpc.client.Connection;
@@ -21,20 +20,16 @@ import krpc.client.services.SpaceCenter.Engine;
 import krpc.client.services.SpaceCenter.Node;
 import krpc.client.services.SpaceCenter.Vessel;
 
-public class Manobras extends SwingWorker<String, String> {
+public class Manobras extends Nave{
 
 	private final static float CONST_GRAV = 9.81f;
-	private static Connection conexao;
-	private static SpaceCenter centroEspacial;
-	private static Vessel naveAtual;
 	private Node noDeManobra;
 	private ControlePID ctrlAcel;
 
+	
 	public Manobras(Connection con, boolean executar)
 			throws RPCException, StreamException, IOException, InterruptedException {
-		conexao = con;
-		centroEspacial = SpaceCenter.newInstance(conexao);
-		naveAtual = centroEspacial.getActiveVessel();
+		super(con);
 		ctrlAcel = new ControlePID();
 		ctrlAcel.ajustarPID(0.025, 0.01, 0.1);
 		ctrlAcel.limitarSaida(0.1, 1);
@@ -50,7 +45,7 @@ public class Manobras extends SwingWorker<String, String> {
 			noDeManobra = naveAtual.getControl().getNodes().get(0);
 		} catch (IndexOutOfBoundsException e) {
 			GUI.setStatus("Não há Manobras disponíveis");
-			MechPeste.finalizarTarefa();
+			
 		}
 		// Caso haja, calcular e executar
 		if (noDeManobra != null) {
@@ -66,7 +61,7 @@ public class Manobras extends SwingWorker<String, String> {
 			naveAtual.getControl().setRCS(false);
 			noDeManobra.remove();
 			GUI.setStatus(Status.PRONTO.get());
-			MechPeste.finalizarTarefa();
+			
 		}
 	}
 
@@ -111,7 +106,7 @@ public class Manobras extends SwingWorker<String, String> {
 			Thread.sleep(100);
 		}
 		// Executar a manobra:
-		Stream<Triplet<Double, Double, Double>> queimaRestante = conexao.addStream(noDeManobra, "remainingBurnVector",
+		Stream<Triplet<Double, Double, Double>> queimaRestante = getConexao().addStream(noDeManobra, "remainingBurnVector",
 				noDeManobra.getReferenceFrame());
 		GUI.setStatus("Executando manobra!");
 		ctrlAcel.setLimitePID(1);
@@ -140,11 +135,6 @@ public class Manobras extends SwingWorker<String, String> {
 		Node noDeManobra = naveAtual.getControl()
 				.addNode(centroEspacial.getUT() + naveAtual.getOrbit().getTimeToApoapsis(), (float) deltaV, 0, 0);
 		return noDeManobra;
-	}
-
-	@Override
-	protected String doInBackground() throws Exception {
-		return null;
 	}
 
 }

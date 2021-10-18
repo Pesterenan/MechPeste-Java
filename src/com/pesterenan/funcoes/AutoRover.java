@@ -256,7 +256,6 @@ public class AutoRover {
 		rover.getAutoPilot().disengage();
 		velocidadeRover.remove();
 		Thread.sleep(1000);
-		MechPeste.finalizarTarefa();
 	}
 
 	private void acelerarRover(double arg) throws IOException, RPCException, StreamException {
