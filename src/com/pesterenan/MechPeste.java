@@ -26,11 +26,11 @@ public class MechPeste implements PropertyChangeListener {
 	}
 
 	private MechPeste() {
-//		new MainGui();
-		GUI gui = new GUI();
-		gui.addPropertyChangeListener(this);
-		new Arquivos();
-		iniciarConexao();
+		new MainGui();
+//		GUI gui = new GUI();
+//		gui.addPropertyChangeListener(this);
+//		new Arquivos();
+//		iniciarConexao();
 	}
 
 	public static void iniciarConexao() {

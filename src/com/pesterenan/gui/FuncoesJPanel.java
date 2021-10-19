@@ -1,5 +1,6 @@
 package com.pesterenan.gui;
 
+import java.awt.CardLayout;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -17,14 +18,16 @@ public class FuncoesJPanel extends JPanel implements ActionListener {
 
 	private static final long serialVersionUID = 1L;
 
-	private final String 	decolagemOrbital = "Decolagem Orbital",
-							pousoAutomatico = "Pouso Automático",
-							roverAutonomo = "Rover Autônomo",
+	public static final String 	decolagemOrbital = "Decolagem Orbital",
+							pousoAutomatico = "Pouso AutomÃ¡tico",
+							roverAutonomo = "Rover AutÃ´nomo",
 							execManobras = "Exec. Manobras",
+							telemetria = "Telemetria",
 							sair = "Sair";
+
 	
 	public FuncoesJPanel() {
-		TitledBorder bordaTitulo = new TitledBorder("Funções");
+		TitledBorder bordaTitulo = new TitledBorder("FunÃ§Ãµes");
 		EmptyBorder bordaVazia = new EmptyBorder(5, 5, 5, 5);
 		Dimension tamanhoMenu = new Dimension(100, ParametrosJPanel.HEIGHT);
 
@@ -39,6 +42,10 @@ public class FuncoesJPanel extends JPanel implements ActionListener {
 		botRoverAutonomo.setMnemonic(KeyEvent.VK_R);
 		botExecManobras.setMnemonic(KeyEvent.VK_M);
 		botExecManobras.setMnemonic(KeyEvent.VK_X);
+
+		botPousoAutomatico.setEnabled(false);
+		botRoverAutonomo.setEnabled(false);
+		botExecManobras.setEnabled(false);
 		
 		botDecolagem.addActionListener(this);
 		botPousoAutomatico.addActionListener(this);
@@ -50,12 +57,11 @@ public class FuncoesJPanel extends JPanel implements ActionListener {
 		setLayout(new GridBagLayout());
 		GridBagConstraints gc = new GridBagConstraints();
 		gc.weightx = 0.1;
-		gc.weighty = 0.1;
-		gc.fill = GridBagConstraints.HORIZONTAL;
+		gc.weighty = 0.05;
 		gc.gridx = 0;
 		gc.gridy = GridBagConstraints.RELATIVE;
-
 		gc.anchor = GridBagConstraints.LINE_START;
+		gc.fill = GridBagConstraints.HORIZONTAL;
 
 		add(botDecolagem, gc);
 		add(botPousoAutomatico, gc);
@@ -70,8 +76,10 @@ public class FuncoesJPanel extends JPanel implements ActionListener {
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
+		JPanel parametros = new ParametrosJPanel();
 		switch (e.getActionCommand()) {
 		case decolagemOrbital:
+			parametros.firePropertyChange(decolagemOrbital, 0, 1);
 			System.out.println("Decolagem!");
 			break;
 		case pousoAutomatico:
