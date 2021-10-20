@@ -1,7 +1,6 @@
 package com.pesterenan.gui;
 
 import java.awt.CardLayout;
-import java.awt.event.ActionEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 
@@ -18,29 +17,28 @@ public class ParametrosJPanel extends JPanel implements PropertyChangeListener {
 
 	private JPanel telemetria = new TelemetriaJPanel();
 	private JPanel decolagem = new DecolagemJPanel();
+	private CardLayout layout = new CardLayout();
 
 	public ParametrosJPanel() {
+		setLayout(layout);
 		setBorder(BorderFactory.createCompoundBorder(((Border) BorderFactory.createCompoundBorder(bordaVazia,
 				BorderFactory.createTitledBorder("Parâmetros:"))), bordaVazia));
-		setLayout(new CardLayout());
-		add(FuncoesJPanel.telemetria, telemetria);
-		add(FuncoesJPanel.decolagemOrbital, decolagem);
+		add(telemetria, FuncoesJPanel.telemetria);
+		add(decolagem, FuncoesJPanel.decolagemOrbital);
 		addPropertyChangeListener(this);
 	}
 
 	@Override
 	public void propertyChange(PropertyChangeEvent evt) {
-	switch (evt.getPropertyName()) {
+		switch (evt.getPropertyName()) {
 		case FuncoesJPanel.decolagemOrbital:
-			CardLayout pp = (CardLayout) getLayout();
-			pp.show(this, FuncoesJPanel.decolagemOrbital);
+			layout.show(this, FuncoesJPanel.decolagemOrbital);
 			break;
-		case FuncoesJPanel.pousoAutomatico:
-			System.out.println("Pouso!");
+		case FuncoesJPanel.telemetria:
+			layout.show(this, FuncoesJPanel.telemetria);
 			break;
 		}
+
 	}
-
-
 
 }

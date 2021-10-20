@@ -1,6 +1,5 @@
 package com.pesterenan.gui;
 
-import java.awt.CardLayout;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -76,18 +75,11 @@ public class FuncoesJPanel extends JPanel implements ActionListener {
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
-		JPanel parametros = new ParametrosJPanel();
-		switch (e.getActionCommand()) {
-		case decolagemOrbital:
-			parametros.firePropertyChange(decolagemOrbital, 0, 1);
-			System.out.println("Decolagem!");
-			break;
-		case pousoAutomatico:
-			System.out.println("Pouso!");
-			break;
-		case sair: 
+		if (e.getActionCommand().equals(sair)){ 
 			System.exit(0);
 		}
+		MainGui.getParametros().firePropertyChange(e.getActionCommand(), 0, 1);
+	
 	}
 
 }
