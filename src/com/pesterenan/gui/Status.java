@@ -1,12 +1,12 @@
 package com.pesterenan.gui;
 
 public enum Status {
-	CONECTANDO("Conectando..."), CONECTADO("Conectado."), ERROCONEXAO("Erro na conex�o. O jogo n�o est� sendo executado."),
-	ERRODECOLAGEM("Erro ao executar a Decolagem Orbital!"), ERROSUICIDE("Erro ao executar o Pouso Automático!"),
-	ERROROVER("Erro ao executar o Controle de Rover!"), ERROMANOBRAS("Erro ao executar a manobra!"),
-	EXECSUICIDE("Executando Suicide Burn..."), EXECDECOLAGEM("Executando Decolagem Orbital..."),
-	EXECROVER("Executando Auto Rover..."), JAEXEC("Já está em execução"), PRONTO("Pronto."),
-	EXECMANOBRAS("Executando Manobras...");
+	CONECTANDO("Conectando..."), CONECTADO("Conectado."), ERRO_CONEXAO("Erro na conexão. O jogo não está sendo executado."),
+	ERRO_DECOLAGEM_ORBITAL("Erro ao executar a Decolagem Orbital!"), ERRO_POUSO_AUTO("Erro ao executar o Pouso Automático!"),
+	ERRO_ROVER("Erro ao executar o Controle de Rover!"), ERRO_MANOBRAS("Erro ao executar a manobra!"),
+	EXEC_POUSO_AUTO("Executando Suicide Burn..."), EXEC_DECOLAGEM_ORBITAL("Executando Decolagem Orbital..."),
+	EXEC_ROVER("Executando Auto Rover..."), JA_EXECUTANDO("Já está em execução"), PRONTO("Pronto."),
+	EXEC_MANOBRAS("Executando Manobras...");
 
 	String t;
 

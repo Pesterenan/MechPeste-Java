@@ -1,4 +1,4 @@
-package com.pesterenan.funcoes;
+package com.pesterenan.controller;
 
 import java.io.IOException;
 
@@ -14,7 +14,7 @@ import krpc.client.RPCException;
 import krpc.client.StreamException;
 import krpc.client.services.SpaceCenter.Vessel;
 
-public class SuicideBurn extends Nave {
+public class PousoAutomaticoController extends Nave {
 
 	private static final int ALTITUDE_SUICIDEBURN = 10000, ALTITUDE_TREM_DE_POUSO = 500;
 
@@ -25,13 +25,13 @@ public class SuicideBurn extends Nave {
 	private static double altP = 0.01, altI = 0.01, altD = 0.01;
 	private static double velP = 0.025, velI = 0.05, velD = 0.1;
 
-	public SuicideBurn(Connection con) throws StreamException, RPCException, IOException, InterruptedException {
+	public PousoAutomaticoController(Connection con) throws StreamException, RPCException, IOException, InterruptedException {
 		super(con);
 		naveAtual = centroEspacial.getActiveVessel();
-		new SuicideBurn(con, naveAtual);
+		new PousoAutomaticoController(con, naveAtual);
 	}
 
-	public SuicideBurn(Connection con, Vessel nave)
+	public PousoAutomaticoController(Connection con, Vessel nave)
 			throws StreamException, RPCException, IOException, InterruptedException {
 		super(con);
 		naveAtual = nave;

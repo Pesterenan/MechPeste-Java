@@ -1,4 +1,4 @@
-package com.pesterenan.funcoes;
+package com.pesterenan.controller;
 
 import java.io.IOException;
 import java.util.List;
@@ -18,12 +18,12 @@ import krpc.client.services.SpaceCenter.Engine;
 import krpc.client.services.SpaceCenter.Node;
 
 
-public class Manobras extends Nave {
+public class ManobrasController extends Nave {
 
 	private Node noDeManobra;
 	private ControlePID ctrlAcel = new ControlePID();
 
-	public Manobras(boolean executar) throws RPCException, StreamException, IOException, InterruptedException {
+	public ManobrasController(boolean executar) throws RPCException, StreamException, IOException, InterruptedException {
 		super(getConexao());
 		ctrlAcel.ajustarPID(0.025, 0.01, 0.1);
 		ctrlAcel.limitarSaida(0.1, 1);

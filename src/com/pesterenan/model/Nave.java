@@ -2,10 +2,10 @@ package com.pesterenan.model;
 
 import java.io.IOException;
 
-import com.pesterenan.funcoes.AutoRover;
-import com.pesterenan.funcoes.DecolagemOrbital;
-import com.pesterenan.funcoes.Manobras;
-import com.pesterenan.funcoes.SuicideBurn;
+import com.pesterenan.controller.RoverAutonomoController;
+import com.pesterenan.controller.DecolagemOrbitalController;
+import com.pesterenan.controller.ManobrasController;
+import com.pesterenan.controller.PousoAutomaticoController;
 
 import krpc.client.Connection;
 import krpc.client.RPCException;
@@ -52,19 +52,19 @@ public class Nave {
 	}
 
 	public void decolagemOrbital() throws RPCException, StreamException, IOException, InterruptedException {
-		new DecolagemOrbital(getConexao());
+		new DecolagemOrbitalController(getConexao());
 	}
 
 	public void suicideBurn() throws StreamException, RPCException, IOException, InterruptedException {
-		new SuicideBurn(getConexao());
+		new PousoAutomaticoController(getConexao());
 	}
 
 	public void autoRover() throws IOException, RPCException, InterruptedException, StreamException {
-		new AutoRover(getConexao());
+		new RoverAutonomoController(getConexao());
 	}
 
 	public void manobras() throws RPCException, StreamException, IOException, InterruptedException {
-		new Manobras(true);
+		new ManobrasController(true);
 	}
 
 	public static Connection getConexao() {

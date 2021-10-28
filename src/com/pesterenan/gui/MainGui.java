@@ -14,12 +14,14 @@ public class MainGui extends JFrame {
 	private final Dimension tamanhoApp = new Dimension(450, 250);
 	private static JPanel parametros = new ParametrosJPanel();
 	private JPanel funcoes = new FuncoesJPanel();
+	private static JPanel status = new StatusJPanel();
 
 	public MainGui() {
 		setLocation(100, 100);
 		setMinimumSize(tamanhoApp);
 		add(funcoes, BorderLayout.WEST);
 		add(parametros, BorderLayout.CENTER);
+		add(status, BorderLayout.SOUTH);
 		
 		setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		setResizable(false);
@@ -29,6 +31,10 @@ public class MainGui extends JFrame {
 
 	public static JPanel getParametros() {
 		return parametros;
+	}
+
+	public static JPanel getStatus() {
+		return status;
 	}
 
 }

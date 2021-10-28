@@ -1,4 +1,4 @@
-package com.pesterenan.funcoes;
+package com.pesterenan.controller;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -27,13 +27,13 @@ import krpc.client.services.SpaceCenter.Vessel;
 import krpc.client.services.SpaceCenter.Waypoint;
 import krpc.client.services.SpaceCenter.WaypointManager;
 
-// Módulo de Piloto automático de Rovers
+// Mï¿½dulo de Piloto automï¿½tico de Rovers
 // Autor: Renan Torres <pesterenan@gmail.com>
 // Data: 14/02/2019
 
-public class AutoRover {
+public class RoverAutonomoController {
 	private static final int DISTANCIA_DE_PROCURA = 4400000;
-	// Declaração de variáveis:
+	// Declaraï¿½ï¿½o de variï¿½veis:
 	static private SpaceCenter centroEspacial;
 	WaypointManager gerenciadorMarcadores;
 	List<Waypoint> listaDeMarcadoresASeguir = new ArrayList<Waypoint>();
@@ -70,7 +70,7 @@ public class AutoRover {
 	private double tempoRestante;
 
 
-	public AutoRover(Connection conexao) throws IOException, RPCException, InterruptedException, StreamException {
+	public RoverAutonomoController(Connection conexao) throws IOException, RPCException, InterruptedException, StreamException {
 		iniciarParametros(conexao);
 		definirAlvo();
 		controlarRover();
@@ -80,7 +80,7 @@ public class AutoRover {
 		centroEspacial = SpaceCenter.newInstance(conexao);
 		gerenciadorMarcadores = centroEspacial.getWaypointManager();
 		rover = centroEspacial.getActiveVessel();
-		// REFERENCIA PARA BUSCAR ANGULO DE DIREÇÃO DO ROVER:
+		// REFERENCIA PARA BUSCAR ANGULO DE DIREï¿½ï¿½O DO ROVER:
 		pontoRefRover = rover.getReferenceFrame();
 		// REFERENCIA PARA VELOCIDADE DO ROVER:
 		pontoRefOrbital = rover.getOrbit().getBody().getReferenceFrame();
@@ -116,20 +116,20 @@ public class AutoRover {
 			}
 			if (listaDeMarcadoresASeguir.isEmpty()) {
 				executandoAutoRover = false;
-				GUI.setStatus("Sem alvos disponíveis");
+				GUI.setStatus("Sem alvos disponï¿½veis");
 			} else {
 				checarDistancia();
 			}
 		} else {
 			try {
 				naveAlvo = centroEspacial.getTargetVessel();
-				GUI.setStatus("Está indo na direção de: " + naveAlvo.getName());
+				GUI.setStatus("Estï¿½ indo na direï¿½ï¿½o de: " + naveAlvo.getName());
 				GUI.setParametros("nome", naveAlvo.getName());
 				distParaAlvo = new Vetor(naveAlvo.position(pontoRefSuperficie));
 				fazerListaDoCaminho();
 			} catch (NullPointerException e) {
 				executandoAutoRover = false;
-				GUI.setStatus("Sem alvos disponíveis");
+				GUI.setStatus("Sem alvos disponï¿½veis");
 			}
 		}
 	}
@@ -161,7 +161,7 @@ public class AutoRover {
 					}
 				}
 				if (paineis.isEmpty()) {
-					GUI.setStatus("Não há painéis solares para carregar as baterias.");
+					GUI.setStatus("Nï¿½o hï¿½ painï¿½is solares para carregar as baterias.");
 					executandoAutoRover = false;
 				}
 				segCarga = ((cargaTotal - cargaAtual) / segCarga);
@@ -188,15 +188,15 @@ public class AutoRover {
 		}
 		distParaAlvo = (posicionarMarcador(alvoMarcador));
 		fazerListaDoCaminho();
-		GUI.setStatus("Localizado marcador mais próximo: " + alvoMarcador.getName());
+		GUI.setStatus("Localizado marcador mais prï¿½ximo: " + alvoMarcador.getName());
 		GUI.setParametros("nome", alvoMarcador.getName());
 
 	}
 
 	private void fazerListaDoCaminho() throws IOException, RPCException {
-		// posição ultimo ponto
+		// posiï¿½ï¿½o ultimo ponto
 		System.out.println("distParaAlvo" + distParaAlvo);
-		// dividir distancia até ponto por 1000 para gerar pontos intermediarios
+		// dividir distancia atï¿½ ponto por 1000 para gerar pontos intermediarios
 		pontos = (int) distParaAlvo.Magnitude3d() / 1000;
 		System.out.println("pontos" + pontos);
 		// dividir distancia final por pontos para conseguir distancia do segmento
@@ -268,7 +268,7 @@ public class AutoRover {
 	}
 
 	private void pilotarRover() throws IOException, RPCException, StreamException {
-		// Calcular diferença de angulo entre o alvo e o rover
+		// Calcular diferenï¿½a de angulo entre o alvo e o rover
 		double diferencaAngulo = Math.abs(anguloAlvo - anguloRover);
 		if (velocidadeRover.get() > velocidadeCurva && diferencaAngulo < 20) {
 			try {
@@ -321,7 +321,7 @@ public class AutoRover {
 
 	private void antiTombamento() throws RPCException {
 
-		// Vetores direção para Ponto de Ref Rover:
+		// Vetores direï¿½ï¿½o para Ponto de Ref Rover:
 		// Vetor ( -ESQ/DIR , -TRAS/FRENTE , -CIMA/BAIXO)
 
 		Vetor dirEsq = new Vetor(rover.direction(pontoRefRover)).soma(new Vetor(-0.2, -1.0, 0.8));

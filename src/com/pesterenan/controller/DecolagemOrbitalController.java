@@ -1,4 +1,4 @@
-package com.pesterenan.funcoes;
+package com.pesterenan.controller;
 
 import java.io.IOException;
 
@@ -13,7 +13,7 @@ import krpc.client.StreamException;
 import krpc.client.services.SpaceCenter.Node;
 import krpc.client.services.SpaceCenter.VesselSituation;
 
-public class DecolagemOrbital extends Nave {
+public class DecolagemOrbitalController extends Nave {
 
 	// Streams de conexao com a nave:
 	double pressaoAtual;
@@ -27,10 +27,10 @@ public class DecolagemOrbital extends Nave {
 	private double anguloGiro = 0;
 	private boolean executando = true;
 	private static boolean abortar = false;
-	private Manobras manobras;
+	private ManobrasController manobras;
 	ControlePID ctrlAcel = new ControlePID();
 
-	public DecolagemOrbital(Connection con) throws RPCException, StreamException, IOException, InterruptedException {
+	public DecolagemOrbitalController(Connection con) throws RPCException, StreamException, IOException, InterruptedException {
 		super(con);
 		decolagem();
 	}
@@ -76,7 +76,7 @@ public class DecolagemOrbital extends Nave {
 	private void iniciarScript() throws RPCException, StreamException, IOException, InterruptedException {
 		// Iniciar Conexão:
 		naveAtual.getAutoPilot().setReferenceFrame(naveAtual.getSurfaceReferenceFrame());
-		manobras = new Manobras(false);
+		manobras = new ManobrasController(false);
 		ctrlAcel.setAmostraTempo(25);
 		ctrlAcel.setLimitePID(20);
 		ctrlAcel.ajustarPID(0.25, 0.01, 0.025);
