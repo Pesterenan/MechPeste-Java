@@ -38,6 +38,9 @@ public class Nave {
 		}
 	}
 
+	public Nave() {
+	}
+
 	private void iniciarTelemetria() throws RPCException, StreamException {
 		parametrosDeVoo = this.naveAtual.flight(this.naveAtual.getOrbit().getBody().getReferenceFrame());
 		altitude = getConexao().addStream(parametrosDeVoo, "getMeanAltitude");

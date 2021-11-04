@@ -7,9 +7,9 @@ import org.javatuples.Triplet;
 
 import com.pesterenan.MechPeste;
 import com.pesterenan.gui.GUI;
-import com.pesterenan.gui.Status;
 import com.pesterenan.model.Nave;
 import com.pesterenan.utils.ControlePID;
+import com.pesterenan.utils.Status;
 
 import krpc.client.RPCException;
 import krpc.client.Stream;

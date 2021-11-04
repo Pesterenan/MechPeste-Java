@@ -3,9 +3,9 @@ package com.pesterenan.controller;
 import java.io.IOException;
 
 import com.pesterenan.gui.GUI;
-import com.pesterenan.gui.Status;
 import com.pesterenan.model.Nave;
 import com.pesterenan.utils.ControlePID;
+import com.pesterenan.utils.Status;
 
 import krpc.client.Connection;
 import krpc.client.RPCException;

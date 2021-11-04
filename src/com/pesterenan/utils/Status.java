@@ -1,4 +1,4 @@
-package com.pesterenan.gui;
+package com.pesterenan.utils;
 
 public enum Status {
 	CONECTANDO("Conectando..."), CONECTADO("Conectado."), ERRO_CONEXAO("Erro na conexão. O jogo não está sendo executado."),

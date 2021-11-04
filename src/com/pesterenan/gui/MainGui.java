@@ -13,7 +13,7 @@ public class MainGui extends JFrame {
 
 	private final Dimension tamanhoApp = new Dimension(450, 250);
 	private static JPanel parametros = new ParametrosJPanel();
-	private JPanel funcoes = new FuncoesJPanel();
+	private static JPanel funcoes = new FuncoesJPanel();
 	private static JPanel status = new StatusJPanel();
 
 	public MainGui() {
@@ -35,6 +35,10 @@ public class MainGui extends JFrame {
 
 	public static JPanel getStatus() {
 		return status;
+	}
+
+	public static JPanel getFuncoes() {
+		return funcoes;
 	}
 
 }

@@ -1,3 +1,5 @@
 /bin/
 mp_erros.log
 mp_config.cfg
+.classpath
+.project

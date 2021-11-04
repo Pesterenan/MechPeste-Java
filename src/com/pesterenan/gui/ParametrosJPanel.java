@@ -9,6 +9,8 @@ import javax.swing.JPanel;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 
+import static com.pesterenan.utils.Dicionario.*;
+
 public class ParametrosJPanel extends JPanel implements PropertyChangeListener {
 
 	private static final long serialVersionUID = 1L;
@@ -22,23 +24,20 @@ public class ParametrosJPanel extends JPanel implements PropertyChangeListener {
 	public ParametrosJPanel() {
 		setLayout(layout);
 		setBorder(BorderFactory.createCompoundBorder(((Border) BorderFactory.createCompoundBorder(bordaVazia,
-				BorderFactory.createTitledBorder("Parâmetros:"))), bordaVazia));
-		add(telemetria, FuncoesJPanel.telemetria);
-		add(decolagem, FuncoesJPanel.decolagemOrbital);
+				BorderFactory.createTitledBorder(TXT_PARAMETROS.get()))), bordaVazia));
+		add(telemetria, TELEMETRIA.get());
+		add(decolagem, DECOLAGEM_ORBITAL.get());
 		addPropertyChangeListener(this);
 	}
 
 	@Override
 	public void propertyChange(PropertyChangeEvent evt) {
-		switch (evt.getPropertyName()) {
-		case FuncoesJPanel.decolagemOrbital:
-			layout.show(this, FuncoesJPanel.decolagemOrbital);
-			break;
-		case FuncoesJPanel.telemetria:
-			layout.show(this, FuncoesJPanel.telemetria);
-			break;
+		if (evt.getPropertyName().equals(DECOLAGEM_ORBITAL.get())){
+			layout.show(this, DECOLAGEM_ORBITAL.get());
 		}
-
+		if (evt.getPropertyName().equals(TELEMETRIA.get())){
+			layout.show(this, TELEMETRIA.get());
+		}
 	}
 
 }

@@ -13,29 +13,25 @@ import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
 
+import com.pesterenan.MechPeste;
+
+import static com.pesterenan.utils.Dicionario.*;
+
 public class FuncoesJPanel extends JPanel implements ActionListener {
 
 	private static final long serialVersionUID = 1L;
 
-	public static final String 	decolagemOrbital = "Decolagem Orbital",
-							pousoAutomatico = "Pouso Automático",
-							roverAutonomo = "Rover Autônomo",
-							execManobras = "Exec. Manobras",
-							telemetria = "Telemetria",
-							sair = "Sair";
-
-	
 	public FuncoesJPanel() {
 		TitledBorder bordaTitulo = new TitledBorder("Funções");
 		EmptyBorder bordaVazia = new EmptyBorder(5, 5, 5, 5);
 		Dimension tamanhoMenu = new Dimension(100, ParametrosJPanel.HEIGHT);
 
-		JButton botDecolagem = new JButton(decolagemOrbital);
-		JButton botPousoAutomatico = new JButton(pousoAutomatico);
-		JButton botRoverAutonomo = new JButton(roverAutonomo);
-		JButton botExecManobras = new JButton(execManobras);
-		JButton botSair = new JButton(sair);
-		
+		JButton botDecolagem = new JButton(DECOLAGEM_ORBITAL.get());
+		JButton botPousoAutomatico = new JButton(POUSO_AUTOMATICO.get());
+		JButton botRoverAutonomo = new JButton(ROVER_AUTONOMO.get());
+		JButton botExecManobras = new JButton(MANOBRAS.get());
+		JButton botSair = new JButton(SAIR.get());
+
 		botDecolagem.setMnemonic(KeyEvent.VK_D);
 		botPousoAutomatico.setMnemonic(KeyEvent.VK_S);
 		botRoverAutonomo.setMnemonic(KeyEvent.VK_R);
@@ -45,13 +41,13 @@ public class FuncoesJPanel extends JPanel implements ActionListener {
 		botPousoAutomatico.setEnabled(false);
 		botRoverAutonomo.setEnabled(false);
 		botExecManobras.setEnabled(false);
-		
+
 		botDecolagem.addActionListener(this);
 		botPousoAutomatico.addActionListener(this);
 		botRoverAutonomo.addActionListener(this);
 		botExecManobras.addActionListener(this);
 		botSair.addActionListener(this);
-		
+
 		setMinimumSize(tamanhoMenu);
 		setLayout(new GridBagLayout());
 		GridBagConstraints gc = new GridBagConstraints();
@@ -75,11 +71,12 @@ public class FuncoesJPanel extends JPanel implements ActionListener {
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
-		if (e.getActionCommand().equals(sair)){ 
+		if (e.getActionCommand().equals(SAIR.get())) {
 			System.exit(0);
+		} else {
+			MainGui.getParametros().firePropertyChange(e.getActionCommand(), 0, 1);
 		}
-		MainGui.getParametros().firePropertyChange(e.getActionCommand(), 0, 1);
-	
+		firePropertyChange(DECOLAGEM_ORBITAL.get(), 0, 1);
 	}
 
 }

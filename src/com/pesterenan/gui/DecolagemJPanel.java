@@ -6,6 +6,8 @@ import java.awt.event.ActionListener;
 import javax.swing.JButton;
 import javax.swing.JPanel;
 
+import static com.pesterenan.utils.Dicionario.*;
+
 public class DecolagemJPanel extends JPanel implements ActionListener{
 
 	private static final long serialVersionUID = 1L;
@@ -22,7 +24,7 @@ public class DecolagemJPanel extends JPanel implements ActionListener{
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		if (e.getActionCommand().equals("Voltar")) {
-			MainGui.getParametros().firePropertyChange(FuncoesJPanel.telemetria, 0, 1);
+			MainGui.getParametros().firePropertyChange(TELEMETRIA.get(), 0, 1);
 		}
 	}
 

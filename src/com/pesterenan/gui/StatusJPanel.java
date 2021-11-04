@@ -6,8 +6,6 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -15,20 +13,24 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.border.BevelBorder;
 
+import com.pesterenan.utils.Status;
+
+import static com.pesterenan.utils.Status.*;
+import static com.pesterenan.utils.Dicionario.*;
+
 public class StatusJPanel extends JPanel implements ActionListener {
 
 	private static final long serialVersionUID = 1L;
 
 	private static JLabel statusLabel = new JLabel(" ");
-	private static JButton botConectar = new JButton("Conectar");
-	public static String conectar = "Conectar";
+	private static JButton botConectar = new JButton(CONECTAR.get());
 
 	public StatusJPanel() {
 
 		botConectar.setPreferredSize(new Dimension(90, 18));
 		botConectar.setVisible(false);
 		botConectar.addActionListener(this);
-		botConectar.setActionCommand(conectar);
+		botConectar.setActionCommand(CONECTAR.get());
 		setBorder(BorderFactory.createCompoundBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2),
 				BorderFactory.createBevelBorder(BevelBorder.LOWERED)));
 
@@ -56,15 +58,11 @@ public class StatusJPanel extends JPanel implements ActionListener {
 		statusLabel.setText(novoStatus);
 	}
 
-	public static void setStatus(Status status) {
-		statusLabel.setText(status.get());
-	}
-
 	@Override
 	public void actionPerformed(ActionEvent e) {
-		if (e.getActionCommand().equals(conectar)) {
-			setStatus(Status.CONECTANDO);
-			firePropertyChange(conectar, 0, 1);
+		if (e.getActionCommand().equals(CONECTAR.get())) {
+			setStatus(CONECTANDO.get());
+			firePropertyChange(CONECTAR.get(), 0, 1);
 		}
 
 	}
