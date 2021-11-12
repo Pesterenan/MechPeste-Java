@@ -1,4 +1,4 @@
-Log de erros criado na data: 04-11-21 �4 11:31:04
+Log de erros criado na data: 12-11-21 �29 14:52:29
 
 java.base/java.net.PlainSocketImpl.connect0(Native Method)
 java.base/java.net.PlainSocketImpl.socketConnect(PlainSocketImpl.java:101)
@@ -12,7 +12,7 @@ java.base/java.net.Socket.<init>(Socket.java:454)
 java.base/java.net.Socket.<init>(Socket.java:264)
 krpc.client.Connection.<init>(Connection.java:140)
 krpc.client.Connection.newInstance(Connection.java:56)
-com.pesterenan.MechPeste.iniciarConexao(MechPeste.java:50)
-com.pesterenan.MechPeste.<init>(MechPeste.java:38)
-com.pesterenan.MechPeste.main(MechPeste.java:33)
+com.pesterenan.MechPeste.iniciarConexao(MechPeste.java:52)
+com.pesterenan.MechPeste.<init>(MechPeste.java:40)
+com.pesterenan.MechPeste.main(MechPeste.java:35)
 

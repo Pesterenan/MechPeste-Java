@@ -32,26 +32,12 @@ public class Nave {
 			setConexao(con);
 			Nave.centroEspacial = SpaceCenter.newInstance(getConexao());
 			this.naveAtual = centroEspacial.getActiveVessel();
-			iniciarTelemetria();
-		} catch (RPCException | StreamException e) {
+		} catch (RPCException e) {
 			System.err.println("Erro\n\t\t" + e.getMessage());
 		}
 	}
 
 	public Nave() {
-	}
-
-	private void iniciarTelemetria() throws RPCException, StreamException {
-		parametrosDeVoo = this.naveAtual.flight(this.naveAtual.getOrbit().getBody().getReferenceFrame());
-		altitude = getConexao().addStream(parametrosDeVoo, "getMeanAltitude");
-		altitudeSup = getConexao().addStream(parametrosDeVoo, "getSurfaceAltitude");
-		apoastro = getConexao().addStream(naveAtual.getOrbit(), "getApoapsisAltitude");
-		periastro = getConexao().addStream(naveAtual.getOrbit(), "getPeriapsisAltitude");
-		velVertical = getConexao().addStream(parametrosDeVoo, "getVerticalSpeed");
-		velHorizontal = getConexao().addStream(parametrosDeVoo, "getHorizontalSpeed");
-		massaTotal = getConexao().addStream(naveAtual, "getMass");
-		tempoMissao = getConexao().addStream(SpaceCenter.class, "getUT");
-
 	}
 
 	public void decolagemOrbital() throws RPCException, StreamException, IOException, InterruptedException {
