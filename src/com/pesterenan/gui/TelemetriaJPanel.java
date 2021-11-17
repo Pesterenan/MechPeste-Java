@@ -34,6 +34,7 @@ public class TelemetriaJPanel extends JPanel implements PropertyChangeListener {
 		JLabel velHLabel = new JLabel("Vel. Horizontal:");
 		JLabel bateriaLabel = new JLabel("Bateria: ");
 		JLabel tempoLabel = new JLabel("Tempo de Missão: ");
+		addPropertyChangeListener(this);
 		setLayout(new GridBagLayout());
 		GridBagConstraints gc = new GridBagConstraints();
 		gc.weightx = 0.1;
@@ -69,37 +70,38 @@ public class TelemetriaJPanel extends JPanel implements PropertyChangeListener {
 	public void propertyChange(PropertyChangeEvent evt) {
 		switch (evt.getPropertyName()) {
 		case "altitude":
-			altitudeValorLabel.setText(String.format("%1$.0f", evt.getNewValue()) + "m");
+			altitudeValorLabel.setText(String.format("%,.1f", evt.getNewValue()) + "m");
 			break;
-		case "carga":
-			bateriaValorLabel.setText(String.format("%1$.0f", evt.getNewValue()) + "%");
+		case "bateria":
+			bateriaValorLabel.setText(String.format("%.0f", evt.getNewValue()) + "%");
 			break;
 		case "apoastro":
-			apoastroValorLabel.setText(String.format("%1$.0f", evt.getNewValue()) + "m");
+			apoastroValorLabel.setText(String.format("%,.1f", evt.getNewValue()) + "m");
 			break;
 		case "periastro":
-			periastroValorLabel.setText(String.format("%1$.0f", evt.getNewValue()) + "m");
+			periastroValorLabel.setText(String.format("%,.1f", evt.getNewValue()) + "m");
 			break;
-		case "tempoDeMissao":
-			int segTotaisTdm = (int) evt.getNewValue();
+		case "tempoMissao":
+			Double tempoDouble = (Double) evt.getNewValue();
+			int segTotaisTdm = tempoDouble.intValue();
 			int horasTdm = segTotaisTdm / 3600;
 			int minutosTdm = (segTotaisTdm % 3600) / 60;
 			int segundosTdm = segTotaisTdm % 60;
 			tempoValorLabel
-					.setText("Tempo de Miss�o: " + String.format("%02d:%02d:%02d", horasTdm, minutosTdm, segundosTdm));
+					.setText(String.format("%02d:%02d:%02d", horasTdm, minutosTdm, segundosTdm));
 			break;
-		case "velVert":
-			velVValorLabel.setText(String.format("%1$.0f", evt.getNewValue()) + "m/s");
+		case "velVertical":
+			velVValorLabel.setText(String.format("%,.1f", evt.getNewValue()) + "m/s");
 			break;
-		case "velHorz":
-			velHValorLabel.setText(String.format("%1$.0f", evt.getNewValue()) + "m/s");
+		case "velHorizontal":
+			velHValorLabel.setText(String.format("%,.1f", evt.getNewValue()) + "m/s");
 			break;
 		case "tempoRestante":
 			int segTotaisTr = (int) evt.getNewValue();
 			int horasTr = segTotaisTr / 3600;
 			int minutosTr = (segTotaisTr % 3600) / 60;
 			int segundosTr = segTotaisTr % 60;
-			tempoValorLabel.setText("Tempo Restante: " + String.format("%02d:%02d:%02d", horasTr, minutosTr, segundosTr));
+			tempoValorLabel.setText(String.format("%02d:%02d:%02d", horasTr, minutosTr, segundosTr));
 			break;
 		}
 	}
