@@ -15,7 +15,7 @@ public class TelemetriaController extends Nave implements Runnable {
 	public TelemetriaController(Connection con) {
 		super(con);
 		try {
-			parametrosDeVoo = this.naveAtual.flight(this.naveAtual.getOrbit().getBody().getReferenceFrame());
+			parametrosDeVoo = naveAtual.flight(naveAtual.getOrbit().getBody().getReferenceFrame());
 			altitude = getConexao().addStream(parametrosDeVoo, "getMeanAltitude");
 			altitudeSup = getConexao().addStream(parametrosDeVoo, "getSurfaceAltitude");
 			apoastro = getConexao().addStream(naveAtual.getOrbit(), "getApoapsisAltitude");
@@ -36,28 +36,29 @@ public class TelemetriaController extends Nave implements Runnable {
 	@Override
 	public void run() {
 		while (!getConexao().equals(null)) {
-			enviarTelemetria();
 			try {
-				Thread.sleep(100);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
+				if (!naveAtual.equals(null)) {
+					enviarTelemetria();
+					Thread.sleep(100);
+				} else {
+					System.out.println("Aguardando reconexão");
+					Thread.sleep(5000);
+				}
+			} catch (InterruptedException | RPCException | StreamException e) {
+				System.err.println(e.getMessage());
 			}
 		}
 	}
 
-	private void enviarTelemetria() {
-		try {
-			MainGui.getParametros().getComponent(0).firePropertyChange("altitude", 0.0, altitude.get());
-			MainGui.getParametros().getComponent(0).firePropertyChange("altitudeSup", 0.0, altitudeSup.get());
-			MainGui.getParametros().getComponent(0).firePropertyChange("apoastro", 0.0, apoastro.get());
-			MainGui.getParametros().getComponent(0).firePropertyChange("periastro", 0.0, periastro.get());
-			MainGui.getParametros().getComponent(0).firePropertyChange("velVertical", 0.0, velVertical.get());
-			MainGui.getParametros().getComponent(0).firePropertyChange("velHorizontal", 0.0, velHorizontal.get());
-			MainGui.getParametros().getComponent(0).firePropertyChange("bateria", 0.0, porcentagemCarga);
-			MainGui.getParametros().getComponent(0).firePropertyChange("tempoMissao", 0.0, tempoMissao.get());
-		} catch (RPCException | StreamException e) {
-			e.printStackTrace();
-		}
+	private void enviarTelemetria() throws RPCException, StreamException {
+		MainGui.getParametros().getComponent(0).firePropertyChange("altitude", 0.0, altitude.get());
+		MainGui.getParametros().getComponent(0).firePropertyChange("altitudeSup", 0.0, altitudeSup.get());
+		MainGui.getParametros().getComponent(0).firePropertyChange("apoastro", 0.0, apoastro.get());
+		MainGui.getParametros().getComponent(0).firePropertyChange("periastro", 0.0, periastro.get());
+		MainGui.getParametros().getComponent(0).firePropertyChange("velVertical", 0.0, velVertical.get());
+		MainGui.getParametros().getComponent(0).firePropertyChange("velHorizontal", 0.0, velHorizontal.get());
+		MainGui.getParametros().getComponent(0).firePropertyChange("bateria", 0.0, porcentagemCarga);
+		MainGui.getParametros().getComponent(0).firePropertyChange("tempoMissao", 0.0, tempoMissao.get());
 	}
 
 }
