@@ -6,11 +6,8 @@ import com.pesterenan.model.Nave;
 import krpc.client.Connection;
 import krpc.client.RPCException;
 import krpc.client.StreamException;
-import krpc.client.services.SpaceCenter;
 
 public class TelemetriaController extends Nave implements Runnable {
-
-	private int porcentagemCarga;
 
 	public TelemetriaController(Connection con) {
 		super(con);
@@ -41,7 +38,7 @@ public class TelemetriaController extends Nave implements Runnable {
 					enviarTelemetria();
 					Thread.sleep(100);
 				} else {
-					System.out.println("Aguardando reconexão");
+					System.out.println("Aguardando reconexão...");
 					Thread.sleep(5000);
 				}
 			} catch (InterruptedException | RPCException | StreamException e) {

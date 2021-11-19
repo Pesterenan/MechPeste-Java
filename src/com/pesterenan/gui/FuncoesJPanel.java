@@ -1,5 +1,11 @@
 package com.pesterenan.gui;
 
+import static com.pesterenan.utils.Dicionario.DECOLAGEM_ORBITAL;
+import static com.pesterenan.utils.Dicionario.MANOBRAS;
+import static com.pesterenan.utils.Dicionario.POUSO_AUTOMATICO;
+import static com.pesterenan.utils.Dicionario.ROVER_AUTONOMO;
+import static com.pesterenan.utils.Dicionario.SAIR;
+
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -12,10 +18,6 @@ import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
-
-import com.pesterenan.MechPeste;
-
-import static com.pesterenan.utils.Dicionario.*;
 
 public class FuncoesJPanel extends JPanel implements ActionListener {
 
@@ -76,7 +78,6 @@ public class FuncoesJPanel extends JPanel implements ActionListener {
 		} else {
 			MainGui.getParametros().firePropertyChange(e.getActionCommand(), 0, 1);
 		}
-		firePropertyChange(DECOLAGEM_ORBITAL.get(), 0, 1);
 	}
 
 }

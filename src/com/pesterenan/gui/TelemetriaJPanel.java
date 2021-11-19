@@ -17,6 +17,7 @@ public class TelemetriaJPanel extends JPanel implements PropertyChangeListener {
 
 	private JLabel nomeValorLabel = new JLabel("");
 	private JLabel altitudeValorLabel = new JLabel("");
+	private JLabel altitudeSupValorLabel = new JLabel("");
 	private JLabel apoastroValorLabel = new JLabel("");
 	private JLabel periastroValorLabel = new JLabel("");
 	private JLabel velVValorLabel = new JLabel("");
@@ -28,6 +29,7 @@ public class TelemetriaJPanel extends JPanel implements PropertyChangeListener {
 
 		JLabel nomeLabel = new JLabel("Nome: ");
 		JLabel altitudeLabel = new JLabel("Altitude: ");
+		JLabel altitudeSupLabel = new JLabel("Alt. Superfície: ");
 		JLabel apoastroLabel = new JLabel("Apoastro: ");
 		JLabel periastroLabel = new JLabel("Periastro: ");
 		JLabel velVLabel = new JLabel("Vel. Vertical: ");
@@ -43,6 +45,7 @@ public class TelemetriaJPanel extends JPanel implements PropertyChangeListener {
 		gc.anchor = GridBagConstraints.LINE_START;
 		add(nomeLabel, gc);
 		add(altitudeLabel, gc);
+		add(altitudeSupLabel, gc);
 		add(apoastroLabel, gc);
 		add(periastroLabel, gc);
 		add(velVLabel, gc);
@@ -54,6 +57,7 @@ public class TelemetriaJPanel extends JPanel implements PropertyChangeListener {
 		gc.anchor = GridBagConstraints.EAST;
 		add(nomeValorLabel, gc);
 		add(altitudeValorLabel, gc);
+		add(altitudeSupValorLabel, gc);
 		add(apoastroValorLabel, gc);
 		add(periastroValorLabel, gc);
 		add(velVValorLabel, gc);
@@ -71,6 +75,9 @@ public class TelemetriaJPanel extends JPanel implements PropertyChangeListener {
 		switch (evt.getPropertyName()) {
 		case "altitude":
 			altitudeValorLabel.setText(String.format("%,.1f", evt.getNewValue()) + "m");
+			break;
+		case "altitudeSup":
+			altitudeSupValorLabel.setText(String.format("%,.1f", evt.getNewValue()) + "m");
 			break;
 		case "bateria":
 			bateriaValorLabel.setText(String.format("%.0f", evt.getNewValue()) + "%");

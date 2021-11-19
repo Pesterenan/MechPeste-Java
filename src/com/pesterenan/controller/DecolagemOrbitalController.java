@@ -13,7 +13,7 @@ import krpc.client.StreamException;
 import krpc.client.services.SpaceCenter.Node;
 import krpc.client.services.SpaceCenter.VesselSituation;
 
-public class DecolagemOrbitalController extends Nave {
+public class DecolagemOrbitalController extends Nave implements Runnable {
 
 	// Streams de conexao com a nave:
 	double pressaoAtual;
@@ -30,9 +30,9 @@ public class DecolagemOrbitalController extends Nave {
 	private ManobrasController manobras;
 	ControlePID ctrlAcel = new ControlePID();
 
-	public DecolagemOrbitalController(Connection con) throws RPCException, StreamException, IOException, InterruptedException {
+	public DecolagemOrbitalController(Connection con) {
 		super(con);
-		decolagem();
+		System.out.println("Instancia Criada");
 	}
 
 	public void decolagem() throws RPCException, StreamException, IOException, InterruptedException {
@@ -189,6 +189,15 @@ public class DecolagemOrbitalController extends Nave {
 
 	public static int getDirecao() {
 		return direcao;
+	}
+
+	@Override
+	public void run() {
+		try {
+			decolagem();
+		} catch (RPCException | StreamException | IOException | InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
 
 }

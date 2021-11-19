@@ -1,22 +1,21 @@
 package com.pesterenan;
 
-import static com.pesterenan.utils.Dicionario.CONECTAR;
-import static com.pesterenan.utils.Dicionario.DECOLAGEM_ORBITAL;
-import static com.pesterenan.utils.Dicionario.ERRO_AO_CONECTAR;
-import static com.pesterenan.utils.Dicionario.MECHPESTE;
-import static com.pesterenan.utils.Status.CONECTADO;
-import static com.pesterenan.utils.Status.CONECTANDO;
-import static com.pesterenan.utils.Status.ERRO_CONEXAO;
+import static com.pesterenan.utils.Dicionario.*;
+import static com.pesterenan.utils.Status.*;
 
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.IOException;
 
+import javax.swing.JComponent;
+
+import com.pesterenan.controller.DecolagemOrbitalController;
 import com.pesterenan.controller.TelemetriaController;
 import com.pesterenan.gui.Arquivos;
 import com.pesterenan.gui.MainGui;
 import com.pesterenan.gui.StatusJPanel;
-import com.pesterenan.model.Nave;
 
 import krpc.client.Connection;
 import krpc.client.RPCException;
@@ -27,8 +26,8 @@ public class MechPeste implements PropertyChangeListener {
 	private static Connection conexao;
 	private static Thread threadModulos;
 	private static Thread threadTelemetria;
-	private Nave naveAtual;
 	private static TelemetriaController telemetriaCtrl;
+	private static DecolagemOrbitalController decolagemOrbitalCtrl;
 
 	public static void main(String[] args) throws StreamException, RPCException, IOException, InterruptedException {
 		new MechPeste();
@@ -44,7 +43,7 @@ public class MechPeste implements PropertyChangeListener {
 //		new Arquivos();
 	}
 
-	public static void iniciarConexao() {
+	public void iniciarConexao() {
 		StatusJPanel.setStatus(CONECTANDO.get());
 		if (getConexao() == null) {
 			try {
@@ -65,20 +64,28 @@ public class MechPeste implements PropertyChangeListener {
 		}
 	}
 
-	private static void iniciarTelemetria() {
+	private void iniciarTelemetria() {
 		telemetriaCtrl = new TelemetriaController(getConexao());
 		setThreadTelemetria(new Thread(telemetriaCtrl));
 		getThreadTelemetria().start();
 	}
 
+	public static void iniciarThreadModulos(String modulo) {
+		decolagemOrbitalCtrl = new DecolagemOrbitalController(getConexao());
+		setThreadModulos(new Thread(decolagemOrbitalCtrl));
+		getThreadModulos().start();
+	}
+
 	@Override
 	public void propertyChange(PropertyChangeEvent evt) {
-		if (evt.getPropertyName().equals(CONECTAR.get())) {
+		String evtNomeProp = evt.getPropertyName();
+		if (evtNomeProp.equals(CONECTAR.get())) {
 			iniciarConexao();
-		}
-		if (evt.getPropertyName().equals(DECOLAGEM_ORBITAL.get())) {
-
-		}
+		}	
+		if(evtNomeProp.equals(EXECUTAR_DECOLAGEM.get())){
+			StatusJPanel.setStatus(STATUS_DECOLAGEM_ORBITAL.get());
+			iniciarThreadModulos(evtNomeProp);
+		}			
 
 //		if (getThreadModulos() == null) {
 //			iniciarConexao();
@@ -88,7 +95,6 @@ public class MechPeste implements PropertyChangeListener {
 //					try {
 //						switch (Dicionario.valueOf(evt.getPropertyName())) {
 //						case DECOLAGEM_ORBITAL:
-//							StatusJPanel.setStatus(EXEC_DECOLAGEM_ORBITAL.get());
 //							naveAtual.decolagemOrbital();
 //							break;
 //						case POUSO_AUTOMATICO:
@@ -161,6 +167,10 @@ public class MechPeste implements PropertyChangeListener {
 
 	private static void setThreadTelemetria(Thread threadTelemetria) {
 		MechPeste.threadTelemetria = threadTelemetria;
+	}
+
+	public MechPeste get() {
+		return this;
 	}
 
 }
