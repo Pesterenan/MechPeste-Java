@@ -15,7 +15,6 @@ public class TelemetriaJPanel extends JPanel implements PropertyChangeListener {
 
 	private static final long serialVersionUID = 1L;
 
-	private JLabel nomeValorLabel = new JLabel("");
 	private JLabel altitudeValorLabel = new JLabel("");
 	private JLabel altitudeSupValorLabel = new JLabel("");
 	private JLabel apoastroValorLabel = new JLabel("");
@@ -27,7 +26,6 @@ public class TelemetriaJPanel extends JPanel implements PropertyChangeListener {
 
 	public TelemetriaJPanel() {
 
-		JLabel nomeLabel = new JLabel("Nome: ");
 		JLabel altitudeLabel = new JLabel("Altitude: ");
 		JLabel altitudeSupLabel = new JLabel("Alt. Superfície: ");
 		JLabel apoastroLabel = new JLabel("Apoastro: ");
@@ -43,7 +41,6 @@ public class TelemetriaJPanel extends JPanel implements PropertyChangeListener {
 		gc.weighty = 0.05;
 		gc.gridx = 0;
 		gc.anchor = GridBagConstraints.LINE_START;
-		add(nomeLabel, gc);
 		add(altitudeLabel, gc);
 		add(altitudeSupLabel, gc);
 		add(apoastroLabel, gc);
@@ -55,7 +52,6 @@ public class TelemetriaJPanel extends JPanel implements PropertyChangeListener {
 		gc.weightx = 1;
 		gc.gridx = 1;
 		gc.anchor = GridBagConstraints.EAST;
-		add(nomeValorLabel, gc);
 		add(altitudeValorLabel, gc);
 		add(altitudeSupValorLabel, gc);
 		add(apoastroValorLabel, gc);
