@@ -21,6 +21,10 @@ public class Nave {
 	protected float bateriaTotal, bateriaAtual;
 	protected int porcentagemCarga;
 
+	
+	public Nave(Nave nave) {
+		new Nave(nave.getConexao());
+	}
 	public Nave(Connection con) {
 		setConexao(con);
 		centroEspacial = SpaceCenter.newInstance(getConexao());
