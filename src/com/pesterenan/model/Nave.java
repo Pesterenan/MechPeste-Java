@@ -17,8 +17,8 @@ public class Nave {
 
 	protected Stream<Double> altitude, altitudeSup, apoastro, periastro;
 	protected Stream<Double> velVertical, tempoMissao, velHorizontal;
-	protected Stream<Float> massaTotal;
-	protected float bateriaTotal, bateriaAtual;
+	protected Stream<Float> massaTotal, bateriaAtual;
+	protected float bateriaTotal;
 	protected int porcentagemCarga;
 
 	

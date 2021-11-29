@@ -21,9 +21,8 @@ public class TelemetriaController extends Nave implements Runnable {
 			velHorizontal = getConexao().addStream(parametrosDeVoo, "getHorizontalSpeed");
 			massaTotal = getConexao().addStream(naveAtual, "getMass");
 			tempoMissao = getConexao().addStream(naveAtual, "getMET");
+			bateriaAtual = getConexao().addStream(naveAtual.getResources(), "amount", "ElectricCharge");
 			bateriaTotal = naveAtual.getResources().max("ElectricCharge");
-			bateriaAtual = naveAtual.getResources().amount("ElectricCharge");
-			porcentagemCarga = (int) Math.ceil(bateriaAtual * 100 / bateriaTotal);
 		} catch (StreamException | RPCException e) {
 			e.printStackTrace();
 		}
@@ -48,6 +47,7 @@ public class TelemetriaController extends Nave implements Runnable {
 	}
 
 	private void enviarTelemetria() throws RPCException, StreamException {
+		porcentagemCarga = (int) Math.ceil(bateriaAtual.get() * 100 / bateriaTotal);
 		MainGui.getParametros().getComponent(0).firePropertyChange("altitude", 0.0, altitude.get());
 		MainGui.getParametros().getComponent(0).firePropertyChange("altitudeSup", 0.0, altitudeSup.get());
 		MainGui.getParametros().getComponent(0).firePropertyChange("apoastro", 0.0, apoastro.get());
