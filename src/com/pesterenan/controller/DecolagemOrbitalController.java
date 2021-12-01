@@ -17,10 +17,13 @@ import krpc.client.services.SpaceCenter.VesselSituation;
 
 public class DecolagemOrbitalController extends TelemetriaController implements Runnable {
 
+	private final float INC_PARA_CIMA = 90;
 
 	private float altInicioCurva = 100;
 	private float altApoastroFinal = 80000;
-	
+	private float inclinacaoAtual = 90;
+	private float direcao = 90;
+
 	public DecolagemOrbitalController(Connection con) {
 		super(con);
 	}
@@ -28,10 +31,36 @@ public class DecolagemOrbitalController extends TelemetriaController implements 
 	@Override
 	public void run() {
 		try {
-		decolagem();
+			decolagem();
+			curvaGravitacional();
 		} catch (Exception e) {
 			System.out.println(e.getMessage());
 		}
+	}
+
+	private void curvaGravitacional() throws RPCException, StreamException, InterruptedException {
+		// Acelerar ao máximo
+		naveAtual.getControl().setThrottle(1f);
+		// Começar a virar o foguete para o leste
+		naveAtual.getAutoPilot().engage();
+		naveAtual.getAutoPilot().targetPitchAndHeading(inclinacaoAtual, direcao);
+		// Dependendo da altitude nós viramos mais o foguete
+		while (inclinacaoAtual > 1) {
+			if (altitude.get() > altInicioCurva && altitude.get() < altApoastroFinal) {
+				// Virarei o foguete
+				inclinacaoAtual = (float) (INC_PARA_CIMA - (altitude.get() * INC_PARA_CIMA / altApoastroFinal));
+				naveAtual.getAutoPilot()
+						 .targetPitchAndHeading(inclinacaoAtual, direcao);
+				StatusJPanel.setStatus(String.format("A inclinação do foguete é: %.1f", inclinacaoAtual));
+				Thread.sleep(500);
+				if (apoastro.get() > altApoastroFinal) {
+					naveAtual.getControl().setThrottle(0f);
+				}
+			}
+		}
+		StatusJPanel.setStatus(Status.PRONTO.get());
+		naveAtual.getAutoPilot().disengage();
+		// Até chegar a altitude de apoastro
 	}
 
 	private void decolagem() throws RPCException, InterruptedException {
@@ -41,7 +70,7 @@ public class DecolagemOrbitalController extends TelemetriaController implements 
 		naveAtual.getControl().setThrottle(1f);
 		// Contagem regressiva
 		float contagemRegressiva = 5f;
-		for (;contagemRegressiva > 0;) {
+		for (; contagemRegressiva > 0;) {
 			StatusJPanel.setStatus(String.format("Lançamento em: %.1f segundos...", contagemRegressiva));
 			contagemRegressiva -= 0.1;
 			// Esperar 100 milissegundos
@@ -55,12 +84,7 @@ public class DecolagemOrbitalController extends TelemetriaController implements 
 		Thread.sleep(3000);
 		StatusJPanel.setStatus(Status.PRONTO.get());
 	}
-	
-	
-	
-	
-	
-	
+
 //	// Streams de conexao com a nave:
 //	double pressaoAtual;
 //	// Parametros de voo:
@@ -76,7 +100,6 @@ public class DecolagemOrbitalController extends TelemetriaController implements 
 //	private ManobrasController manobras;
 //	ControlePID ctrlAcel = new ControlePID();
 
-	
 //	public void decolagem() throws RPCException, StreamException, IOException, InterruptedException {
 //		iniciarScript();
 //// Loop principal de subida
@@ -232,7 +255,5 @@ public class DecolagemOrbitalController extends TelemetriaController implements 
 //	public static int getDirecao() {
 //		return direcao;
 //	}
-
-	
 
 }
