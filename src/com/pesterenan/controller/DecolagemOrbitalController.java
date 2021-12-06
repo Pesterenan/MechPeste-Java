@@ -47,14 +47,23 @@ public class DecolagemOrbitalController extends TelemetriaController implements 
 		// Dependendo da altitude nós viramos mais o foguete
 		while (inclinacaoAtual > 1) {
 			if (altitude.get() > altInicioCurva && altitude.get() < altApoastroFinal) {
+				
 				// Virarei o foguete
 				inclinacaoAtual = (float) (INC_PARA_CIMA - (altitude.get() * INC_PARA_CIMA / altApoastroFinal));
-				naveAtual.getAutoPilot()
-						 .targetPitchAndHeading(inclinacaoAtual, direcao);
+				naveAtual.getAutoPilot().targetPitchAndHeading(inclinacaoAtual, direcao);
 				StatusJPanel.setStatus(String.format("A inclinação do foguete é: %.1f", inclinacaoAtual));
+				
+//				double progresso = (altitude.get() - altInicioCurva) / (altApoastroFinal - altInicioCurva);
+//				double incrementoCircular = Math.sqrt(1 - Math.pow(progresso - 1, 2));
+//				double novoAnguloGiro = incrementoCircular * INC_PARA_CIMA;
+//				naveAtual.getAutoPilot().targetPitchAndHeading((float) novoAnguloGiro, direcao);
+
 				Thread.sleep(500);
-				if (apoastro.get() > altApoastroFinal) {
-					naveAtual.getControl().setThrottle(0f);
+				if (apoastro.get() > (altApoastroFinal * 0.75)) {
+					naveAtual.getControl().setThrottle(0.5f);
+					if (apoastro.get() > altApoastroFinal) {
+						naveAtual.getControl().setThrottle(0f);
+					}
 				}
 			}
 		}
