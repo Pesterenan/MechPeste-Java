@@ -1,4 +1,4 @@
-Log de erros criado na data: 22-11-21 �36 21:42:36
+Log de erros criado na data: 15-12-21 �28 00:19:28
 
 java.base/sun.nio.ch.Net.connect0(Native Method)
 java.base/sun.nio.ch.Net.connect(Net.java:493)

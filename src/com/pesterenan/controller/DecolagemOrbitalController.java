@@ -31,23 +31,16 @@ public class DecolagemOrbitalController extends TelemetriaController implements 
 	}
 
 	private void curvaGravitacional() throws RPCException, StreamException, InterruptedException {
-		// Acelerar ao máximo
 		naveAtual.getControl().setThrottle(1f);
-		// Começar a virar o foguete para o leste
 		naveAtual.getAutoPilot().engage();
-		naveAtual.getAutoPilot().targetPitchAndHeading(inclinacaoAtual, direcao);
-		// Dependendo da altitude nós viramos mais o foguete
+		naveAtual.getAutoPilot().targetPitchAndHeading(inclinacaoAtual, getDirecao());
 		while (inclinacaoAtual > 1) {
 			if (altitude.get() > altInicioCurva && altitude.get() < altApoastroFinal) {
-		
-				// Curva de inclinação por raiz quadrada
 				double progresso = (altitude.get() - altInicioCurva) / (altApoastroFinal - altInicioCurva);
 				double incrementoCircular = Math.sqrt(1 - Math.pow(progresso - 1, 2));
 				inclinacaoAtual = (float) (INC_PARA_CIMA - (incrementoCircular * INC_PARA_CIMA));
-				naveAtual.getAutoPilot().targetPitchAndHeading((float) inclinacaoAtual, direcao);
-
+				naveAtual.getAutoPilot().targetPitchAndHeading((float) inclinacaoAtual, getDirecao());
 				StatusJPanel.setStatus(String.format("A inclinação do foguete é: %.1f", inclinacaoAtual));
-				
 				if (apoastro.get() > (altApoastroFinal * 0.75)) {
 					naveAtual.getControl().setThrottle(0.5f);
 					if (apoastro.get() >= altApoastroFinal) {
@@ -59,29 +52,35 @@ public class DecolagemOrbitalController extends TelemetriaController implements 
 		}
 		StatusJPanel.setStatus(Status.PRONTO.get());
 		naveAtual.getAutoPilot().disengage();
-		// Até chegar a altitude de apoastro
 	}
 
 	private void decolagem() throws RPCException, InterruptedException {
-		// Ativar o SAS
 		naveAtual.getControl().setSAS(true);
-		// Acelerar ao máximo
 		naveAtual.getControl().setThrottle(1f);
-		// Contagem regressiva
 		float contagemRegressiva = 5f;
 		for (; contagemRegressiva > 0;) {
 			StatusJPanel.setStatus(String.format("Lançamento em: %.1f segundos...", contagemRegressiva));
 			contagemRegressiva -= 0.1;
-			// Esperar 100 milissegundos
 			Thread.sleep(100);
 		}
-		// Decolar - Apertar Espaço
 		StatusJPanel.setStatus("Decolagem!");
-		// Ativar próximo estágio
 		naveAtual.getControl().activateNextStage();
-		// Esperar 3 segundos
 		Thread.sleep(1000);
 		StatusJPanel.setStatus(Status.PRONTO.get());
+	}
+
+	public float getDirecao() {
+		return direcao;
+	}
+
+	public void setDirecao(float direcao) {
+		if (direcao > 360) {
+			this.direcao = 360;
+		}
+		if (direcao < 0) {
+			this.direcao = 0;
+		}
+		this.direcao = direcao;
 	}
 
 //	// Streams de conexao com a nave:

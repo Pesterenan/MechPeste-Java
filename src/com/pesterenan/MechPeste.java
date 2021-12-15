@@ -71,8 +71,10 @@ public class MechPeste implements PropertyChangeListener {
 	}
 
 	public static void iniciarThreadModulos(String modulo) {
-		decolagemOrbitalCtrl = new DecolagemOrbitalController(getConexao());
-		setThreadModulos(new Thread(decolagemOrbitalCtrl));
+		if (modulo.equals(EXECUTAR_DECOLAGEM.get())){
+			decolagemOrbitalCtrl = new DecolagemOrbitalController(getConexao());
+			setThreadModulos(new Thread(decolagemOrbitalCtrl));			
+		}
 		getThreadModulos().start();
 	}
 
