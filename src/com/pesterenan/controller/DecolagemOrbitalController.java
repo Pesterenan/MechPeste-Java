@@ -1,6 +1,7 @@
 package com.pesterenan.controller;
 
 import com.pesterenan.gui.StatusJPanel;
+import com.pesterenan.utils.ControlePID;
 import com.pesterenan.utils.Status;
 
 import krpc.client.Connection;
@@ -15,9 +16,12 @@ public class DecolagemOrbitalController extends TelemetriaController implements 
 	private float altApoastroFinal = 80000;
 	private float inclinacaoAtual = 90;
 	private float direcao = 90;
+	private ControlePID aceleracaoCtrl = new ControlePID();
 
 	public DecolagemOrbitalController(Connection con) {
 		super(con);
+		aceleracaoCtrl.setAmostraTempo(100);
+		aceleracaoCtrl.ajustarPID(0.05, 0.1, 1);
 	}
 
 	@Override
@@ -34,21 +38,26 @@ public class DecolagemOrbitalController extends TelemetriaController implements 
 		naveAtual.getControl().setThrottle(1f);
 		naveAtual.getAutoPilot().engage();
 		naveAtual.getAutoPilot().targetPitchAndHeading(inclinacaoAtual, getDirecao());
+		// Limitar a aceleração no apoastro final
+		aceleracaoCtrl.limitarSaida(0.1, 1.0);
+		
 		while (inclinacaoAtual > 1) {
-			if (altitude.get() > altInicioCurva && altitude.get() < altApoastroFinal) {
-				double progresso = (altitude.get() - altInicioCurva) / (altApoastroFinal - altInicioCurva);
+			if (altitude.get() > altInicioCurva && altitude.get() < getAltApoastroFinal()) {
+				double progresso = (altitude.get() - altInicioCurva) / (getAltApoastroFinal() - altInicioCurva);
 				double incrementoCircular = Math.sqrt(1 - Math.pow(progresso - 1, 2));
 				inclinacaoAtual = (float) (INC_PARA_CIMA - (incrementoCircular * INC_PARA_CIMA));
 				naveAtual.getAutoPilot().targetPitchAndHeading((float) inclinacaoAtual, getDirecao());
 				StatusJPanel.setStatus(String.format("A inclinação do foguete é: %.1f", inclinacaoAtual));
-				if (apoastro.get() > (altApoastroFinal * 0.75)) {
-					naveAtual.getControl().setThrottle(0.5f);
-					if (apoastro.get() >= altApoastroFinal) {
-						naveAtual.getControl().setThrottle(0f);
-					}
+				// Informar ao Controlador PID da aceleração a porcentagem do caminho
+				aceleracaoCtrl.setEntradaPID((apoastro.get() * 100 / getAltApoastroFinal()));
+				// Acelerar a nave de acordo com o PID, ou cortar o motor caso passe do apoastro
+				if (apoastro.get() < getAltApoastroFinal()) {
+					naveAtual.getControl().setThrottle((float) aceleracaoCtrl.computarPID());					
+				} else {
+					naveAtual.getControl().setThrottle(0.0f);
 				}
 			}
-			Thread.sleep(500);
+			Thread.sleep(100);
 		}
 		StatusJPanel.setStatus(Status.PRONTO.get());
 		naveAtual.getAutoPilot().disengage();
@@ -76,11 +85,25 @@ public class DecolagemOrbitalController extends TelemetriaController implements 
 	public void setDirecao(float direcao) {
 		if (direcao > 360) {
 			this.direcao = 360;
-		}
-		if (direcao < 0) {
+		} else if (direcao < 0) {
 			this.direcao = 0;
-		}
+		} else {
 		this.direcao = direcao;
+		}
+	}
+
+	public float getAltApoastroFinal() {
+		return altApoastroFinal;
+	}
+
+	public void setAltApoastroFinal(float altApoastroFinal) {
+		if (altApoastroFinal < 10000) {
+			this.altApoastroFinal = 10000;
+		} else if (altApoastroFinal > 2000000) {
+			this.altApoastroFinal = 2000000;
+		} else {
+		this.altApoastroFinal = altApoastroFinal;
+		}
 	}
 
 //	// Streams de conexao com a nave:

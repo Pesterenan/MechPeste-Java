@@ -1,9 +1,14 @@
 package com.pesterenan.gui;
 
+import static com.pesterenan.utils.Dicionario.EXECUTAR_DECOLAGEM;
+import static com.pesterenan.utils.Dicionario.TELEMETRIA;
+
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.swing.JButton;
 import javax.swing.JLabel;
@@ -12,8 +17,6 @@ import javax.swing.JTextField;
 
 import com.pesterenan.MechPeste;
 
-import static com.pesterenan.utils.Dicionario.*;
-
 public class DecolagemJPanel extends JPanel implements ActionListener {
 
 	private static final long serialVersionUID = 1L;
@@ -21,7 +24,7 @@ public class DecolagemJPanel extends JPanel implements ActionListener {
 	private JButton botIniciar = new JButton("Iniciar");
 	private JLabel apoastroLabel = new JLabel("Apoastro final: ");
 	private JLabel direcaoLabel = new JLabel("Direção: ");
-	private JTextField apoastroTextField = new JTextField("80.000");
+	private JTextField apoastroTextField = new JTextField("80000");
 	private JTextField direcaoTextField = new JTextField("90");
 
 	public DecolagemJPanel() {
@@ -32,12 +35,14 @@ public class DecolagemJPanel extends JPanel implements ActionListener {
 
 		setLayout(new GridBagLayout());
 		GridBagConstraints gc = new GridBagConstraints();
+		
 		gc.gridy = 0;
 		gc.anchor = GridBagConstraints.LINE_START;
 		add(apoastroLabel, gc);
 		gc.anchor = GridBagConstraints.EAST;
 		gc.fill = GridBagConstraints.HORIZONTAL;
 		add(apoastroTextField, gc);
+		
 		gc.gridy = 1;
 		gc.anchor = GridBagConstraints.LINE_START;
 		add(direcaoLabel, gc);
@@ -51,15 +56,16 @@ public class DecolagemJPanel extends JPanel implements ActionListener {
 		gc.anchor = GridBagConstraints.EAST;
 		add(botVoltar, gc);
 
-
 		return;
 	}
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		if (e.getActionCommand().equals("Iniciar")) {
-			MainGui.getParametros().firePropertyChange(TELEMETRIA.get(), 0, 1);
-			MechPeste.iniciarThreadModulos(EXECUTAR_DECOLAGEM.get());
+			Map<String, String> valores = new HashMap<>();
+			valores.put("APOASTRO", apoastroTextField.getText());
+			valores.put("DIRECAO", direcaoTextField.getText());
+			MechPeste.iniciarThreadModulos(EXECUTAR_DECOLAGEM.get(), valores);
 		}
 		if (e.getActionCommand().equals("Voltar")) {
 			MainGui.getParametros().firePropertyChange(TELEMETRIA.get(), 0, 1);

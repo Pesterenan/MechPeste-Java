@@ -1,15 +1,20 @@
 package com.pesterenan;
 
-import static com.pesterenan.utils.Dicionario.*;
-import static com.pesterenan.utils.Status.*;
+import static com.pesterenan.utils.Dicionario.CONECTAR;
+import static com.pesterenan.utils.Dicionario.ERRO_AO_CONECTAR;
+import static com.pesterenan.utils.Dicionario.EXECUTAR_DECOLAGEM;
+import static com.pesterenan.utils.Dicionario.MECHPESTE;
+import static com.pesterenan.utils.Dicionario.TELEMETRIA;
+import static com.pesterenan.utils.Status.CONECTADO;
+import static com.pesterenan.utils.Status.CONECTANDO;
+import static com.pesterenan.utils.Status.ERRO_CONEXAO;
+import static com.pesterenan.utils.Status.STATUS_DECOLAGEM_ORBITAL;
 
-import java.awt.event.ComponentEvent;
-import java.awt.event.ComponentListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.IOException;
-
-import javax.swing.JComponent;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.pesterenan.controller.DecolagemOrbitalController;
 import com.pesterenan.controller.TelemetriaController;
@@ -70,14 +75,30 @@ public class MechPeste implements PropertyChangeListener {
 		getThreadTelemetria().start();
 	}
 
-	public static void iniciarThreadModulos(String modulo) {
+	public static void iniciarThreadModulos(String modulo, Map<String, String> valores) {
 		if (modulo.equals(EXECUTAR_DECOLAGEM.get())){
-			decolagemOrbitalCtrl = new DecolagemOrbitalController(getConexao());
-			setThreadModulos(new Thread(decolagemOrbitalCtrl));			
+			if (validarDecolagem(valores)) {
+				MainGui.getParametros().firePropertyChange(TELEMETRIA.get(), 0, 1);
+				decolagemOrbitalCtrl = new DecolagemOrbitalController(getConexao());
+				decolagemOrbitalCtrl.setAltApoastroFinal(Float.valueOf(valores.get("APOASTRO")));				
+				decolagemOrbitalCtrl.setDirecao(Float.valueOf(valores.get("DIRECAO")));				
+				setThreadModulos(new Thread(decolagemOrbitalCtrl));			
+				getThreadModulos().start();
+			}
 		}
-		getThreadModulos().start();
 	}
 
+	private static boolean validarDecolagem(Map<String, String> valores) {
+		try { 
+			Float.parseFloat(valores.get("APOASTRO"));
+			Float.parseFloat(valores.get("DIRECAO"));
+		} catch (NumberFormatException nfe) {
+			StatusJPanel.setStatus("Os campos só aceitam números");
+			return false;
+		}
+		return true;
+	}
+	
 	@Override
 	public void propertyChange(PropertyChangeEvent evt) {
 		String evtNomeProp = evt.getPropertyName();
@@ -86,7 +107,6 @@ public class MechPeste implements PropertyChangeListener {
 		}	
 		if(evtNomeProp.equals(EXECUTAR_DECOLAGEM.get())){
 			StatusJPanel.setStatus(STATUS_DECOLAGEM_ORBITAL.get());
-			iniciarThreadModulos(evtNomeProp);
 		}			
 
 //		if (getThreadModulos() == null) {

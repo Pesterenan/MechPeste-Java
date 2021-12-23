@@ -18,6 +18,12 @@ public class ControlePID {
 	private double termoIntegral, ultimaEntrada; // vari�veis de c�lculo de erro
 	private double ultimoCalculo = 0; // tempo do �ltimo c�lculo
 
+	public ControlePID() {
+		this.setAmostraTempo(25);
+		this.setEntradaPID(0);
+		this.setLimitePID(100);
+	}
+
 	public double computarPID() {
 		// M�todo que computa o incremento do PID
 		double agora = System.currentTimeMillis(); // Buscar tempo imediato
@@ -36,7 +42,6 @@ public class ControlePID {
 
 			// Computar o valor de sa�da:
 			this.valorSaida = kp * erro + ki * termoIntegral - kd * diferencaEntrada;
-
 			// Limitar valor de sa�da:
 			if (this.valorSaida > saidaMax) {
 				this.valorSaida = saidaMax;
