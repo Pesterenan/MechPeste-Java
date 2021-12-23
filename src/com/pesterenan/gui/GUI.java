@@ -1,37 +1,18 @@
 package com.pesterenan.gui;
 
-import java.awt.BorderLayout;
-import java.awt.CardLayout;
-import java.awt.Dimension;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
-import java.io.IOException;
+import com.pesterenan.controller.PousoAutomaticoController;
+import com.pesterenan.controller.RoverAutonomoController;
 
-import javax.swing.BorderFactory;
-import javax.swing.ButtonGroup;
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JRadioButton;
-import javax.swing.JSlider;
-import javax.swing.JTextField;
-import javax.swing.SwingConstants;
-import javax.swing.WindowConstants;
-import javax.swing.border.BevelBorder;
+import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-
-import com.pesterenan.MechPeste;
-import com.pesterenan.controller.RoverAutonomoController;
-import com.pesterenan.controller.DecolagemOrbitalController;
-import com.pesterenan.controller.PousoAutomaticoController;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.io.IOException;
 
 public class GUI extends JFrame implements ActionListener, ChangeListener {
 	private static final long serialVersionUID = 6999337104582004411L;
@@ -610,12 +591,12 @@ public class GUI extends JFrame implements ActionListener, ChangeListener {
 			System.out.println("Clicou em Cancelar");
 			botCancelar.setVisible(false);
 			botIniciar.setVisible(true);
-			switch (executarModulo) {
-			case decolagemOrbital:
-				DecolagemOrbitalController.setAbortar(true);
+//			switch (executarModulo) {
+//			case decolagemOrbital:
+//				DecolagemOrbitalController.setAbortar(true);
 //			case suicideBurn:
 //				SuicideBurn.setAbortar(true);
-			}
+//			}
 			CardLayout pp = (CardLayout) (painelPrincipal.getLayout());
 			pp.show(painelPrincipal, executarModulo);
 		}
@@ -646,18 +627,18 @@ public class GUI extends JFrame implements ActionListener, ChangeListener {
 				GUI.setStatus("Os campos s� aceitam n�meros inteiros.");
 				return false;
 			}
-			if (apoastro >= 1000) {
-				DecolagemOrbitalController.setAltApoastro(apoastro);
-			} else {
-				GUI.setStatus("O apoastro tem que ser maior ou igual a 1000 metros.");
-				return false;
-			}
-			if (direcao >= 0 && direcao < 360) {
-				DecolagemOrbitalController.setDirecao(direcao);
-			} else {
-				GUI.setStatus("A direcao tem que ser um n�mero entre 0 e 359 graus.");
-				return false;
-			}
+//			if (apoastro >= 1000) {
+//				DecolagemOrbitalController.setAltApoastro(apoastro);
+//			} else {
+//				GUI.setStatus("O apoastro tem que ser maior ou igual a 1000 metros.");
+//				return false;
+//			}
+//			if (direcao >= 0 && direcao < 360) {
+//				DecolagemOrbitalController.setDirecao(direcao);
+//			} else {
+//				GUI.setStatus("A direcao tem que ser um n�mero entre 0 e 359 graus.");
+//				return false;
+//			}
 			try {
 				String[] dados = { Arquivos.DO, String.valueOf(apoastro), String.valueOf(direcao) };
 				Arquivos.gravarDadosConfig(dados);
