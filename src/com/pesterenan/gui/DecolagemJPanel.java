@@ -1,21 +1,19 @@
 package com.pesterenan.gui;
 
-import static com.pesterenan.utils.Dicionario.EXECUTAR_DECOLAGEM;
-import static com.pesterenan.utils.Dicionario.TELEMETRIA;
+import com.pesterenan.MechPeste;
+import com.pesterenan.utils.Modulo;
 
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
+import javax.swing.*;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.swing.JButton;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JTextField;
-
-import com.pesterenan.MechPeste;
+import static com.pesterenan.utils.Modulo.APOASTRO;
+import static com.pesterenan.utils.Modulo.DIRECAO;
+import static com.pesterenan.utils.Dicionario.EXECUTAR_DECOLAGEM;
+import static com.pesterenan.utils.Dicionario.TELEMETRIA;
 
 public class DecolagemJPanel extends JPanel implements ActionListener {
 
@@ -35,14 +33,14 @@ public class DecolagemJPanel extends JPanel implements ActionListener {
 
 		setLayout(new GridBagLayout());
 		GridBagConstraints gc = new GridBagConstraints();
-		
+
 		gc.gridy = 0;
 		gc.anchor = GridBagConstraints.LINE_START;
 		add(apoastroLabel, gc);
 		gc.anchor = GridBagConstraints.EAST;
 		gc.fill = GridBagConstraints.HORIZONTAL;
 		add(apoastroTextField, gc);
-		
+
 		gc.gridy = 1;
 		gc.anchor = GridBagConstraints.LINE_START;
 		add(direcaoLabel, gc);
@@ -62,10 +60,10 @@ public class DecolagemJPanel extends JPanel implements ActionListener {
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		if (e.getActionCommand().equals("Iniciar")) {
-			Map<String, String> valores = new HashMap<>();
-			valores.put("APOASTRO", apoastroTextField.getText());
-			valores.put("DIRECAO", direcaoTextField.getText());
-			MechPeste.iniciarThreadModulos(EXECUTAR_DECOLAGEM.get(), valores);
+			Map<Modulo, String> valores = new HashMap<>();
+			valores.put(APOASTRO, apoastroTextField.getText());
+			valores.put(DIRECAO, direcaoTextField.getText());
+			MechPeste.iniciarThreadModulos(EXECUTAR_DECOLAGEM, valores);
 		}
 		if (e.getActionCommand().equals("Voltar")) {
 			MainGui.getParametros().firePropertyChange(TELEMETRIA.get(), 0, 1);
