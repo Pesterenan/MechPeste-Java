@@ -26,33 +26,58 @@ public class DecolagemJPanel extends JPanel implements ActionListener {
 	private JTextField direcaoTextField = new JTextField("90");
 
 	public DecolagemJPanel() {
-		botIniciar.addActionListener(this);
-		botVoltar.addActionListener(this);
-		botIniciar.setActionCommand("Iniciar");
-		botVoltar.setActionCommand("Voltar");
 
-		setLayout(new GridBagLayout());
+		GridBagLayout gridBagLayout = new GridBagLayout();
+		gridBagLayout.columnWidths = new int[]{170, 0};
+		gridBagLayout.rowWeights = new double[]{0.0, 0.0, 1.0};
+		gridBagLayout.columnWeights = new double[]{1.0, 1.0};
+		setLayout(gridBagLayout);
 		GridBagConstraints gc = new GridBagConstraints();
+		gc.insets = new Insets(0, 0, 5, 5);
+		gc.gridx = 0;
 
 		gc.gridy = 0;
-		gc.anchor = GridBagConstraints.LINE_START;
 		add(apoastroLabel, gc);
-		gc.anchor = GridBagConstraints.EAST;
 		gc.fill = GridBagConstraints.HORIZONTAL;
-		add(apoastroTextField, gc);
+		GridBagConstraints gbc_apoastroTextField = new GridBagConstraints();
+		gbc_apoastroTextField.fill = GridBagConstraints.HORIZONTAL;
+		gbc_apoastroTextField.insets = new Insets(0, 0, 5, 0);
+		gbc_apoastroTextField.gridx = 1;
+		gbc_apoastroTextField.gridy = 0;
+		add(apoastroTextField, gbc_apoastroTextField);
 
 		gc.gridy = 1;
-		gc.anchor = GridBagConstraints.LINE_START;
-		add(direcaoLabel, gc);
-		gc.anchor = GridBagConstraints.EAST;
 		gc.fill = GridBagConstraints.HORIZONTAL;
-		add(direcaoTextField, gc);
 
 		gc.gridy = 2;
-		gc.anchor = GridBagConstraints.LINE_START;
-		add(botIniciar, gc);
-		gc.anchor = GridBagConstraints.EAST;
-		add(botVoltar, gc);
+		GridBagConstraints gbc_direcaoLabel = new GridBagConstraints();
+		gbc_direcaoLabel.insets = new Insets(0, 0, 5, 5);
+		gbc_direcaoLabel.gridx = 0;
+		gbc_direcaoLabel.gridy = 1;
+		add(direcaoLabel, gbc_direcaoLabel);
+		GridBagConstraints gbc_direcaoTextField = new GridBagConstraints();
+		gbc_direcaoTextField.fill = GridBagConstraints.HORIZONTAL;
+		gbc_direcaoTextField.insets = new Insets(0, 0, 5, 0);
+		gbc_direcaoTextField.gridx = 1;
+		gbc_direcaoTextField.gridy = 1;
+		add(direcaoTextField, gbc_direcaoTextField);
+		botIniciar.addActionListener(this);
+		botIniciar.setActionCommand("Iniciar");
+		GridBagConstraints gbc_botIniciar = new GridBagConstraints();
+		gbc_botIniciar.fill = GridBagConstraints.HORIZONTAL;
+		gbc_botIniciar.anchor = GridBagConstraints.SOUTH;
+		gbc_botIniciar.insets = new Insets(0, 0, 0, 5);
+		gbc_botIniciar.gridx = 0;
+		gbc_botIniciar.gridy = 2;
+		add(botIniciar, gbc_botIniciar);
+		botVoltar.addActionListener(this);
+		botVoltar.setActionCommand("Voltar");
+		GridBagConstraints gbc_botVoltar = new GridBagConstraints();
+		gbc_botVoltar.anchor = GridBagConstraints.SOUTH;
+		gbc_botVoltar.fill = GridBagConstraints.HORIZONTAL;
+		gbc_botVoltar.gridx = 1;
+		gbc_botVoltar.gridy = 2;
+		add(botVoltar, gbc_botVoltar);
 
 		return;
 	}

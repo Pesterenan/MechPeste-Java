@@ -1,4 +1,4 @@
-Log de erros criado na data: 16-12-21 �4 19:57:04
+Log de erros criado na data: 25-12-21 �7 02:31:07
 
 java.base/sun.nio.ch.Net.connect0(Native Method)
 java.base/sun.nio.ch.Net.connect(Net.java:493)
@@ -11,7 +11,7 @@ java.base/java.net.Socket.<init>(Socket.java:475)
 java.base/java.net.Socket.<init>(Socket.java:283)
 krpc.client.Connection.<init>(Connection.java:140)
 krpc.client.Connection.newInstance(Connection.java:56)
-com.pesterenan.MechPeste.iniciarConexao(MechPeste.java:50)
-com.pesterenan.MechPeste.<init>(MechPeste.java:38)
-com.pesterenan.MechPeste.main(MechPeste.java:33)
+com.pesterenan.MechPeste.iniciarConexao(MechPeste.java:58)
+com.pesterenan.MechPeste.<init>(MechPeste.java:46)
+com.pesterenan.MechPeste.main(MechPeste.java:41)
 
