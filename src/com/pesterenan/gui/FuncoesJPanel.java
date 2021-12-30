@@ -42,7 +42,6 @@ public class FuncoesJPanel extends JPanel implements ActionListener {
 
 		botPousoAutomatico.setEnabled(false);
 		botRoverAutonomo.setEnabled(false);
-		botExecManobras.setEnabled(false);
 
 		botDecolagem.addActionListener(this);
 		botPousoAutomatico.addActionListener(this);

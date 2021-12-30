@@ -6,7 +6,8 @@ import java.util.List;
 import org.javatuples.Triplet;
 
 import com.pesterenan.MechPeste;
-import com.pesterenan.gui.GUI;
+import com.pesterenan.gui.MainGui;
+import com.pesterenan.gui.StatusJPanel;
 import com.pesterenan.model.Nave;
 import com.pesterenan.utils.ControlePID;
 import com.pesterenan.utils.Status;
@@ -17,34 +18,62 @@ import krpc.client.StreamException;
 import krpc.client.services.SpaceCenter.Engine;
 import krpc.client.services.SpaceCenter.Node;
 
-
 public class ManobrasController extends Nave {
 
-	private Node noDeManobra;
-	private ControlePID ctrlAcel = new ControlePID();
+	public enum Altitude {
+		APOASTRO, PERIASTRO
+	}
 
-	public ManobrasController(boolean executar) throws RPCException, StreamException, IOException, InterruptedException {
+	private Node noDeManobra;
+	private ControlePID aceleracaoCtrl = new ControlePID();
+	private double parametroGravitacional;
+
+	public ManobrasController() throws RPCException {
 		super(getConexao());
-		ctrlAcel.ajustarPID(0.025, 0.01, 0.1);
-		ctrlAcel.limitarSaida(0.1, 1);
-		if (executar) {
-			executarProximaManobra();
+		aceleracaoCtrl.setAmostraTempo(25);
+		aceleracaoCtrl.ajustarPID(0.025, 0.1, 1);
+		aceleracaoCtrl.limitarSaida(0.1, 1.0);
+		parametroGravitacional = naveAtual.getOrbit().getBody().getGravitationalParameter();
+	}
+
+	public void circularizarOrbita(Altitude altitude)
+			throws RPCException, StreamException, IOException, InterruptedException {
+		double apoastroInicial = 1;
+		double semiEixoMaior = naveAtual.getOrbit().getSemiMajorAxis();
+		double apoastroAlvo = 1;
+		double tempoAteAltitude = 60.0;
+		switch (altitude) {
+		case APOASTRO:
+			apoastroInicial = naveAtual.getOrbit().getApoapsis();
+			apoastroAlvo = apoastroInicial;
+			tempoAteAltitude = naveAtual.getOrbit().getTimeToApoapsis();
+			break;
+		case PERIASTRO:
+			apoastroInicial = naveAtual.getOrbit().getPeriapsis();
+			apoastroAlvo = apoastroInicial;
+			tempoAteAltitude = naveAtual.getOrbit().getTimeToPeriapsis();
+			break;
 		}
+		double velOrbitalAtual = Math.sqrt(parametroGravitacional * ((2.0 / apoastroInicial) - (1.0 / semiEixoMaior)));
+		double velOrbitalAlvo = Math.sqrt(parametroGravitacional * ((2.0 / apoastroInicial) - (1.0 / apoastroAlvo)));
+		double deltaVdaManobra = velOrbitalAlvo - velOrbitalAtual;
+		naveAtual.getControl().addNode(centroEspacial.getUT() + tempoAteAltitude, (float) deltaVdaManobra, 0, 0);
+		executarProximaManobra();
 	}
 
 	private void executarProximaManobra() throws RPCException, StreamException, IOException, InterruptedException {
-		// Procurar se h� manobras para executar
-		GUI.setStatus("Buscando Manobras...");
+// Procurar se h� manobras para executar
+		StatusJPanel.setStatus("Buscando Manobras...");
 		try {
 			noDeManobra = naveAtual.getControl().getNodes().get(0);
 		} catch (IndexOutOfBoundsException e) {
-			GUI.setStatus("Não há Manobras disponíveis.");
+			StatusJPanel.setStatus("Não há Manobras disponíveis.");
 			System.err.println("Não há Manobras disponíveis.");
 			MechPeste.finalizarTarefa();
 		}
-		// Caso haja, calcular e executar
+// Caso haja, calcular e executar
 		if (noDeManobra != null) {
-			GUI.setParametros("altitude", noDeManobra.getDeltaV());
+			MainGui.getStatus().firePropertyChange("altitudeSup", 0, noDeManobra.getDeltaV());
 			System.out.println("DELTA-V DA MANOBRA: " + noDeManobra.getDeltaV());
 
 			double duracaoDaQueima = calcularTempoDeQueima(noDeManobra);
@@ -55,13 +84,13 @@ public class ManobrasController extends Nave {
 			naveAtual.getControl().setSAS(true);
 			naveAtual.getControl().setRCS(false);
 			noDeManobra.remove();
-			GUI.setStatus(Status.PRONTO.get());
-			
+			StatusJPanel.setStatus(Status.PRONTO.get());
+
 		}
 	}
 
 	public double calcularTempoDeQueima(Node noDeManobra) throws RPCException {
-		// Calcular tempo de queima (equa��o de foguete)
+// Calcular tempo de queima (equa��o de foguete)
 		List<Engine> motores = naveAtual.getParts().getEngines();
 		for (Engine motor : motores) {
 			if (motor.getPart().getStage() == naveAtual.getControl().getCurrentStage() && motor.getActive() == false) {
@@ -79,7 +108,7 @@ public class ManobrasController extends Nave {
 	}
 
 	public void orientarNaveParaNoDeManobra(Node noDeManobra) {
-		GUI.setStatus("Orientando nave para o nó de Manobra...");
+		StatusJPanel.setStatus("Orientando nave para o nó de Manobra...");
 		try {
 			naveAtual.getAutoPilot().setReferenceFrame(noDeManobra.getReferenceFrame());
 			naveAtual.getAutoPilot().setTargetDirection(new Triplet<Double, Double, Double>(0.0, 1.0, 0.0));
@@ -93,27 +122,27 @@ public class ManobrasController extends Nave {
 	public void executarQueima(Node noDeManobra, double duracaoDaQueima)
 			throws RPCException, InterruptedException, StreamException {
 		double inicioDaQueima = noDeManobra.getTimeTo();
-		// Caso estiver muito distante da manobra, dar Warp:
+// Caso estiver muito distante da manobra, dar Warp:
 		if (inicioDaQueima + duracaoDaQueima > 90) {
 			centroEspacial.warpTo((centroEspacial.getUT() + inicioDaQueima - duracaoDaQueima - 10), 100000, 4);
 		}
-		// Mostrar tempo de ignição:
-		GUI.setStatus("Duração da queima: " + duracaoDaQueima + " segundos.");
+// Mostrar tempo de ignição:
+		StatusJPanel.setStatus("Duração da queima: " + duracaoDaQueima + " segundos.");
 		while (inicioDaQueima > 0) {
 			inicioDaQueima = noDeManobra.getTimeTo() - (duracaoDaQueima / 2.0);
 			inicioDaQueima = inicioDaQueima > 0.0 ? inicioDaQueima : 0.0;
-			GUI.setStatus(String.format("Ignição em: %1$.1f segundos...", inicioDaQueima));
+			StatusJPanel.setStatus(String.format("Ignição em: %1$.1f segundos...", inicioDaQueima));
 			Thread.sleep(100);
 		}
-		// Executar a manobra:
+// Executar a manobra:
 		Stream<Triplet<Double, Double, Double>> queimaRestante = getConexao().addStream(noDeManobra,
 				"remainingBurnVector", noDeManobra.getReferenceFrame());
-		GUI.setStatus("Executando manobra!");
-		ctrlAcel.setLimitePID(1);
+		StatusJPanel.setStatus("Executando manobra!");
+		aceleracaoCtrl.setLimitePID(0);
 		while (noDeManobra != null) {
-			ctrlAcel.setEntradaPID(-queimaRestante.get().getValue1());
+			aceleracaoCtrl.setEntradaPID(-queimaRestante.get().getValue1() * 100 / noDeManobra.getDeltaV());
 			if (queimaRestante.get().getValue1() > 1) {
-				naveAtual.getControl().setThrottle((float) ctrlAcel.computarPID());
+				naveAtual.getControl().setThrottle((float) aceleracaoCtrl.computarPID());
 			} else {
 				naveAtual.getControl().setThrottle(0.0f);
 				queimaRestante.remove();
@@ -122,19 +151,4 @@ public class ManobrasController extends Nave {
 			Thread.sleep(25);
 		}
 	}
-
-	public Node circularizarApoastro() throws RPCException {
-		// Planejar circulariza��o usando equa��o vis-viva
-		double parGrav = naveAtual.getOrbit().getBody().getGravitationalParameter(); // parametro G do corpo
-		double apo = naveAtual.getOrbit().getApoapsis(); // apoastro da orbita
-		double sma = naveAtual.getOrbit().getSemiMajorAxis(); // semieixo da orbita
-		double apo2 = apo; // apoastro alvo
-		double v1 = Math.sqrt(parGrav * ((2.0 / apo) - (1.0 / sma))); // calculo da vel orbital atual
-		double v2 = Math.sqrt(parGrav * ((2.0 / apo) - (1.0 / apo2))); // calculo da vel orbital alvo
-		double deltaV = v2 - v1; // delta -v manobra
-		Node noDeManobra = naveAtual.getControl()
-				.addNode(centroEspacial.getUT() + naveAtual.getOrbit().getTimeToApoapsis(), (float) deltaV, 0, 0);
-		return noDeManobra;
-	}
-
 }

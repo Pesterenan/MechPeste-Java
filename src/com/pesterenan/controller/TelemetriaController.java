@@ -11,6 +11,11 @@ public class TelemetriaController extends Nave implements Runnable {
 
 	public TelemetriaController(Connection con) {
 		super(con);
+		iniciarStreams();
+
+	}
+
+	private void iniciarStreams() {
 		try {
 			parametrosDeVoo = naveAtual.flight(naveAtual.getOrbit().getBody().getReferenceFrame());
 			altitude = getConexao().addStream(parametrosDeVoo, "getMeanAltitude");
@@ -23,25 +28,21 @@ public class TelemetriaController extends Nave implements Runnable {
 			tempoMissao = getConexao().addStream(naveAtual, "getMET");
 			bateriaAtual = getConexao().addStream(naveAtual.getResources(), "amount", "ElectricCharge");
 			bateriaTotal = naveAtual.getResources().max("ElectricCharge");
-		} catch (StreamException | RPCException e) {
-			e.printStackTrace();
+		} catch (StreamException | RPCException | NullPointerException | IllegalArgumentException e) {
+			checarConexao();
 		}
-
 	}
 
 	@Override
 	public void run() {
 		while (!getConexao().equals(null)) {
 			try {
-				if (!naveAtual.equals(null)) {
-					enviarTelemetria();
-					Thread.sleep(100);
-				} else {
-					System.out.println("Aguardando reconexão...");
-					Thread.sleep(5000);
-				}
-			} catch (InterruptedException | RPCException | StreamException e) {
-				System.err.println(e.getMessage());
+				enviarTelemetria();
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
+			} catch (RPCException | StreamException | NullPointerException e) {
+				checarConexao();
+				iniciarStreams();
 			}
 		}
 	}

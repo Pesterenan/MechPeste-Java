@@ -1,7 +1,7 @@
 package com.pesterenan.gui;
 
 import com.pesterenan.MechPeste;
-import com.pesterenan.utils.Modulo;
+import com.pesterenan.utils.Modulos;
 
 import javax.swing.*;
 import java.awt.*;
@@ -10,9 +10,9 @@ import java.awt.event.ActionListener;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.pesterenan.utils.Modulo.APOASTRO;
-import static com.pesterenan.utils.Modulo.DIRECAO;
-import static com.pesterenan.utils.Dicionario.EXECUTAR_DECOLAGEM;
+import static com.pesterenan.utils.Modulos.APOASTRO;
+import static com.pesterenan.utils.Modulos.DIRECAO;
+import static com.pesterenan.utils.Modulos.EXECUTAR_DECOLAGEM;
 import static com.pesterenan.utils.Dicionario.TELEMETRIA;
 
 public class DecolagemJPanel extends JPanel implements ActionListener {
@@ -85,7 +85,7 @@ public class DecolagemJPanel extends JPanel implements ActionListener {
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		if (e.getActionCommand().equals("Iniciar")) {
-			Map<Modulo, String> valores = new HashMap<>();
+			Map<Modulos, String> valores = new HashMap<>();
 			valores.put(APOASTRO, apoastroTextField.getText());
 			valores.put(DIRECAO, direcaoTextField.getText());
 			MechPeste.iniciarThreadModulos(EXECUTAR_DECOLAGEM, valores);

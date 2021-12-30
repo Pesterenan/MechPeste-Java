@@ -1,5 +1,8 @@
 package com.pesterenan.controller;
 
+import java.io.IOException;
+
+import com.pesterenan.controller.ManobrasController.Altitude;
 import com.pesterenan.gui.StatusJPanel;
 import com.pesterenan.utils.ControlePID;
 import com.pesterenan.utils.Status;
@@ -7,6 +10,7 @@ import com.pesterenan.utils.Status;
 import krpc.client.Connection;
 import krpc.client.RPCException;
 import krpc.client.StreamException;
+import krpc.client.services.SpaceCenter.VesselSituation;
 
 public class DecolagemOrbitalController extends TelemetriaController implements Runnable {
 
@@ -26,6 +30,7 @@ public class DecolagemOrbitalController extends TelemetriaController implements 
 		super(con);
 		aceleracaoCtrl.setAmostraTempo(100);
 		aceleracaoCtrl.ajustarPID(0.05, 0.1, 1);
+		aceleracaoCtrl.limitarSaida(0.1, 1.0);
 	}
 
 	@Override
@@ -33,18 +38,26 @@ public class DecolagemOrbitalController extends TelemetriaController implements 
 		try {
 			decolagem();
 			curvaGravitacional();
+			planejarOrbita();
+			StatusJPanel.setStatus(Status.PRONTO.get());
 		} catch (Exception e) {
 			System.out.println(e.getMessage());
 		}
+	}
+
+	private void planejarOrbita() throws RPCException, StreamException, IOException, InterruptedException {
+		StatusJPanel.setStatus("Planejando Manobra de circularização...");
+		ManobrasController manobras = new ManobrasController();
+		manobras.circularizarOrbita(Altitude.APOASTRO);
+		naveAtual.getAutoPilot().disengage();
+		naveAtual.getControl().setSAS(true);
+		naveAtual.getControl().setRCS(false);
 	}
 
 	private void curvaGravitacional() throws RPCException, StreamException, InterruptedException {
 		naveAtual.getControl().setThrottle(1f);
 		naveAtual.getAutoPilot().engage();
 		naveAtual.getAutoPilot().targetPitchAndHeading(inclinacaoAtual, getDirecao());
-		// Limitar a aceleração no apoastro final
-		aceleracaoCtrl.limitarSaida(0.1, 1.0);
-
 		while (inclinacaoAtual > 1) {
 			if (altitude.get() > altInicioCurva && altitude.get() < getAltApoastroFinal()) {
 				double progresso = (altitude.get() - altInicioCurva) / (getAltApoastroFinal() - altInicioCurva);
@@ -59,27 +72,27 @@ public class DecolagemOrbitalController extends TelemetriaController implements 
 					naveAtual.getControl().setThrottle((float) aceleracaoCtrl.computarPID());
 				} else {
 					naveAtual.getControl().setThrottle(0.0f);
+					break;
 				}
 			}
 			Thread.sleep(100);
 		}
-		StatusJPanel.setStatus(Status.PRONTO.get());
-		naveAtual.getAutoPilot().disengage();
 	}
 
 	private void decolagem() throws RPCException, InterruptedException {
 		naveAtual.getControl().setSAS(true);
 		naveAtual.getControl().setThrottle(1f);
-		float contagemRegressiva = 5f;
-		while (contagemRegressiva > 0) {
-			StatusJPanel.setStatus(String.format("Lançamento em: %.1f segundos...", contagemRegressiva));
-			contagemRegressiva -= 0.1;
-			Thread.sleep(100);
+		if (naveAtual.getSituation().equals(VesselSituation.PRE_LAUNCH)) {
+			float contagemRegressiva = 5f;
+			while (contagemRegressiva > 0) {
+				StatusJPanel.setStatus(String.format("Lançamento em: %.1f segundos...", contagemRegressiva));
+				contagemRegressiva -= 0.1;
+				Thread.sleep(100);
+			}
+			StatusJPanel.setStatus("Decolagem!");
+			naveAtual.getControl().activateNextStage();
 		}
-		StatusJPanel.setStatus("Decolagem!");
-		naveAtual.getControl().activateNextStage();
 		Thread.sleep(1000);
-		StatusJPanel.setStatus(Status.PRONTO.get());
 	}
 
 	public float getDirecao() {

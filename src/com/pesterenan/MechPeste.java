@@ -2,11 +2,11 @@ package com.pesterenan;
 
 import static com.pesterenan.utils.Dicionario.CONECTAR;
 import static com.pesterenan.utils.Dicionario.ERRO_AO_CONECTAR;
-import static com.pesterenan.utils.Dicionario.EXECUTAR_DECOLAGEM;
+import static com.pesterenan.utils.Modulos.EXECUTAR_DECOLAGEM;
 import static com.pesterenan.utils.Dicionario.MECHPESTE;
 import static com.pesterenan.utils.Dicionario.TELEMETRIA;
-import static com.pesterenan.utils.Modulo.APOASTRO;
-import static com.pesterenan.utils.Modulo.DIRECAO;
+import static com.pesterenan.utils.Modulos.APOASTRO;
+import static com.pesterenan.utils.Modulos.DIRECAO;
 import static com.pesterenan.utils.Status.CONECTADO;
 import static com.pesterenan.utils.Status.CONECTANDO;
 import static com.pesterenan.utils.Status.ERRO_CONEXAO;
@@ -23,7 +23,7 @@ import com.pesterenan.gui.Arquivos;
 import com.pesterenan.gui.MainGui;
 import com.pesterenan.gui.StatusJPanel;
 import com.pesterenan.utils.Dicionario;
-import com.pesterenan.utils.Modulo;
+import com.pesterenan.utils.Modulos;
 
 import krpc.client.Connection;
 import krpc.client.RPCException;
@@ -43,9 +43,9 @@ public class MechPeste implements PropertyChangeListener {
 
 	private MechPeste() {
 		new MainGui();
-		iniciarConexao();
 		MainGui.getStatus().addPropertyChangeListener(this);
 		MainGui.getFuncoes().addPropertyChangeListener(this);
+		iniciarConexao();
 //		GUI gui = new GUI();
 //		gui.addPropertyChangeListener(this);
 //		new Arquivos();
@@ -78,9 +78,10 @@ public class MechPeste implements PropertyChangeListener {
 		getThreadTelemetria().start();
 	}
 
-	public static void iniciarThreadModulos(Dicionario modulo, Map<Modulo, String> valores) {
+	public static void iniciarThreadModulos(Modulos modulo, Map<Modulos, String> valores) {
 		if (modulo.equals(EXECUTAR_DECOLAGEM)) {
 			if (validarDecolagem(valores)) {
+				StatusJPanel.setStatus(STATUS_DECOLAGEM_ORBITAL.get());
 				MainGui.getParametros().firePropertyChange(TELEMETRIA.get(), 0, 1);
 				decolagemOrbitalCtrl = new DecolagemOrbitalController(getConexao());
 				decolagemOrbitalCtrl.setAltApoastroFinal(Float.parseFloat(valores.get(APOASTRO)));
@@ -91,7 +92,7 @@ public class MechPeste implements PropertyChangeListener {
 		}
 	}
 
-	private static boolean validarDecolagem(Map<Modulo, String> valores) {
+	private static boolean validarDecolagem(Map<Modulos, String> valores) {
 		try {
 			Float.parseFloat(valores.get(APOASTRO));
 			Float.parseFloat(valores.get(DIRECAO));
@@ -107,9 +108,6 @@ public class MechPeste implements PropertyChangeListener {
 		String evtNomeProp = evt.getPropertyName();
 		if (evtNomeProp.equals(CONECTAR.get())) {
 			iniciarConexao();
-		}
-		if (evtNomeProp.equals(EXECUTAR_DECOLAGEM.get())) {
-			StatusJPanel.setStatus(STATUS_DECOLAGEM_ORBITAL.get());
 		}
 
 //		if (getThreadModulos() == null) {
