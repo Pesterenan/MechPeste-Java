@@ -3,6 +3,7 @@ package com.pesterenan;
 import static com.pesterenan.utils.Dicionario.CONECTAR;
 import static com.pesterenan.utils.Dicionario.ERRO_AO_CONECTAR;
 import static com.pesterenan.utils.Modulos.EXECUTAR_DECOLAGEM;
+import static com.pesterenan.utils.Modulos.EXECUTAR_MANOBRA;
 import static com.pesterenan.utils.Dicionario.MECHPESTE;
 import static com.pesterenan.utils.Dicionario.TELEMETRIA;
 import static com.pesterenan.utils.Modulos.APOASTRO;
@@ -15,9 +16,11 @@ import static com.pesterenan.utils.Status.STATUS_DECOLAGEM_ORBITAL;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
 import com.pesterenan.controller.DecolagemOrbitalController;
+import com.pesterenan.controller.ManobrasController;
 import com.pesterenan.controller.TelemetriaController;
 import com.pesterenan.gui.Arquivos;
 import com.pesterenan.gui.MainGui;
@@ -36,6 +39,7 @@ public class MechPeste implements PropertyChangeListener {
 	private static Thread threadTelemetria;
 	private static TelemetriaController telemetriaCtrl;
 	private static DecolagemOrbitalController decolagemOrbitalCtrl;
+	private static ManobrasController manobrasCtrl;
 
 	public static void main(String[] args) throws StreamException, RPCException, IOException, InterruptedException {
 		new MechPeste();
@@ -46,8 +50,6 @@ public class MechPeste implements PropertyChangeListener {
 		MainGui.getStatus().addPropertyChangeListener(this);
 		MainGui.getFuncoes().addPropertyChangeListener(this);
 		iniciarConexao();
-//		GUI gui = new GUI();
-//		gui.addPropertyChangeListener(this);
 //		new Arquivos();
 	}
 
@@ -78,6 +80,11 @@ public class MechPeste implements PropertyChangeListener {
 		getThreadTelemetria().start();
 	}
 
+	public static void iniciarThreadModulos(Modulos modulo) {
+		Map<Modulos, String> valores = new HashMap<>();
+		iniciarThreadModulos(modulo, valores);
+	}
+
 	public static void iniciarThreadModulos(Modulos modulo, Map<Modulos, String> valores) {
 		if (modulo.equals(EXECUTAR_DECOLAGEM)) {
 			if (validarDecolagem(valores)) {
@@ -88,6 +95,16 @@ public class MechPeste implements PropertyChangeListener {
 				decolagemOrbitalCtrl.setDirecao(Float.parseFloat(valores.get(DIRECAO)));
 				setThreadModulos(new Thread(decolagemOrbitalCtrl));
 				getThreadModulos().start();
+			}
+		}
+		if (modulo.equals(EXECUTAR_MANOBRA)) {
+			try {
+				MainGui.getParametros().firePropertyChange(TELEMETRIA.get(), 0, 1);
+				manobrasCtrl = new ManobrasController();
+				manobrasCtrl.setFuncao(valores.get(EXECUTAR_MANOBRA));
+				setThreadModulos(new Thread(manobrasCtrl));
+				getThreadModulos().start();
+			} catch (RPCException e) {
 			}
 		}
 	}
@@ -109,56 +126,6 @@ public class MechPeste implements PropertyChangeListener {
 		if (evtNomeProp.equals(CONECTAR.get())) {
 			iniciarConexao();
 		}
-
-//		if (getThreadModulos() == null) {
-//			iniciarConexao();
-//			setThreadModulos(new Thread(new Runnable() {
-//				public void run() {
-//					naveAtual = new Nave(getConexao());
-//					try {
-//						switch (Dicionario.valueOf(evt.getPropertyName())) {
-//						case DECOLAGEM_ORBITAL:
-//							naveAtual.decolagemOrbital();
-//							break;
-//						case POUSO_AUTOMATICO:
-//							StatusJPanel.setStatus(EXEC_POUSO_AUTO.get());
-//							naveAtual.suicideBurn();
-//							break;
-//						case ROVER_AUTONOMO:
-//							StatusJPanel.setStatus(EXEC_ROVER.get());
-//							new RoverAutonomoController(getConexao());
-//							naveAtual.autoRover();
-//							break;
-//						case MANOBRAS:
-//							StatusJPanel.setStatus(EXEC_MANOBRAS.get());
-//							new ManobrasController(true);
-//							naveAtual.manobras();
-//							break;
-//						default:
-//							break;
-//						}
-//					} catch (Exception e) {
-//						try {
-//							Arquivos.criarLogDeErros(e.getStackTrace());
-//						} catch (IOException e1) {
-//						}
-//						e.printStackTrace();
-//						StatusJPanel.setStatus(ERRO_DECOLAGEM_ORBITAL.get());
-//						GUI.botConectarVisivel(true);
-//						setThreadModulos(null);
-//					} finally {
-//						StatusJPanel.setStatus(PRONTO.get());
-//						try {
-//							finalizarTarefa();
-//						} catch (IOException e) {
-//							System.err.println("Deu erro! :D " + e.getMessage());
-//						}
-//					}
-//				}
-//			}));
-//			getThreadModulos().start();
-//
-//		}
 	}
 
 	public static void finalizarTarefa() throws IOException {

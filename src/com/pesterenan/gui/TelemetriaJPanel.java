@@ -23,6 +23,7 @@ public class TelemetriaJPanel extends JPanel implements PropertyChangeListener {
 	private JLabel velHValorLabel = new JLabel("");
 	private JLabel bateriaValorLabel = new JLabel("");
 	private JLabel tempoValorLabel = new JLabel("");
+	private JLabel estagioValorLabel = new JLabel("");
 
 	public TelemetriaJPanel() {
 
@@ -34,6 +35,7 @@ public class TelemetriaJPanel extends JPanel implements PropertyChangeListener {
 		JLabel velHLabel = new JLabel("Vel. Horizontal:");
 		JLabel bateriaLabel = new JLabel("Bateria: ");
 		JLabel tempoLabel = new JLabel("Tempo de Missão: ");
+		JLabel estagioLabel = new JLabel("Estágio Atual: ");
 		addPropertyChangeListener(this);
 		setLayout(new GridBagLayout());
 		GridBagConstraints gc = new GridBagConstraints();
@@ -49,6 +51,7 @@ public class TelemetriaJPanel extends JPanel implements PropertyChangeListener {
 		add(velHLabel, gc);
 		add(bateriaLabel, gc);
 		add(tempoLabel, gc);
+		add(estagioLabel, gc);
 		gc.weightx = 1;
 		gc.gridx = 1;
 		gc.anchor = GridBagConstraints.EAST;
@@ -60,6 +63,7 @@ public class TelemetriaJPanel extends JPanel implements PropertyChangeListener {
 		add(velHValorLabel, gc);
 		add(bateriaValorLabel, gc);
 		add(tempoValorLabel, gc);
+		add(estagioValorLabel, gc);
 		gc.weighty = 0.8;
 		add(new JPanel(), gc);
 		return;
@@ -105,6 +109,9 @@ public class TelemetriaJPanel extends JPanel implements PropertyChangeListener {
 			int minutosTr = (segTotaisTr % 3600) / 60;
 			int segundosTr = segTotaisTr % 60;
 			tempoValorLabel.setText(String.format("%02d:%02d:%02d", horasTr, minutosTr, segundosTr));
+			break;
+		case "estagio":
+			estagioValorLabel.setText(String.format("%.1f", evt.getNewValue()));
 			break;
 		}
 	}

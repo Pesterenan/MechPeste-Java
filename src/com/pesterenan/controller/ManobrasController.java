@@ -18,7 +18,7 @@ import krpc.client.StreamException;
 import krpc.client.services.SpaceCenter.Engine;
 import krpc.client.services.SpaceCenter.Node;
 
-public class ManobrasController extends Nave {
+public class ManobrasController extends Nave implements Runnable{
 
 	public enum Altitude {
 		APOASTRO, PERIASTRO
@@ -27,6 +27,7 @@ public class ManobrasController extends Nave {
 	private Node noDeManobra;
 	private ControlePID aceleracaoCtrl = new ControlePID();
 	private double parametroGravitacional;
+	private String funcao;
 
 	public ManobrasController() throws RPCException {
 		super(getConexao());
@@ -36,6 +37,16 @@ public class ManobrasController extends Nave {
 		parametroGravitacional = naveAtual.getOrbit().getBody().getGravitationalParameter();
 	}
 
+	@Override
+	public void run() {
+		if (this.funcao.equals("Executar")) {
+			try {
+				executarProximaManobra();
+			} catch (RPCException | StreamException | IOException | InterruptedException e) {
+			}
+		}
+	}
+	
 	public void circularizarOrbita(Altitude altitude)
 			throws RPCException, StreamException, IOException, InterruptedException {
 		double apoastroInicial = 1;
@@ -57,11 +68,15 @@ public class ManobrasController extends Nave {
 		double velOrbitalAtual = Math.sqrt(parametroGravitacional * ((2.0 / apoastroInicial) - (1.0 / semiEixoMaior)));
 		double velOrbitalAlvo = Math.sqrt(parametroGravitacional * ((2.0 / apoastroInicial) - (1.0 / apoastroAlvo)));
 		double deltaVdaManobra = velOrbitalAlvo - velOrbitalAtual;
-		naveAtual.getControl().addNode(centroEspacial.getUT() + tempoAteAltitude, (float) deltaVdaManobra, 0, 0);
-		executarProximaManobra();
+		try {
+			naveAtual.getControl().addNode(centroEspacial.getUT() + tempoAteAltitude, (float) deltaVdaManobra, 0, 0);
+			executarProximaManobra();
+		} catch (Exception e) {
+			StatusJPanel.setStatus("Não foi possível criar a manobra.");
+		}
 	}
 
-	private void executarProximaManobra() throws RPCException, StreamException, IOException, InterruptedException {
+	public void executarProximaManobra() throws RPCException, StreamException, IOException, InterruptedException {
 // Procurar se h� manobras para executar
 		StatusJPanel.setStatus("Buscando Manobras...");
 		try {
@@ -69,7 +84,6 @@ public class ManobrasController extends Nave {
 		} catch (IndexOutOfBoundsException e) {
 			StatusJPanel.setStatus("Não há Manobras disponíveis.");
 			System.err.println("Não há Manobras disponíveis.");
-			MechPeste.finalizarTarefa();
 		}
 // Caso haja, calcular e executar
 		if (noDeManobra != null) {
@@ -151,4 +165,10 @@ public class ManobrasController extends Nave {
 			Thread.sleep(25);
 		}
 	}
+
+	public void setFuncao(String funcao) {
+		this.funcao = funcao;
+	}
+
+	
 }
