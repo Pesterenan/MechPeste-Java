@@ -97,7 +97,7 @@ public class ManobrasJPanel extends JPanel implements ActionListener {
 		if (e.getSource().equals(botExecutarManobra)) {
 			Map<Modulos, String> valores = new HashMap<>();
 			valores.put(Modulos.EXECUTAR_MANOBRA, "Executar");
-			MechPeste.iniciarThreadModulos(Modulos.EXECUTAR_MANOBRA, valores);
+			MechPeste.iniciarModulo(Modulos.EXECUTAR_MANOBRA, valores);
 		}
 
 	}

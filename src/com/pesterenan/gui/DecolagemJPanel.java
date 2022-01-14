@@ -88,7 +88,7 @@ public class DecolagemJPanel extends JPanel implements ActionListener {
 			Map<Modulos, String> valores = new HashMap<>();
 			valores.put(APOASTRO, apoastroTextField.getText());
 			valores.put(DIRECAO, direcaoTextField.getText());
-			MechPeste.iniciarThreadModulos(EXECUTAR_DECOLAGEM, valores);
+			MechPeste.iniciarModulo(EXECUTAR_DECOLAGEM, valores);
 		}
 		if (e.getActionCommand().equals("Voltar")) {
 			MainGui.getParametros().firePropertyChange(TELEMETRIA.get(), 0, 1);

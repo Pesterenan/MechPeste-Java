@@ -9,6 +9,8 @@ import javax.swing.WindowConstants;
 
 public class MainGui extends JFrame {
 
+	private static MainGui mainGui = null;
+	
 	private static final long serialVersionUID = 1L;
 
 	private final Dimension tamanhoApp = new Dimension(450, 250);
@@ -16,7 +18,7 @@ public class MainGui extends JFrame {
 	private static JPanel funcoes = new FuncoesJPanel();
 	private static JPanel status = new StatusJPanel();
 
-	public MainGui() {
+	private MainGui() {
 		setLocation(100, 100);
 		setMinimumSize(tamanhoApp);
 		add(funcoes, BorderLayout.WEST);
@@ -27,6 +29,13 @@ public class MainGui extends JFrame {
 		setResizable(false);
 		pack();
 		setVisible(true);
+	}
+	
+	public static MainGui getInstance() {
+		if (mainGui == null) {
+			mainGui = new MainGui();
+		}
+		return mainGui;
 	}
 
 	public static JPanel getParametros() {

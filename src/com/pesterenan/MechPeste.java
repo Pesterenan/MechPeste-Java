@@ -34,6 +34,8 @@ import krpc.client.StreamException;
 
 public class MechPeste implements PropertyChangeListener {
 
+	private static MechPeste mechPeste = null;
+
 	private static Connection conexao;
 	private static Thread threadModulos;
 	private static Thread threadTelemetria;
@@ -42,22 +44,29 @@ public class MechPeste implements PropertyChangeListener {
 	private static ManobrasController manobrasCtrl;
 
 	public static void main(String[] args) throws StreamException, RPCException, IOException, InterruptedException {
-		new MechPeste();
+		MechPeste.getInstance();
 	}
 
 	private MechPeste() {
-		new MainGui();
+		MainGui.getInstance();
 		MainGui.getStatus().addPropertyChangeListener(this);
 		MainGui.getFuncoes().addPropertyChangeListener(this);
 		iniciarConexao();
 //		new Arquivos();
 	}
 
+	public static MechPeste getInstance() {
+		if (mechPeste == null) {
+			mechPeste = new MechPeste();
+		}
+		return mechPeste;
+	}
+
 	public void iniciarConexao() {
-		StatusJPanel.setStatus(CONECTANDO.get());
 		if (getConexao() == null) {
 			try {
-				setConexao(Connection.newInstance(MECHPESTE.get()));
+				StatusJPanel.setStatus(CONECTANDO.get());
+				MechPeste.conexao = Connection.newInstance(MECHPESTE.get());
 				StatusJPanel.setStatus(CONECTADO.get());
 				StatusJPanel.botConectarVisivel(false);
 				iniciarTelemetria();
@@ -80,12 +89,12 @@ public class MechPeste implements PropertyChangeListener {
 		getThreadTelemetria().start();
 	}
 
-	public static void iniciarThreadModulos(Modulos modulo) {
+	public static void iniciarModulo(Modulos modulo) {
 		Map<Modulos, String> valores = new HashMap<>();
-		iniciarThreadModulos(modulo, valores);
+		iniciarModulo(modulo, valores);
 	}
 
-	public static void iniciarThreadModulos(Modulos modulo, Map<Modulos, String> valores) {
+	public static void iniciarModulo(Modulos modulo, Map<Modulos, String> valores) {
 		if (modulo.equals(EXECUTAR_DECOLAGEM)) {
 			if (validarDecolagem(valores)) {
 				StatusJPanel.setStatus(STATUS_DECOLAGEM_ORBITAL.get());
@@ -139,10 +148,6 @@ public class MechPeste implements PropertyChangeListener {
 		return conexao;
 	}
 
-	private static void setConexao(Connection conexao) {
-		MechPeste.conexao = conexao;
-	}
-
 	private static Thread getThreadModulos() {
 		return threadModulos;
 	}
@@ -158,9 +163,4 @@ public class MechPeste implements PropertyChangeListener {
 	private static void setThreadTelemetria(Thread threadTelemetria) {
 		MechPeste.threadTelemetria = threadTelemetria;
 	}
-
-	public MechPeste get() {
-		return this;
-	}
-
 }
