@@ -2,13 +2,15 @@ package com.pesterenan.controller;
 
 import java.io.IOException;
 
-import com.pesterenan.controller.ManobrasController.Altitude;
+import com.pesterenan.controller.ManobrasController.Manobras;
+import com.pesterenan.gui.MainGui;
 import com.pesterenan.gui.StatusJPanel;
 import com.pesterenan.utils.ControlePID;
 import com.pesterenan.utils.Status;
 
 import krpc.client.Connection;
 import krpc.client.RPCException;
+import krpc.client.Stream;
 import krpc.client.StreamException;
 import krpc.client.services.SpaceCenter.VesselSituation;
 
@@ -24,10 +26,11 @@ public class DecolagemOrbitalController extends TelemetriaController implements 
 	private float altApoastroFinal = 80000;
 	private float inclinacaoAtual = 90;
 	private float direcao = 90;
-	private final ControlePID aceleracaoCtrl = new ControlePID();
+	private final ControlePID aceleracaoCtrl;
 
 	public DecolagemOrbitalController(Connection con) {
 		super(con);
+		aceleracaoCtrl = new ControlePID();
 		aceleracaoCtrl.setAmostraTempo(100);
 		aceleracaoCtrl.ajustarPID(0.05, 0.1, 1);
 		aceleracaoCtrl.limitarSaida(0.1, 1.0);
@@ -48,7 +51,7 @@ public class DecolagemOrbitalController extends TelemetriaController implements 
 	private void planejarOrbita() throws RPCException, StreamException, IOException, InterruptedException {
 		StatusJPanel.setStatus("Planejando Manobra de circularização...");
 		ManobrasController manobras = new ManobrasController();
-		manobras.circularizarOrbita(Altitude.APOASTRO);
+		manobras.circularizarOrbita(Manobras.APOASTRO);
 		naveAtual.getAutoPilot().disengage();
 		naveAtual.getControl().setSAS(true);
 		naveAtual.getControl().setRCS(false);
@@ -74,10 +77,17 @@ public class DecolagemOrbitalController extends TelemetriaController implements 
 					acelerar(0.0f);
 					break;
 				}
+				checarCombustivel();
 			}
 			
 			Thread.sleep(100);
 		}
+	}
+
+	private void checarCombustivel() throws RPCException, StreamException {
+		float combustivel = naveAtual.resourcesInDecoupleStage(
+				naveAtual.getControl().getCurrentStage(), false).amount("LiquidFuel");
+		MainGui.getParametros().getComponent(0).firePropertyChange("estagio", -1.0, combustivel);
 	}
 
 	private void acelerar(float acel) throws RPCException {

@@ -70,23 +70,40 @@ public class TelemetriaJPanel extends JPanel implements PropertyChangeListener {
 
 	}
 
+	private String converterMetros(Object obj) {
+		Double metros = Math.abs((double) obj);
+		String casasDecimais = "%.2f";
+		if ((double) obj < 0d) {
+			return new String(String.format(casasDecimais + "m", 0d));
+		}
+		if (metros > 1000000000) {
+			return String.format(casasDecimais + "Gm", metros / 1000000000);
+		} else if (metros > 1000000) {
+			return String.format(casasDecimais + "Mm", metros / 1000000);
+		} else if (metros > 1000) {
+			return String.format(casasDecimais + "km", metros / 1000);
+		} else {
+			return new String(String.format(casasDecimais + "m", metros));
+		}
+	}
+
 	@Override
 	public void propertyChange(PropertyChangeEvent evt) {
 		switch (evt.getPropertyName()) {
 		case "altitude":
-			altitudeValorLabel.setText(String.format("%,.1f", evt.getNewValue()) + "m");
+			altitudeValorLabel.setText(converterMetros(evt.getNewValue()));
 			break;
 		case "altitudeSup":
-			altitudeSupValorLabel.setText(String.format("%,.1f", evt.getNewValue()) + "m");
+			altitudeSupValorLabel.setText(converterMetros(evt.getNewValue()));
 			break;
 		case "bateria":
 			bateriaValorLabel.setText(String.format("%.0f", evt.getNewValue()) + "%");
 			break;
 		case "apoastro":
-			apoastroValorLabel.setText(String.format("%,.1f", evt.getNewValue()) + "m");
+			apoastroValorLabel.setText(converterMetros(evt.getNewValue()));
 			break;
 		case "periastro":
-			periastroValorLabel.setText(String.format("%,.1f", evt.getNewValue()) + "m");
+			periastroValorLabel.setText(converterMetros(evt.getNewValue()));
 			break;
 		case "tempoMissao":
 			Double tempoDouble = (Double) evt.getNewValue();
@@ -94,8 +111,7 @@ public class TelemetriaJPanel extends JPanel implements PropertyChangeListener {
 			int horasTdm = segTotaisTdm / 3600;
 			int minutosTdm = (segTotaisTdm % 3600) / 60;
 			int segundosTdm = segTotaisTdm % 60;
-			tempoValorLabel
-					.setText(String.format("%02d:%02d:%02d", horasTdm, minutosTdm, segundosTdm));
+			tempoValorLabel.setText(String.format("%02d:%02d:%02d", horasTdm, minutosTdm, segundosTdm));
 			break;
 		case "velVertical":
 			velVValorLabel.setText(String.format("%,.1f", evt.getNewValue()) + "m/s");

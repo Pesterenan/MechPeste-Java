@@ -57,8 +57,7 @@ public class TelemetriaController extends Nave implements Runnable {
 		MainGui.getParametros().getComponent(0).firePropertyChange("velHorizontal", 0.0, velHorizontal.get());
 		MainGui.getParametros().getComponent(0).firePropertyChange("bateria", 0.0, porcentagemCarga);
 		MainGui.getParametros().getComponent(0).firePropertyChange("tempoMissao", 0.0, tempoMissao.get());
-		MainGui.getParametros().getComponent(0).firePropertyChange("estagio", -1.0,
-				naveAtual.getControl().getCurrentStage());
+		
 	}
 
 }

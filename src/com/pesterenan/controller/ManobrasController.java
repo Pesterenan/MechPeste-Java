@@ -20,8 +20,8 @@ import krpc.client.services.SpaceCenter.Node;
 
 public class ManobrasController extends Nave implements Runnable{
 
-	public enum Altitude {
-		APOASTRO, PERIASTRO
+	public enum Manobras {
+		APOASTRO, PERIASTRO, EXECUTAR, AJUSTAR
 	}
 
 	private Node noDeManobra;
@@ -47,7 +47,7 @@ public class ManobrasController extends Nave implements Runnable{
 		}
 	}
 	
-	public void circularizarOrbita(Altitude altitude)
+	public void circularizarOrbita(Manobras altitude)
 			throws RPCException, StreamException, IOException, InterruptedException {
 		double apoastroInicial = 1;
 		double semiEixoMaior = naveAtual.getOrbit().getSemiMajorAxis();
