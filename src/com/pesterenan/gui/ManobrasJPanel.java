@@ -45,7 +45,7 @@ public class ManobrasJPanel extends JPanel implements ActionListener {
 		gbc_btnExecutar.gridy = 0;
 		add(btnExecutar, gbc_btnExecutar);
 		btnExecutar.addActionListener(this);
-		btnExecutar.setActionCommand("Executar");
+		btnExecutar.setActionCommand(Modulos.EXECUTAR.get());
 		
 		GridBagConstraints gbc_lblCircularizar = new GridBagConstraints();
 		gbc_lblCircularizar.anchor = GridBagConstraints.WEST;
@@ -60,7 +60,7 @@ public class ManobrasJPanel extends JPanel implements ActionListener {
 		gbc_btnApoastro.gridy = 1;
 		add(btnApoastro, gbc_btnApoastro);
 		btnApoastro.addActionListener(this);
-		btnApoastro.setActionCommand("Apoastro");
+		btnApoastro.setActionCommand(Modulos.APOASTRO.get());
 		
 		GridBagConstraints gbc_btnPeriastro = new GridBagConstraints();
 		gbc_btnPeriastro.fill = GridBagConstraints.HORIZONTAL;
@@ -69,7 +69,7 @@ public class ManobrasJPanel extends JPanel implements ActionListener {
 		gbc_btnPeriastro.gridy = 2;
 		add(btnPeriastro, gbc_btnPeriastro);
 		btnPeriastro.addActionListener(this);
-		btnPeriastro.setActionCommand("Periastro");
+		btnPeriastro.setActionCommand(Modulos.PERIASTRO.get());
 		
 		GridBagConstraints gbc_lblAjustar = new GridBagConstraints();
 		gbc_lblAjustar.anchor = GridBagConstraints.WEST;
@@ -84,16 +84,18 @@ public class ManobrasJPanel extends JPanel implements ActionListener {
 		gbc_btnAjustar.gridy = 3;
 		add(btnAjustar, gbc_btnAjustar);
 		btnAjustar.addActionListener(this);
-		btnAjustar.setActionCommand("Ajustar");
+		btnAjustar.setActionCommand(Modulos.AJUSTAR.get());
+		btnAjustar.setEnabled(false);
 		
 	}
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		String evtComando = e.getActionCommand();
-		Map<Modulos, String> valores = new HashMap<>();
-		valores.put(Modulos.EXECUTAR_MANOBRA, evtComando);
-		MechPeste.iniciarModulo(Modulos.EXECUTAR_MANOBRA, valores);
+		Map<String, String> comandos = new HashMap<>();
+		comandos.put(Modulos.MODULO.get(),Modulos.MODULO_MANOBRAS.get());
+		comandos.put(Modulos.FUNCAO.get(),evtComando);
+		MechPeste.iniciarModulo(comandos);
 	}
 
 }

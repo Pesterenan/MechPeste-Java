@@ -1,16 +1,18 @@
 package com.pesterenan.controller;
 
-import java.io.IOException;
+import static com.pesterenan.utils.Status.STATUS_DECOLAGEM_ORBITAL;
 
-import com.pesterenan.controller.ManobrasController.Manobras;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
+import com.pesterenan.MechPeste;
 import com.pesterenan.gui.MainGui;
 import com.pesterenan.gui.StatusJPanel;
 import com.pesterenan.utils.ControlePID;
-import com.pesterenan.utils.Status;
+import com.pesterenan.utils.Modulos;
 
-import krpc.client.Connection;
 import krpc.client.RPCException;
-import krpc.client.Stream;
 import krpc.client.StreamException;
 import krpc.client.services.SpaceCenter.VesselSituation;
 
@@ -28,8 +30,11 @@ public class DecolagemOrbitalController extends TelemetriaController implements 
 	private float direcao = 90;
 	private final ControlePID aceleracaoCtrl;
 
-	public DecolagemOrbitalController(Connection con) {
-		super(con);
+	public DecolagemOrbitalController(Map<String, String> comandos) {
+		super(getConexao());
+		StatusJPanel.setStatus(STATUS_DECOLAGEM_ORBITAL.get());
+		setAltApoastroFinal(Float.parseFloat(comandos.get(Modulos.APOASTRO.get())));
+		setDirecao(Float.parseFloat(comandos.get(Modulos.DIRECAO.get())));
 		aceleracaoCtrl = new ControlePID();
 		aceleracaoCtrl.setAmostraTempo(100);
 		aceleracaoCtrl.ajustarPID(0.05, 0.1, 1);
@@ -42,7 +47,6 @@ public class DecolagemOrbitalController extends TelemetriaController implements 
 			decolagem();
 			curvaGravitacional();
 			planejarOrbita();
-			StatusJPanel.setStatus(Status.PRONTO.get());
 		} catch (Exception e) {
 			System.out.println(e.getMessage());
 		}
@@ -50,11 +54,13 @@ public class DecolagemOrbitalController extends TelemetriaController implements 
 
 	private void planejarOrbita() throws RPCException, StreamException, IOException, InterruptedException {
 		StatusJPanel.setStatus("Planejando Manobra de circularização...");
-		ManobrasController manobras = new ManobrasController();
-		manobras.circularizarOrbita(Manobras.APOASTRO);
 		naveAtual.getAutoPilot().disengage();
 		naveAtual.getControl().setSAS(true);
 		naveAtual.getControl().setRCS(false);
+		Map<String, String> comandos = new HashMap<>();
+		comandos.put(Modulos.MODULO.get(), Modulos.MODULO_MANOBRAS.get());
+		comandos.put(Modulos.FUNCAO.get(), Modulos.APOASTRO.get());
+		MechPeste.iniciarModulo(comandos);
 	}
 
 	private void curvaGravitacional() throws RPCException, StreamException, InterruptedException {
@@ -79,14 +85,14 @@ public class DecolagemOrbitalController extends TelemetriaController implements 
 				}
 				checarCombustivel();
 			}
-			
+
 			Thread.sleep(100);
 		}
 	}
 
 	private void checarCombustivel() throws RPCException, StreamException {
-		float combustivel = naveAtual.resourcesInDecoupleStage(
-				naveAtual.getControl().getCurrentStage(), false).amount("LiquidFuel");
+		float combustivel = naveAtual.resourcesInDecoupleStage(naveAtual.getControl().getCurrentStage(), false)
+				.amount("LiquidFuel");
 		MainGui.getParametros().getComponent(0).firePropertyChange("estagio", -1.0, combustivel);
 	}
 

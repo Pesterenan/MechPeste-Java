@@ -10,6 +10,7 @@ import com.pesterenan.gui.MainGui;
 import com.pesterenan.gui.StatusJPanel;
 import com.pesterenan.model.Nave;
 import com.pesterenan.utils.ControlePID;
+import com.pesterenan.utils.Modulos;
 import com.pesterenan.utils.Status;
 
 import krpc.client.RPCException;
@@ -18,74 +19,69 @@ import krpc.client.StreamException;
 import krpc.client.services.SpaceCenter.Engine;
 import krpc.client.services.SpaceCenter.Node;
 
-public class ManobrasController extends Nave implements Runnable{
-
-	public enum Manobras {
-		APOASTRO, PERIASTRO, EXECUTAR, AJUSTAR
-	}
+public class ManobrasController extends TelemetriaController implements Runnable {
 
 	private Node noDeManobra;
+	public final static float CONST_GRAV = 9.81f;
 	private ControlePID aceleracaoCtrl = new ControlePID();
 	private double parametroGravitacional;
 	private String funcao;
 
-	public ManobrasController() throws RPCException {
+	public ManobrasController(String funcao) {
 		super(getConexao());
+		this.funcao = funcao;
 		aceleracaoCtrl.setAmostraTempo(25);
 		aceleracaoCtrl.ajustarPID(0.025, 0.1, 1);
 		aceleracaoCtrl.limitarSaida(0.1, 1.0);
-		parametroGravitacional = naveAtual.getOrbit().getBody().getGravitationalParameter();
 	}
 
 	@Override
 	public void run() {
-		if (this.funcao.equals("Executar")) {
-			try {
-				executarProximaManobra();
-			} catch (RPCException | StreamException | IOException | InterruptedException e) {
-			}
+		try {
+			calcularManobra();
+			executarProximaManobra();
+		} catch (RPCException | StreamException | IOException | InterruptedException e) {
 		}
 	}
-	
-	public void circularizarOrbita(Manobras altitude)
-			throws RPCException, StreamException, IOException, InterruptedException {
-		double apoastroInicial = 1;
-		double semiEixoMaior = naveAtual.getOrbit().getSemiMajorAxis();
-		double apoastroAlvo = 1;
-		double tempoAteAltitude = 60.0;
-		switch (altitude) {
-		case APOASTRO:
-			apoastroInicial = naveAtual.getOrbit().getApoapsis();
-			apoastroAlvo = apoastroInicial;
+
+	public void calcularManobra() throws RPCException {
+		if (this.funcao.equals(Modulos.EXECUTAR.get()))
+			return;
+		parametroGravitacional = naveAtual.getOrbit().getBody().getGravitationalParameter();
+		double altitudeInicial = 0, tempoAteAltitude = 0;
+		if (this.funcao.equals(Modulos.APOASTRO.get())) {
+			altitudeInicial = naveAtual.getOrbit().getApoapsis();
 			tempoAteAltitude = naveAtual.getOrbit().getTimeToApoapsis();
-			break;
-		case PERIASTRO:
-			apoastroInicial = naveAtual.getOrbit().getPeriapsis();
-			apoastroAlvo = apoastroInicial;
-			tempoAteAltitude = naveAtual.getOrbit().getTimeToPeriapsis();
-			break;
 		}
-		double velOrbitalAtual = Math.sqrt(parametroGravitacional * ((2.0 / apoastroInicial) - (1.0 / semiEixoMaior)));
-		double velOrbitalAlvo = Math.sqrt(parametroGravitacional * ((2.0 / apoastroInicial) - (1.0 / apoastroAlvo)));
+		if (this.funcao.equals(Modulos.PERIASTRO.get())) {
+			altitudeInicial = naveAtual.getOrbit().getPeriapsis();
+			tempoAteAltitude = naveAtual.getOrbit().getTimeToPeriapsis();
+		}
+
+		double semiEixoMaior = naveAtual.getOrbit().getSemiMajorAxis();
+		double velOrbitalAtual = Math.sqrt(parametroGravitacional * ((2.0 / altitudeInicial) - (1.0 / semiEixoMaior)));
+		double velOrbitalAlvo = Math.sqrt(parametroGravitacional * ((2.0 / altitudeInicial) - (1.0 / altitudeInicial)));
 		double deltaVdaManobra = velOrbitalAlvo - velOrbitalAtual;
+		double[] deltaV = { deltaVdaManobra, 0, 0 };
+		criarManobra(tempoAteAltitude, deltaV);
+	}
+
+	private void criarManobra(double tempoPosterior, double[] deltaV) {
 		try {
-			naveAtual.getControl().addNode(centroEspacial.getUT() + tempoAteAltitude, (float) deltaVdaManobra, 0, 0);
-			executarProximaManobra();
-		} catch (Exception e) {
+			naveAtual.getControl().addNode(centroEspacial.getUT() + tempoPosterior, (float) deltaV[0],
+					(float) deltaV[1], (float) deltaV[2]);
+		} catch (RPCException e) {
 			StatusJPanel.setStatus("Não foi possível criar a manobra.");
 		}
 	}
 
 	public void executarProximaManobra() throws RPCException, StreamException, IOException, InterruptedException {
-// Procurar se h� manobras para executar
 		StatusJPanel.setStatus("Buscando Manobras...");
 		try {
 			noDeManobra = naveAtual.getControl().getNodes().get(0);
 		} catch (IndexOutOfBoundsException e) {
 			StatusJPanel.setStatus("Não há Manobras disponíveis.");
-			System.err.println("Não há Manobras disponíveis.");
 		}
-// Caso haja, calcular e executar
 		if (noDeManobra != null) {
 			MainGui.getStatus().firePropertyChange("altitudeSup", 0, noDeManobra.getDeltaV());
 			System.out.println("DELTA-V DA MANOBRA: " + noDeManobra.getDeltaV());
@@ -170,5 +166,4 @@ public class ManobrasController extends Nave implements Runnable{
 		this.funcao = funcao;
 	}
 
-	
 }

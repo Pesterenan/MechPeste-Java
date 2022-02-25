@@ -16,7 +16,6 @@ import krpc.client.services.SpaceCenter.Vessel;
 public class Nave {
 	private static Connection conexao;
 
-	public final static float CONST_GRAV = 9.81f;
 	protected static SpaceCenter centroEspacial;
 	protected Vessel naveAtual;
 	protected Flight parametrosDeVoo;

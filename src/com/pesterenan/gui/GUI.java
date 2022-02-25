@@ -639,12 +639,6 @@ public class GUI extends JFrame implements ActionListener, ChangeListener {
 //				GUI.setStatus("A direcao tem que ser um n�mero entre 0 e 359 graus.");
 //				return false;
 //			}
-                try {
-                    String[] dados = {Arquivos.DO, String.valueOf(apoastro), String.valueOf(direcao)};
-                    Arquivos.gravarDadosConfig(dados);
-                } catch (IOException e1) {
-                    System.out.println("Erro ao gravar dados da Decolagem Orbital");
-                }
                 return true;
             case suicideBurn:
                 try {
@@ -656,13 +650,6 @@ public class GUI extends JFrame implements ActionListener, ChangeListener {
                     double velDd = Double.parseDouble(velD.getText());
                     PousoAutomaticoController.setAjusteAltPID(altPd, altId, altDd);
                     PousoAutomaticoController.setAjusteVelPID(velPd, velId, velDd);
-                    try {
-                        String[] dados = {Arquivos.SB, String.valueOf(altPd), String.valueOf(altId), String.valueOf(altDd),
-                                String.valueOf(velPd), String.valueOf(velId), String.valueOf(velDd),};
-                        Arquivos.gravarDadosConfig(dados);
-                    } catch (IOException e) {
-                        System.out.println("Erro ao gravar dados do Suicide Burn");
-                    }
                 } catch (NullPointerException | NumberFormatException npe) {
                     GUI.setStatus("Valores incorretos para o PID.");
                     return false;
@@ -683,12 +670,6 @@ public class GUI extends JFrame implements ActionListener, ChangeListener {
                 } catch (NullPointerException | NumberFormatException npe) {
                     GUI.setStatus("Valor inv�lido para velocidade. Utilizando 10m/s.");
                     RoverAutonomoController.setVelMaxima(10);
-                }
-                try {
-                    String[] dados = {Arquivos.AR, nomeMarcador, String.valueOf(velMaxima)};
-                    Arquivos.gravarDadosConfig(dados);
-                } catch (IOException e) {
-                    System.out.println("Erro ao gravar dados do Auto-Rover");
                 }
                 return true;
             case manobras:
