@@ -85,7 +85,7 @@ public class FuncoesJPanel extends JPanel implements ActionListener {
 		pnlBotoes.add(btnDecolagem, gbc_btnDecolagem);
 
 		JButton btnPousoAutomatico = new JButton(POUSO_AUTOMATICO.get());
-		btnPousoAutomatico.setEnabled(false);
+//		btnPousoAutomatico.setEnabled(false);
 		btnPousoAutomatico.addActionListener(this);
 		btnPousoAutomatico.setActionCommand(POUSO_AUTOMATICO.get());
 		GridBagConstraints gbc_btnPousoAutomatico = new GridBagConstraints();

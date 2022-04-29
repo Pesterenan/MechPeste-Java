@@ -60,4 +60,7 @@ public class TelemetriaController extends Nave implements Runnable {
 		
 	}
 
+	public void acelerar(float acel) throws RPCException {
+		naveAtual.getControl().setThrottle(acel);
+	}
 }

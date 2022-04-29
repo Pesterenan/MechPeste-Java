@@ -23,6 +23,7 @@ public class TelemetriaJPanel extends JPanel implements PropertyChangeListener {
 	private JLabel velHValorLabel = new JLabel("");
 	private JLabel bateriaValorLabel = new JLabel("");
 	private JLabel tempoValorLabel = new JLabel("");
+	private JLabel distanciaValorLabel = new JLabel("");
 
 	public TelemetriaJPanel() {
 
@@ -34,6 +35,7 @@ public class TelemetriaJPanel extends JPanel implements PropertyChangeListener {
 		JLabel velHLabel = new JLabel("Vel. Horizontal:");
 		JLabel bateriaLabel = new JLabel("Bateria: ");
 		JLabel tempoLabel = new JLabel("Tempo de Missão: ");
+		JLabel distanciaLabel = new JLabel("Distancia ate o pouso:");
 		addPropertyChangeListener(this);
 		setLayout(new GridBagLayout());
 		GridBagConstraints gc = new GridBagConstraints();
@@ -49,6 +51,7 @@ public class TelemetriaJPanel extends JPanel implements PropertyChangeListener {
 		add(velHLabel, gc);
 		add(bateriaLabel, gc);
 		add(tempoLabel, gc);
+		add(distanciaLabel, gc);
 		gc.weightx = 1;
 		gc.gridx = 1;
 		gc.anchor = GridBagConstraints.EAST;
@@ -60,6 +63,7 @@ public class TelemetriaJPanel extends JPanel implements PropertyChangeListener {
 		add(velHValorLabel, gc);
 		add(bateriaValorLabel, gc);
 		add(tempoValorLabel, gc);
+		add(distanciaValorLabel, gc);
 		gc.weighty = 0.8;
 		add(new JPanel(), gc);
 		return;
@@ -69,9 +73,6 @@ public class TelemetriaJPanel extends JPanel implements PropertyChangeListener {
 	private String converterMetros(Object obj) {
 		Double metros = Math.abs((double) obj);
 		String casasDecimais = "%.2f";
-		if ((double) obj < 0d) {
-			return new String(String.format(casasDecimais + "m", 0d));
-		}
 		if (metros > 1000000000) {
 			return String.format(casasDecimais + "Gm", metros / 1000000000);
 		} else if (metros > 1000000) {
@@ -81,6 +82,15 @@ public class TelemetriaJPanel extends JPanel implements PropertyChangeListener {
 		} else {
 			return new String(String.format(casasDecimais + "m", metros));
 		}
+	}
+
+	private String formatarTempoDecorrido(Double segundosTotais) {
+		int anos = (segundosTotais.intValue() / 9201600);
+		int dias = (segundosTotais.intValue() / 21600) % 426;
+		int horas = (segundosTotais.intValue() / 3600) % 6;
+		int minutos = (segundosTotais.intValue() % 3600) / 60;
+		int segundos = segundosTotais.intValue() % 60;
+		return String.format("%dA-%dd-%02d:%02d:%02d",anos, dias, horas, minutos, segundos);
 	}
 
 	@Override
@@ -101,14 +111,9 @@ public class TelemetriaJPanel extends JPanel implements PropertyChangeListener {
 		case "periastro":
 			periastroValorLabel.setText(converterMetros(evt.getNewValue()));
 			break;
+		case "tempoRestante":
 		case "tempoMissao":
-			Double tempoDouble = (Double) evt.getNewValue();
-			int segTotaisTdm = tempoDouble.intValue();
-			int diasTdm = segTotaisTdm / 21600;
-			int horasTdm = (segTotaisTdm % 21600) % 6 / 60 ;
-			int minutosTdm = (segTotaisTdm % 3600) / 60;
-			int segundosTdm = segTotaisTdm % 60;
-			tempoValorLabel.setText(String.format("%02d:%02d:%02d:%02d", diasTdm,horasTdm, minutosTdm, segundosTdm));
+			tempoValorLabel.setText(formatarTempoDecorrido((Double) evt.getNewValue()));
 			break;
 		case "velVertical":
 			velVValorLabel.setText(converterMetros(evt.getNewValue()) + "/s");
@@ -116,14 +121,8 @@ public class TelemetriaJPanel extends JPanel implements PropertyChangeListener {
 		case "velHorizontal":
 			velHValorLabel.setText(converterMetros(evt.getNewValue()) + "/s");
 			break;
-		case "tempoRestante":
-			int segTotaisTr = (int) evt.getNewValue();
-			int diasTr = segTotaisTr / 21600;
-			int horasTr = segTotaisTr / 3600;
-			int minutosTr = (segTotaisTr % 3600) / 60;
-			int segundosTr = segTotaisTr % 60;
-			tempoValorLabel.setText(String.format("%02d:%02d:%02d:%02d", diasTr,horasTr, minutosTr, segundosTr));
-			break;
+		case "distancia":
+			distanciaValorLabel.setText(converterMetros(evt.getNewValue()));
 		}
 	}
 

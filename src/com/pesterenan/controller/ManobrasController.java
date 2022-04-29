@@ -5,10 +5,8 @@ import java.util.List;
 
 import org.javatuples.Triplet;
 
-import com.pesterenan.MechPeste;
 import com.pesterenan.gui.MainGui;
 import com.pesterenan.gui.StatusJPanel;
-import com.pesterenan.model.Nave;
 import com.pesterenan.utils.ControlePID;
 import com.pesterenan.utils.Modulos;
 import com.pesterenan.utils.Status;
@@ -18,6 +16,7 @@ import krpc.client.Stream;
 import krpc.client.StreamException;
 import krpc.client.services.SpaceCenter.Engine;
 import krpc.client.services.SpaceCenter.Node;
+import krpc.client.services.SpaceCenter.SASMode;
 
 public class ManobrasController extends TelemetriaController implements Runnable {
 
@@ -31,8 +30,8 @@ public class ManobrasController extends TelemetriaController implements Runnable
 		super(getConexao());
 		this.funcao = funcao;
 		aceleracaoCtrl.setAmostraTempo(25);
-		aceleracaoCtrl.ajustarPID(0.025, 0.1, 1);
-		aceleracaoCtrl.limitarSaida(0.1, 1.0);
+		aceleracaoCtrl.ajustarPID(0.05, 0.1, 1);
+		aceleracaoCtrl.limitarSaida(0.05, 1.0);
 	}
 
 	@Override
@@ -70,17 +69,19 @@ public class ManobrasController extends TelemetriaController implements Runnable
 		try {
 			naveAtual.getControl().addNode(centroEspacial.getUT() + tempoPosterior, (float) deltaV[0],
 					(float) deltaV[1], (float) deltaV[2]);
-		} catch (RPCException e) {
+		} catch (UnsupportedOperationException | RPCException e) {
 			StatusJPanel.setStatus("Não foi possível criar a manobra.");
+			return;
 		}
 	}
 
 	public void executarProximaManobra() throws RPCException, StreamException, IOException, InterruptedException {
-		StatusJPanel.setStatus("Buscando Manobras...");
 		try {
+		StatusJPanel.setStatus("Buscando Manobras...");
 			noDeManobra = naveAtual.getControl().getNodes().get(0);
-		} catch (IndexOutOfBoundsException e) {
+		} catch (UnsupportedOperationException | IndexOutOfBoundsException e) {
 			StatusJPanel.setStatus("Não há Manobras disponíveis.");
+			return;
 		}
 		if (noDeManobra != null) {
 			MainGui.getStatus().firePropertyChange("altitudeSup", 0, noDeManobra.getDeltaV());
@@ -89,12 +90,6 @@ public class ManobrasController extends TelemetriaController implements Runnable
 			double duracaoDaQueima = calcularTempoDeQueima(noDeManobra);
 			orientarNaveParaNoDeManobra(noDeManobra);
 			executarQueima(noDeManobra, duracaoDaQueima);
-
-			naveAtual.getAutoPilot().disengage();
-			naveAtual.getControl().setSAS(true);
-			naveAtual.getControl().setRCS(false);
-			noDeManobra.remove();
-			StatusJPanel.setStatus(Status.PRONTO.get());
 
 		}
 	}
@@ -120,10 +115,12 @@ public class ManobrasController extends TelemetriaController implements Runnable
 	public void orientarNaveParaNoDeManobra(Node noDeManobra) {
 		StatusJPanel.setStatus("Orientando nave para o nó de Manobra...");
 		try {
-			naveAtual.getAutoPilot().setReferenceFrame(noDeManobra.getReferenceFrame());
-			naveAtual.getAutoPilot().setTargetDirection(new Triplet<Double, Double, Double>(0.0, 1.0, 0.0));
-			naveAtual.getAutoPilot().engage();
-			naveAtual.getAutoPilot().wait_();
+			naveAtual.getControl().setSAS(true);
+			naveAtual.getControl().setSASMode(SASMode.MANEUVER);
+//			naveAtual.getAutoPilot().setReferenceFrame(noDeManobra.getReferenceFrame());
+//			naveAtual.getAutoPilot().setTargetDirection(new Triplet<Double, Double, Double>(0.0, 1.0, 0.0));
+//			naveAtual.getAutoPilot().engage();
+//			naveAtual.getAutoPilot().wait_();
 		} catch (RPCException e) {
 			System.err.println("Não foi possível orientar a nave para a manobra:\n\t" + e.getMessage());
 		}
@@ -149,17 +146,22 @@ public class ManobrasController extends TelemetriaController implements Runnable
 				"remainingBurnVector", noDeManobra.getReferenceFrame());
 		StatusJPanel.setStatus("Executando manobra!");
 		aceleracaoCtrl.setLimitePID(0);
-		while (noDeManobra != null) {
+		while (true) {
 			aceleracaoCtrl.setEntradaPID(-queimaRestante.get().getValue1() * 100 / noDeManobra.getDeltaV());
-			if (queimaRestante.get().getValue1() > 1) {
+			if (queimaRestante.get().getValue1() > 1 && noDeManobra != null) {
 				naveAtual.getControl().setThrottle((float) aceleracaoCtrl.computarPID());
 			} else {
-				naveAtual.getControl().setThrottle(0.0f);
 				queimaRestante.remove();
 				break;
 			}
 			Thread.sleep(25);
 		}
+		naveAtual.getControl().setThrottle(0.0f);
+		naveAtual.getAutoPilot().disengage();
+		naveAtual.getControl().setSAS(true);
+		naveAtual.getControl().setRCS(false);
+		noDeManobra.remove();
+		StatusJPanel.setStatus(Status.PRONTO.get());
 	}
 
 	public void setFuncao(String funcao) {

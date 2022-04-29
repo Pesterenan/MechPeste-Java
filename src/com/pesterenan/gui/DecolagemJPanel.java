@@ -33,10 +33,10 @@ public class DecolagemJPanel extends JPanel implements ActionListener {
 
 	public DecolagemJPanel() {
 		GridBagLayout gridBagLayout = new GridBagLayout();
-		gridBagLayout.columnWidths = new int[]{136, 100, 0};
-		gridBagLayout.rowHeights = new int[]{23, 23, 30, 0, 0, 0};
-		gridBagLayout.columnWeights = new double[]{1.0, 0.0, Double.MIN_VALUE};
-		gridBagLayout.rowWeights = new double[]{0.0, 0.0, 0.0, 0.0, 1.0, Double.MIN_VALUE};
+		gridBagLayout.columnWidths = new int[] { 136, 100, 0 };
+		gridBagLayout.rowHeights = new int[] { 23, 23, 30, 0, 0, 0 };
+		gridBagLayout.columnWeights = new double[] { 1.0, 0.0, Double.MIN_VALUE };
+		gridBagLayout.rowWeights = new double[] { 0.0, 0.0, 0.0, 0.0, 1.0, Double.MIN_VALUE };
 		setLayout(gridBagLayout);
 		GridBagConstraints gbc_apoastroLabel = new GridBagConstraints();
 		gbc_apoastroLabel.anchor = GridBagConstraints.WEST;
@@ -62,7 +62,7 @@ public class DecolagemJPanel extends JPanel implements ActionListener {
 		gbc_direcaoTextField.gridx = 1;
 		gbc_direcaoTextField.gridy = 1;
 		add(direcaoTextField, gbc_direcaoTextField);
-		
+
 		GridBagConstraints gbc_panel = new GridBagConstraints();
 		gbc_panel.insets = new Insets(0, 0, 0, 5);
 		gbc_panel.fill = GridBagConstraints.BOTH;
@@ -75,22 +75,35 @@ public class DecolagemJPanel extends JPanel implements ActionListener {
 		panel.add(botVoltar);
 		botVoltar.addActionListener(this);
 		botVoltar.setActionCommand("Voltar");
-
+		apoastroTextField.setToolTipText("Altura de apoastro final para a decolagem.");
 		return;
 	}
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		if (e.getActionCommand().equals("Iniciar")) {
-			Map<String, String> comandos = new HashMap<>();
-			comandos.put(Modulos.MODULO.get(), Modulos.MODULO_DECOLAGEM.get());
-			comandos.put(Modulos.APOASTRO.get(), apoastroTextField.getText());
-			comandos.put(Modulos.DIRECAO.get(), direcaoTextField.getText());
-			MechPeste.iniciarModulo(comandos);
+			if (validarCampos()) {
+				Map<String, String> comandos = new HashMap<>();
+				comandos.put(Modulos.MODULO.get(), Modulos.MODULO_DECOLAGEM.get());
+				comandos.put(Modulos.APOASTRO.get(), apoastroTextField.getText());
+				comandos.put(Modulos.DIRECAO.get(), direcaoTextField.getText());
+				MechPeste.iniciarModulo(comandos);
+			}
 		}
 		if (e.getActionCommand().equals("Voltar")) {
 			MainGui.getParametros().firePropertyChange(TELEMETRIA.get(), 0, 1);
 		}
+	}
+
+	private boolean validarCampos() {
+		try {
+			Float.parseFloat(apoastroTextField.getText());
+			Float.parseFloat(direcaoTextField.getText());
+		} catch(NumberFormatException e) {
+			StatusJPanel.setStatus("Erro: Os campos só aceitam números.");
+			return false;
+		}
+		return true;
 	}
 
 }

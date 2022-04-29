@@ -2,9 +2,18 @@ package com.pesterenan.utils;
 
 public enum Modulos {
 
-	APOASTRO("Apoastro"), PERIASTRO("Periastro"), EXECUTAR("Executar"), AJUSTAR("Ajustar"), DIRECAO("Direção"),
-	MODULO("Módulo"), FUNCAO("Função"), MODULO_DECOLAGEM("Executar Decolagem"), MODULO_MANOBRAS("Módulo Manobras");
-
+	APOASTRO("Apoastro"), 
+	PERIASTRO("Periastro"), 
+	EXECUTAR("Executar"), 
+	AJUSTAR("Ajustar"), 
+	DIRECAO("Direção"),
+	MODULO("Módulo"), 
+	FUNCAO("Função"), 
+	MODULO_DECOLAGEM("Executar Decolagem"), 
+	MODULO_MANOBRAS("Módulo Manobras"), 
+	MODULO_POUSO("Módulo Pouso"),
+	ALTITUDE_SOBREVOO("Altitude Sobrevoo"), 
+	MODULO_POUSO_SOBREVOAR("Sobrevoar");
 	String t;
 
 	Modulos(String t) {

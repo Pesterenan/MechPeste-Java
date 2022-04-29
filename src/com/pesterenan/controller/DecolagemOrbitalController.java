@@ -7,13 +7,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.pesterenan.MechPeste;
-import com.pesterenan.gui.MainGui;
 import com.pesterenan.gui.StatusJPanel;
 import com.pesterenan.utils.ControlePID;
 import com.pesterenan.utils.Modulos;
 
 import krpc.client.RPCException;
 import krpc.client.StreamException;
+import krpc.client.services.SpaceCenter.Engine;
 import krpc.client.services.SpaceCenter.VesselSituation;
 
 public class DecolagemOrbitalController extends TelemetriaController implements Runnable {
@@ -47,8 +47,8 @@ public class DecolagemOrbitalController extends TelemetriaController implements 
 			decolagem();
 			curvaGravitacional();
 			planejarOrbita();
-		} catch (Exception e) {
-			System.out.println(e.getMessage());
+		} catch (RPCException | InterruptedException | StreamException | IOException e) {
+			e.printStackTrace();
 		}
 	}
 
@@ -75,7 +75,7 @@ public class DecolagemOrbitalController extends TelemetriaController implements 
 				naveAtual.getAutoPilot().targetPitchAndHeading((float) inclinacaoAtual, getDirecao());
 				StatusJPanel.setStatus(String.format("A inclinação do foguete é: %.1f", inclinacaoAtual));
 				// Informar ao Controlador PID da aceleração a porcentagem do caminho
-				aceleracaoCtrl.setEntradaPID((apoastro.get() * 100 / getAltApoastroFinal()));
+				aceleracaoCtrl.setEntradaPID(apoastro.get() * 100 / getAltApoastroFinal());
 				// Acelerar a nave de acordo com o PID, ou cortar o motor caso passe do apoastro
 				if (apoastro.get() < getAltApoastroFinal()) {
 					acelerar((float) aceleracaoCtrl.computarPID());
@@ -83,37 +83,46 @@ public class DecolagemOrbitalController extends TelemetriaController implements 
 					acelerar(0.0f);
 					break;
 				}
-				checarCombustivel();
+				if (oMotorTemCombustivel()) {
+					StatusJPanel.setStatus("Separando estágio...");
+					Thread.sleep(1000);
+					naveAtual.getControl().activateNextStage();
+					Thread.sleep(1000);
+				}
+				;
 			}
 
 			Thread.sleep(100);
 		}
 	}
 
-	private void checarCombustivel() throws RPCException, StreamException {
-		float combustivel = naveAtual.resourcesInDecoupleStage(naveAtual.getControl().getCurrentStage(), false)
-				.amount("LiquidFuel");
-		MainGui.getParametros().getComponent(0).firePropertyChange("estagio", -1.0, combustivel);
+	private boolean oMotorTemCombustivel() throws RPCException, StreamException {
+		for (Engine motor : naveAtual.getParts().getEngines()) {
+			if (motor.getPart().getStage() == naveAtual.getControl().getCurrentStage() && !motor.getHasFuel()) {
+				return true;
+			}
+		}
+		return false;
 	}
 
-	private void acelerar(float acel) throws RPCException {
-		naveAtual.getControl().setThrottle(acel);
-	}
-
-	private void decolagem() throws RPCException, InterruptedException {
-		naveAtual.getControl().setSAS(true);
-		acelerar(1f);
-		if (naveAtual.getSituation().equals(VesselSituation.PRE_LAUNCH)) {
-			float contagemRegressiva = 5f;
-			while (contagemRegressiva > 0) {
-				StatusJPanel.setStatus(String.format("Lançamento em: %.1f segundos...", contagemRegressiva));
-				contagemRegressiva -= 0.1;
-				Thread.sleep(100);
+	private void decolagem() {
+		try {
+			naveAtual.getControl().setSAS(true);
+			acelerar(1f);
+			if (naveAtual.getSituation().equals(VesselSituation.PRE_LAUNCH)) {
+				float contagemRegressiva = 5f;
+				while (contagemRegressiva > 0) {
+					StatusJPanel.setStatus(String.format("Lançamento em: %.1f segundos...", contagemRegressiva));
+					contagemRegressiva -= 0.1;
+					Thread.sleep(100);
+				}
+				naveAtual.getControl().activateNextStage();
 			}
 			StatusJPanel.setStatus("Decolagem!");
-			naveAtual.getControl().activateNextStage();
+			Thread.sleep(1000);			
+		} catch ( RPCException | InterruptedException erro) {
+			System.err.println("Não foi possivel decolar a nave. Erro: " + erro.getMessage());
 		}
-		Thread.sleep(1000);
 	}
 
 	public float getDirecao() {

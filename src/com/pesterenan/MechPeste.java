@@ -15,6 +15,7 @@ import java.util.Map;
 
 import com.pesterenan.controller.DecolagemOrbitalController;
 import com.pesterenan.controller.ManobrasController;
+import com.pesterenan.controller.PousoAutomaticoController;
 import com.pesterenan.controller.TelemetriaController;
 import com.pesterenan.gui.MainGui;
 import com.pesterenan.gui.StatusJPanel;
@@ -83,6 +84,10 @@ public class MechPeste implements PropertyChangeListener {
 		}
 		if (executarModulo.equals(Modulos.MODULO_DECOLAGEM.get())) {
 			modulo = new DecolagemOrbitalController(comandos);
+		}
+		if (executarModulo.equals(Modulos.MODULO_POUSO_SOBREVOAR.get())
+				|| executarModulo.equals(Modulos.MODULO_POUSO.get())) {
+			modulo = new PousoAutomaticoController(comandos);
 		}
 		setThreadModulos(new Thread(modulo));
 		getThreadModulos().start();
