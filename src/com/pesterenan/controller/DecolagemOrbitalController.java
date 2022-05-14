@@ -105,26 +105,6 @@ public class DecolagemOrbitalController extends TelemetriaController implements 
 		return false;
 	}
 
-	private void decolagem() {
-		try {
-			naveAtual.getControl().setSAS(true);
-			acelerar(1f);
-			if (naveAtual.getSituation().equals(VesselSituation.PRE_LAUNCH)) {
-				float contagemRegressiva = 5f;
-				while (contagemRegressiva > 0) {
-					StatusJPanel.setStatus(String.format("Lançamento em: %.1f segundos...", contagemRegressiva));
-					contagemRegressiva -= 0.1;
-					Thread.sleep(100);
-				}
-				naveAtual.getControl().activateNextStage();
-			}
-			StatusJPanel.setStatus("Decolagem!");
-			Thread.sleep(1000);			
-		} catch ( RPCException | InterruptedException erro) {
-			System.err.println("Não foi possivel decolar a nave. Erro: " + erro.getMessage());
-		}
-	}
-
 	public float getDirecao() {
 		return direcao;
 	}

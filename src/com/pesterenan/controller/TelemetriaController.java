@@ -1,11 +1,13 @@
 package com.pesterenan.controller;
 
 import com.pesterenan.gui.MainGui;
+import com.pesterenan.gui.StatusJPanel;
 import com.pesterenan.model.Nave;
 
 import krpc.client.Connection;
 import krpc.client.RPCException;
 import krpc.client.StreamException;
+import krpc.client.services.SpaceCenter.VesselSituation;
 
 public class TelemetriaController extends Nave implements Runnable {
 
@@ -60,7 +62,26 @@ public class TelemetriaController extends Nave implements Runnable {
 		
 	}
 
-	public void acelerar(float acel) throws RPCException {
+	protected void acelerar(float acel) throws RPCException {
 		naveAtual.getControl().setThrottle(acel);
+	}
+	protected void decolagem() {
+		try {
+			naveAtual.getControl().setSAS(true);
+			acelerar(1f);
+			if (naveAtual.getSituation().equals(VesselSituation.PRE_LAUNCH)) {
+				float contagemRegressiva = 5f;
+				while (contagemRegressiva > 0) {
+					StatusJPanel.setStatus(String.format("Lançamento em: %.1f segundos...", contagemRegressiva));
+					contagemRegressiva -= 0.1;
+					Thread.sleep(100);
+				}
+				naveAtual.getControl().activateNextStage();
+			}
+			StatusJPanel.setStatus("Decolagem!");
+			Thread.sleep(1000);
+		} catch (RPCException | InterruptedException erro) {
+			System.err.println("Não foi possivel decolar a nave. Erro: " + erro.getMessage());
+		}
 	}
 }

@@ -24,7 +24,7 @@ public class MainGui extends JFrame {
 		add(funcoes, BorderLayout.WEST);
 		add(parametros, BorderLayout.CENTER);
 		add(status, BorderLayout.SOUTH);
-		
+		setAlwaysOnTop(true);
 		setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		setResizable(false);
 		pack();
