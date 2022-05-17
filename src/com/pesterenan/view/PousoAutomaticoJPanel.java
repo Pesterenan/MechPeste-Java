@@ -1,4 +1,4 @@
-package com.pesterenan.gui;
+package com.pesterenan.view;
 
 import static com.pesterenan.utils.Dicionario.TELEMETRIA;
 
@@ -13,6 +13,7 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 
 import com.pesterenan.MechPeste;
+import com.pesterenan.controller.LandingController;
 import com.pesterenan.utils.Modulos;
 import java.awt.GridBagLayout;
 import java.awt.GridBagConstraints;
@@ -22,6 +23,7 @@ public class PousoAutomaticoJPanel extends JPanel implements ActionListener {
 
 	private static final long serialVersionUID = 1L;
 	private JTextField sobrevoarTextField;
+	private JButton sobrevoarButton;
 
 	public PousoAutomaticoJPanel() {
 		GridBagLayout gridBagLayout = new GridBagLayout();
@@ -68,6 +70,7 @@ public class PousoAutomaticoJPanel extends JPanel implements ActionListener {
 		gbc_sobrevoarTextField.gridy = 2;
 		add(sobrevoarTextField, gbc_sobrevoarTextField);
 		sobrevoarTextField.setColumns(10);
+		sobrevoarTextField.setText("100");
 		GridBagConstraints gbc_voltarButton = new GridBagConstraints();
 		gbc_voltarButton.anchor = GridBagConstraints.EAST;
 		gbc_voltarButton.insets = new Insets(0, 0, 0, 5);
@@ -75,7 +78,7 @@ public class PousoAutomaticoJPanel extends JPanel implements ActionListener {
 		gbc_voltarButton.gridy = 3;
 		add(voltarButton, gbc_voltarButton);
 
-		JButton sobrevoarButton = new JButton("Sobrevoar");
+		sobrevoarButton = new JButton("Sobrevoar");
 		sobrevoarButton.setActionCommand("Sobrevoar");
 		sobrevoarButton.addActionListener(this);
 		sobrevoarButton.setMnemonic('s');
@@ -89,10 +92,20 @@ public class PousoAutomaticoJPanel extends JPanel implements ActionListener {
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		if (e.getActionCommand().equals("Sobrevoar")) {
+			if (sobrevoarButton.getText().equals("Descer")) {
+				LandingController.descer();
+				sobrevoarButton.setText("Sobrevoar");
+				return;
+			}
+			if (sobrevoarTextField.getText().equals("")) {
+				StatusJPanel.setStatus("A altitude para sobrevoo tem que ser um número.");
+				return;
+			}
 			Map<String, String> comandos = new HashMap<>();
 			comandos.put(Modulos.MODULO.get(), Modulos.MODULO_POUSO_SOBREVOAR.get());
 			comandos.put(Modulos.ALTITUDE_SOBREVOO.get(), sobrevoarTextField.getText());
 			MechPeste.iniciarModulo(comandos);
+			sobrevoarButton.setText("Descer");
 		}
 		if (e.getActionCommand().equals("Pousar")) {
 			Map<String, String> comandos = new HashMap<>();

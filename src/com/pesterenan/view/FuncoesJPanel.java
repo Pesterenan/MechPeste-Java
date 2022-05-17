@@ -1,4 +1,4 @@
-package com.pesterenan.gui;
+package com.pesterenan.view;
 
 import static com.pesterenan.utils.Dicionario.DECOLAGEM_ORBITAL;
 import static com.pesterenan.utils.Dicionario.MANOBRAS;

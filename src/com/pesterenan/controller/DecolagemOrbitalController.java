@@ -7,16 +7,16 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.pesterenan.MechPeste;
-import com.pesterenan.gui.StatusJPanel;
 import com.pesterenan.utils.ControlePID;
 import com.pesterenan.utils.Modulos;
+import com.pesterenan.view.StatusJPanel;
 
 import krpc.client.RPCException;
 import krpc.client.StreamException;
 import krpc.client.services.SpaceCenter.Engine;
 import krpc.client.services.SpaceCenter.VesselSituation;
 
-public class DecolagemOrbitalController extends TelemetriaController implements Runnable {
+public class DecolagemOrbitalController extends FlightController implements Runnable {
 
 	public static final int MIN_APOASTRO_FINAL = 10000;
 	public static final int MAX_APOASTRO_FINAL = 2000000;
@@ -36,7 +36,7 @@ public class DecolagemOrbitalController extends TelemetriaController implements 
 		setAltApoastroFinal(Float.parseFloat(comandos.get(Modulos.APOASTRO.get())));
 		setDirecao(Float.parseFloat(comandos.get(Modulos.DIRECAO.get())));
 		aceleracaoCtrl = new ControlePID();
-		aceleracaoCtrl.setAmostraTempo(100);
+		aceleracaoCtrl.setAmostragem(100);
 		aceleracaoCtrl.ajustarPID(0.05, 0.1, 1);
 		aceleracaoCtrl.limitarSaida(0.1, 1.0);
 	}
@@ -44,7 +44,7 @@ public class DecolagemOrbitalController extends TelemetriaController implements 
 	@Override
 	public void run() {
 		try {
-			decolagem();
+			decolar();
 			curvaGravitacional();
 			planejarOrbita();
 		} catch (RPCException | InterruptedException | StreamException | IOException e) {

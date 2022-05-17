@@ -5,11 +5,11 @@ import java.util.List;
 
 import org.javatuples.Triplet;
 
-import com.pesterenan.gui.MainGui;
-import com.pesterenan.gui.StatusJPanel;
 import com.pesterenan.utils.ControlePID;
 import com.pesterenan.utils.Modulos;
 import com.pesterenan.utils.Status;
+import com.pesterenan.view.MainGui;
+import com.pesterenan.view.StatusJPanel;
 
 import krpc.client.RPCException;
 import krpc.client.Stream;
@@ -18,7 +18,7 @@ import krpc.client.services.SpaceCenter.Engine;
 import krpc.client.services.SpaceCenter.Node;
 import krpc.client.services.SpaceCenter.SASMode;
 
-public class ManobrasController extends TelemetriaController implements Runnable {
+public class ManobrasController extends FlightController implements Runnable {
 
 	private Node noDeManobra;
 	public final static float CONST_GRAV = 9.81f;
@@ -29,7 +29,7 @@ public class ManobrasController extends TelemetriaController implements Runnable
 	public ManobrasController(String funcao) {
 		super(getConexao());
 		this.funcao = funcao;
-		aceleracaoCtrl.setAmostraTempo(25);
+		aceleracaoCtrl.setAmostragem(25);
 		aceleracaoCtrl.ajustarPID(0.05, 0.1, 1);
 		aceleracaoCtrl.limitarSaida(0.05, 1.0);
 	}

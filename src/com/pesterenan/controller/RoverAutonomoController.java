@@ -8,9 +8,9 @@ import java.util.List;
 import org.javatuples.Triplet;
 
 import com.pesterenan.MechPeste;
-import com.pesterenan.gui.GUI;
 import com.pesterenan.utils.ControlePID;
 import com.pesterenan.utils.Vetor;
+import com.pesterenan.view.GUI;
 
 import krpc.client.Connection;
 import krpc.client.RPCException;

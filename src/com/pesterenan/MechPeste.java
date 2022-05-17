@@ -15,11 +15,11 @@ import java.util.Map;
 
 import com.pesterenan.controller.DecolagemOrbitalController;
 import com.pesterenan.controller.ManobrasController;
-import com.pesterenan.controller.PousoAutomaticoController;
-import com.pesterenan.controller.TelemetriaController;
-import com.pesterenan.gui.MainGui;
-import com.pesterenan.gui.StatusJPanel;
+import com.pesterenan.controller.LandingController;
+import com.pesterenan.controller.FlightController;
 import com.pesterenan.utils.Modulos;
+import com.pesterenan.view.MainGui;
+import com.pesterenan.view.StatusJPanel;
 
 import krpc.client.Connection;
 import krpc.client.RPCException;
@@ -32,7 +32,7 @@ public class MechPeste implements PropertyChangeListener {
 	private static Connection conexao;
 	private static Thread threadModulos;
 	private static Thread threadTelemetria;
-	private static TelemetriaController telemetriaCtrl;
+	private static FlightController flightCtrl;
 	private static DecolagemOrbitalController decolagemOrbitalCtrl;
 
 	public static void main(String[] args) throws StreamException, RPCException, IOException, InterruptedException {
@@ -70,13 +70,13 @@ public class MechPeste implements PropertyChangeListener {
 	}
 
 	private void iniciarTelemetria() {
-		telemetriaCtrl = new TelemetriaController(getConexao());
-		setThreadTelemetria(new Thread(telemetriaCtrl));
+		flightCtrl = new FlightController(getConexao());
+		setThreadTelemetria(new Thread(flightCtrl));
 		getThreadTelemetria().start();
 	}
 
 	public static void iniciarModulo(Map<String, String> comandos) {
-		TelemetriaController modulo = null;
+		FlightController modulo = null;
 		String executarModulo = comandos.get(Modulos.MODULO.get());
 
 		if (executarModulo.equals(Modulos.MODULO_MANOBRAS.get())) {
@@ -87,7 +87,7 @@ public class MechPeste implements PropertyChangeListener {
 		}
 		if (executarModulo.equals(Modulos.MODULO_POUSO_SOBREVOAR.get())
 				|| executarModulo.equals(Modulos.MODULO_POUSO.get())) {
-			modulo = new PousoAutomaticoController(comandos);
+			modulo = new LandingController(comandos);
 		}
 		setThreadModulos(new Thread(modulo));
 		getThreadModulos().start();

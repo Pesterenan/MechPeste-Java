@@ -2,7 +2,7 @@ package com.pesterenan.model;
 
 import static com.pesterenan.utils.Status.ERRO_CONEXAO;
 
-import com.pesterenan.gui.StatusJPanel;
+import com.pesterenan.view.StatusJPanel;
 
 import krpc.client.Connection;
 import krpc.client.RPCException;
@@ -23,7 +23,8 @@ public class Nave {
 	protected Stream<Double> altitude, altitudeSup, apoastro, periastro;
 	protected Stream<Double> velVertical, tempoMissao, velHorizontal;
 	protected Stream<Float> massaTotal, bateriaAtual;
-	protected float bateriaTotal;
+	protected float bateriaTotal, acelGravidade;
+	protected String corpoCeleste;
 	protected int porcentagemCarga;
 
 	

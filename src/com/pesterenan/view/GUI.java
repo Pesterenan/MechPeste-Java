@@ -1,6 +1,6 @@
-package com.pesterenan.gui;
+package com.pesterenan.view;
 
-import com.pesterenan.controller.PousoAutomaticoController;
+import com.pesterenan.controller.LandingController;
 import com.pesterenan.controller.RoverAutonomoController;
 
 import javax.swing.*;
@@ -648,8 +648,6 @@ public class GUI extends JFrame implements ActionListener, ChangeListener {
                     double velPd = Double.parseDouble(velP.getText());
                     double velId = Double.parseDouble(velI.getText());
                     double velDd = Double.parseDouble(velD.getText());
-                    PousoAutomaticoController.setAjusteAltPID(altPd, altId, altDd);
-                    PousoAutomaticoController.setAjusteVelPID(velPd, velId, velDd);
                 } catch (NullPointerException | NumberFormatException npe) {
                     GUI.setStatus("Valores incorretos para o PID.");
                     return false;

@@ -6,47 +6,48 @@ Atualizado: 26/02/2019*/
 
 public class ControlePID {
 // Controlador PID escrito em Java para uso com o mod MechPeste
-	private double saidaMin = -1;
-	private double saidaMax = 1;
+	private double limiteMin = -1;
+	private double limiteMax = 1;
 // Vari�veis padr�o de ajuste do PID:
 	private double kp = 0.025;
-	private double ki = 0.001;
-	private double kd = 0.1;
-	private double amostraTempo = 25; // Tempo para amostragem
+	private double ki = 0.05;
+	private double kd = 0.01;
+	private double amostragem = 25; // Tempo para amostragem
 
-	private double valorEntrada, valorSaida, valorLimite; // vari�veis de valores
+	private double valorEntrada = 0, valorSaida = 1, valorLimite = 100; // vari�veis de valores
 	private double termoIntegral, ultimaEntrada; // vari�veis de c�lculo de erro
 	private double ultimoCalculo = 0; // tempo do �ltimo c�lculo
 
 	public ControlePID() {
-		this.setAmostraTempo(25);
-		this.setEntradaPID(0);
-		this.setLimitePID(100);
 	}
 
+	public static double interpolacaoLinear(double v0, double v1, double t) {
+		return (1 - t) * v0 + t * v1;
+	}
+	
 	public double computarPID() {
 // M�todo que computa o incremento do PID
 		double agora = System.currentTimeMillis(); // Buscar tempo imediato
 		double mudancaTempo = agora - this.ultimoCalculo; // Comparar com o �ltimo c�lculo
 
-		if (mudancaTempo >= this.amostraTempo) {
+		if (mudancaTempo >= this.amostragem) {
 // Vari�veis para o c�lculo do valor de sa�da:
 			double erro = this.valorLimite - this.valorEntrada;
 			termoIntegral += ki * erro;
-			if (termoIntegral > saidaMax) {
-				termoIntegral = saidaMax;
-			} else if (termoIntegral < saidaMin) {
-				termoIntegral = saidaMin;
+			if (termoIntegral > limiteMax) {
+				termoIntegral = limiteMax;
+			} else if (termoIntegral < limiteMin) {
+				termoIntegral = limiteMin;
 			}
 			double diferencaEntrada = (this.valorEntrada - this.ultimaEntrada);
 
 // Computar o valor de sa�da:
 			this.valorSaida = kp * erro + ki * termoIntegral - kd * diferencaEntrada;
 // Limitar valor de sa�da:
-			if (this.valorSaida > saidaMax) {
-				this.valorSaida = saidaMax;
-			} else if (this.valorSaida < saidaMin) {
-				this.valorSaida = saidaMin;
+			if (this.valorSaida > limiteMax) {
+				this.valorSaida = limiteMax;
+			} else if (this.valorSaida < limiteMin) {
+				this.valorSaida = limiteMin;
 			}
 
 // Guardando os valores atuais para o pr�ximo c�lculo:
@@ -67,22 +68,22 @@ public class ControlePID {
 		this.valorLimite = valor;
 	}
 
-	public void limitarSaida(double Min, double Max) {
-		if (Min > Max)
+	public void limitarSaida(double min, double max) {
+		if (min > max)
 			return;
-		saidaMin = Min;
-		saidaMax = Max;
+		limiteMin = min;
+		limiteMax = max;
 
-		if (termoIntegral > saidaMax) {
-			termoIntegral = saidaMax;
-		} else if (termoIntegral < saidaMin) {
-			termoIntegral = saidaMin;
+		if (termoIntegral > limiteMax) {
+			termoIntegral = limiteMax;
+		} else if (termoIntegral < limiteMin) {
+			termoIntegral = limiteMin;
 		}
 
-		if (this.valorSaida > saidaMax) {
-			this.valorSaida = saidaMax;
-		} else if (this.valorSaida < saidaMin) {
-			this.valorSaida = saidaMin;
+		if (this.valorSaida > limiteMax) {
+			this.valorSaida = limiteMax;
+		} else if (this.valorSaida < limiteMin) {
+			this.valorSaida = limiteMin;
 		}
 	}
 
@@ -98,10 +99,9 @@ public class ControlePID {
 		}
 	}
 
-	public void setAmostraTempo(double novaAmostraTempo) {
-// Tempo para fazer a amostragem dos valores em milissegundos:
-		if (novaAmostraTempo > 0) {
-			this.amostraTempo = novaAmostraTempo;
+	public void setAmostragem(double milissegundos) {
+		if (milissegundos > 0) {
+			this.amostragem = milissegundos;
 		}
 	}
 }

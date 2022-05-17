@@ -1,4 +1,4 @@
-package com.pesterenan.gui;
+package com.pesterenan.view;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;

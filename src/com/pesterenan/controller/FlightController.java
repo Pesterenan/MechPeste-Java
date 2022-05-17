@@ -1,20 +1,19 @@
 package com.pesterenan.controller;
 
-import com.pesterenan.gui.MainGui;
-import com.pesterenan.gui.StatusJPanel;
 import com.pesterenan.model.Nave;
+import com.pesterenan.view.MainGui;
+import com.pesterenan.view.StatusJPanel;
 
 import krpc.client.Connection;
 import krpc.client.RPCException;
 import krpc.client.StreamException;
 import krpc.client.services.SpaceCenter.VesselSituation;
 
-public class TelemetriaController extends Nave implements Runnable {
+public class FlightController extends Nave implements Runnable {
 
-	public TelemetriaController(Connection con) {
+	public FlightController(Connection con) {
 		super(con);
 		iniciarStreams();
-
 	}
 
 	private void iniciarStreams() {
@@ -30,6 +29,8 @@ public class TelemetriaController extends Nave implements Runnable {
 			tempoMissao = getConexao().addStream(naveAtual, "getMET");
 			bateriaAtual = getConexao().addStream(naveAtual.getResources(), "amount", "ElectricCharge");
 			bateriaTotal = naveAtual.getResources().max("ElectricCharge");
+			acelGravidade = naveAtual.getOrbit().getBody().getSurfaceGravity();
+			corpoCeleste = naveAtual.getOrbit().getBody().getName();
 		} catch (StreamException | RPCException | NullPointerException | IllegalArgumentException e) {
 			checarConexao();
 		}
@@ -59,13 +60,18 @@ public class TelemetriaController extends Nave implements Runnable {
 		MainGui.getParametros().getComponent(0).firePropertyChange("velHorizontal", 0.0, velHorizontal.get());
 		MainGui.getParametros().getComponent(0).firePropertyChange("bateria", 0.0, porcentagemCarga);
 		MainGui.getParametros().getComponent(0).firePropertyChange("tempoMissao", 0.0, tempoMissao.get());
-		
+
 	}
 
 	protected void acelerar(float acel) throws RPCException {
 		naveAtual.getControl().setThrottle(acel);
 	}
-	protected void decolagem() {
+
+	protected void acelerar(double acel) throws RPCException {
+		acelerar((float) acel);
+	}
+
+	protected void decolar() {
 		try {
 			naveAtual.getControl().setSAS(true);
 			acelerar(1f);
@@ -79,9 +85,15 @@ public class TelemetriaController extends Nave implements Runnable {
 				naveAtual.getControl().activateNextStage();
 			}
 			StatusJPanel.setStatus("Decolagem!");
-			Thread.sleep(1000);
 		} catch (RPCException | InterruptedException erro) {
 			System.err.println("Não foi possivel decolar a nave. Erro: " + erro.getMessage());
 		}
+	}
+	
+	protected double calcularTEP() throws RPCException, StreamException {
+		return naveAtual.getAvailableThrust() / ((massaTotal.get() * acelGravidade));
+	}
+	protected double calcularAcelMaxima() throws RPCException, StreamException {
+		return calcularTEP() * acelGravidade - acelGravidade;
 	}
 }
