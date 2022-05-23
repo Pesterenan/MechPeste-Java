@@ -16,7 +16,6 @@ import krpc.client.Stream;
 import krpc.client.StreamException;
 import krpc.client.services.SpaceCenter.Engine;
 import krpc.client.services.SpaceCenter.Node;
-import krpc.client.services.SpaceCenter.SASMode;
 
 public class ManobrasController extends FlightController implements Runnable {
 
@@ -77,7 +76,7 @@ public class ManobrasController extends FlightController implements Runnable {
 
 	public void executarProximaManobra() throws RPCException, StreamException, IOException, InterruptedException {
 		try {
-		StatusJPanel.setStatus("Buscando Manobras...");
+			StatusJPanel.setStatus("Buscando Manobras...");
 			noDeManobra = naveAtual.getControl().getNodes().get(0);
 		} catch (UnsupportedOperationException | IndexOutOfBoundsException e) {
 			StatusJPanel.setStatus("Não há Manobras disponíveis.");
@@ -116,11 +115,10 @@ public class ManobrasController extends FlightController implements Runnable {
 		StatusJPanel.setStatus("Orientando nave para o nó de Manobra...");
 		try {
 			naveAtual.getControl().setSAS(true);
-			naveAtual.getControl().setSASMode(SASMode.MANEUVER);
-//			naveAtual.getAutoPilot().setReferenceFrame(noDeManobra.getReferenceFrame());
-//			naveAtual.getAutoPilot().setTargetDirection(new Triplet<Double, Double, Double>(0.0, 1.0, 0.0));
-//			naveAtual.getAutoPilot().engage();
-//			naveAtual.getAutoPilot().wait_();
+			naveAtual.getAutoPilot().setReferenceFrame(noDeManobra.getReferenceFrame());
+			naveAtual.getAutoPilot().setTargetDirection(new Triplet<Double, Double, Double>(0.0, 1.0, 0.0));
+			naveAtual.getAutoPilot().engage();
+			naveAtual.getAutoPilot().wait_();
 		} catch (RPCException e) {
 			System.err.println("Não foi possível orientar a nave para a manobra:\n\t" + e.getMessage());
 		}

@@ -11,6 +11,7 @@ import krpc.client.services.KRPC;
 import krpc.client.services.SpaceCenter;
 import krpc.client.services.KRPC.GameScene;
 import krpc.client.services.SpaceCenter.Flight;
+import krpc.client.services.SpaceCenter.ReferenceFrame;
 import krpc.client.services.SpaceCenter.Vessel;
 
 public class Nave {
@@ -19,13 +20,15 @@ public class Nave {
 	protected static SpaceCenter centroEspacial;
 	protected Vessel naveAtual;
 	protected Flight parametrosDeVoo;
-
+	protected ReferenceFrame pontoRefOrbital;
+	protected ReferenceFrame pontoRefSuperficie;
 	protected Stream<Double> altitude, altitudeSup, apoastro, periastro;
 	protected Stream<Double> velVertical, tempoMissao, velHorizontal;
 	protected Stream<Float> massaTotal, bateriaAtual;
 	protected float bateriaTotal, acelGravidade;
 	protected String corpoCeleste;
 	protected int porcentagemCarga;
+	
 
 	
 	public Nave(Connection con) {

@@ -22,9 +22,10 @@ public class ControlePID {
 	}
 
 	public static double interpolacaoLinear(double v0, double v1, double t) {
-		return (1 - t) * v0 + t * v1;
+		double dT = (t > 1 ? 1 : t < 0 ? 0 : t);
+		return (1 - dT) * v0 + dT * v1;
 	}
-	
+
 	public double computarPID() {
 // M�todo que computa o incremento do PID
 		double agora = System.currentTimeMillis(); // Buscar tempo imediato

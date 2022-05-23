@@ -7,9 +7,13 @@ import com.pesterenan.view.StatusJPanel;
 import krpc.client.Connection;
 import krpc.client.RPCException;
 import krpc.client.StreamException;
+import krpc.client.services.SpaceCenter.ReferenceFrame;
 import krpc.client.services.SpaceCenter.VesselSituation;
 
 public class FlightController extends Nave implements Runnable {
+
+	final float MAX_TEP = 5.0f;
+	
 
 	public FlightController(Connection con) {
 		super(con);
@@ -18,7 +22,9 @@ public class FlightController extends Nave implements Runnable {
 
 	private void iniciarStreams() {
 		try {
-			parametrosDeVoo = naveAtual.flight(naveAtual.getOrbit().getBody().getReferenceFrame());
+			pontoRefOrbital = naveAtual.getOrbit().getBody().getReferenceFrame();
+			pontoRefSuperficie = naveAtual.getSurfaceReferenceFrame();
+			parametrosDeVoo = naveAtual.flight(pontoRefOrbital);
 			altitude = getConexao().addStream(parametrosDeVoo, "getMeanAltitude");
 			altitudeSup = getConexao().addStream(parametrosDeVoo, "getSurfaceAltitude");
 			apoastro = getConexao().addStream(naveAtual.getOrbit(), "getApoapsisAltitude");
@@ -89,10 +95,12 @@ public class FlightController extends Nave implements Runnable {
 			System.err.println("Não foi possivel decolar a nave. Erro: " + erro.getMessage());
 		}
 	}
-	
+
 	protected double calcularTEP() throws RPCException, StreamException {
-		return naveAtual.getAvailableThrust() / ((massaTotal.get() * acelGravidade));
+		float valorTEP = naveAtual.getAvailableThrust() / ((massaTotal.get() * acelGravidade));
+		return valorTEP > MAX_TEP ? MAX_TEP : valorTEP;
 	}
+
 	protected double calcularAcelMaxima() throws RPCException, StreamException {
 		return calcularTEP() * acelGravidade - acelGravidade;
 	}
