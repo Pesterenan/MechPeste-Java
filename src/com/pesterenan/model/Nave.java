@@ -33,8 +33,8 @@ public class Nave {
 	
 	public Nave(Connection con) {
 		setConexao(con);
-		centroEspacial = SpaceCenter.newInstance(getConexao());
 		try {
+			centroEspacial = SpaceCenter.newInstance(getConexao());
 			this.naveAtual = centroEspacial.getActiveVessel();
 		} catch (RPCException e) {
 			System.err.println("Erro ao buscar Nave Atual: \n\t" + e.getMessage());

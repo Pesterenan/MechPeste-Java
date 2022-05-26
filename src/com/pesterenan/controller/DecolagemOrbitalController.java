@@ -36,8 +36,6 @@ public class DecolagemOrbitalController extends FlightController implements Runn
 		setAltApoastroFinal(Float.parseFloat(comandos.get(Modulos.APOASTRO.get())));
 		setDirecao(Float.parseFloat(comandos.get(Modulos.DIRECAO.get())));
 		aceleracaoCtrl = new ControlePID();
-		aceleracaoCtrl.setAmostragem(100);
-		aceleracaoCtrl.ajustarPID(0.05, 0.1, 1);
 		aceleracaoCtrl.limitarSaida(0.1, 1.0);
 	}
 
@@ -48,7 +46,14 @@ public class DecolagemOrbitalController extends FlightController implements Runn
 			curvaGravitacional();
 			planejarOrbita();
 		} catch (RPCException | InterruptedException | StreamException | IOException e) {
-			e.printStackTrace();
+			StatusJPanel.setStatus("Decolagem abortada.");
+			try {
+				acelerar(0f);
+				naveAtual.getAutoPilot().disengage();
+			} catch (RPCException e1) {
+				e1.printStackTrace();
+			}
+			return;
 		}
 	}
 
@@ -71,7 +76,8 @@ public class DecolagemOrbitalController extends FlightController implements Runn
 			if (altitude.get() > altInicioCurva && altitude.get() < getAltApoastroFinal()) {
 				double progresso = (altitude.get() - altInicioCurva) / (getAltApoastroFinal() - altInicioCurva);
 				double incrementoCircular = Math.sqrt(1 - Math.pow(progresso - 1, 2));
-				inclinacaoAtual = (float) (INC_PARA_CIMA - (incrementoCircular * INC_PARA_CIMA));
+//				inclinacaoAtual = (float) (INC_PARA_CIMA - (incrementoCircular * INC_PARA_CIMA));
+				inclinacaoAtual = (float) ControlePID.interpolacaoLinear(INC_PARA_CIMA, 0, incrementoCircular);
 				naveAtual.getAutoPilot().targetPitchAndHeading((float) inclinacaoAtual, getDirecao());
 				StatusJPanel.setStatus(String.format("A inclinação do foguete é: %.1f", inclinacaoAtual));
 				// Informar ao Controlador PID da aceleração a porcentagem do caminho
@@ -92,7 +98,7 @@ public class DecolagemOrbitalController extends FlightController implements Runn
 				;
 			}
 
-			Thread.sleep(100);
+			Thread.sleep(25);
 		}
 	}
 

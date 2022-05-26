@@ -13,6 +13,7 @@ import krpc.client.services.SpaceCenter.VesselSituation;
 public class FlightController extends Nave implements Runnable {
 
 	final float MAX_TEP = 5.0f;
+	protected final static float CONST_GRAV = 9.81f;
 	
 
 	public FlightController(Connection con) {
@@ -77,7 +78,7 @@ public class FlightController extends Nave implements Runnable {
 		acelerar((float) acel);
 	}
 
-	protected void decolar() {
+	protected void decolar() throws InterruptedException {
 		try {
 			naveAtual.getControl().setSAS(true);
 			acelerar(1f);
@@ -91,7 +92,7 @@ public class FlightController extends Nave implements Runnable {
 				naveAtual.getControl().activateNextStage();
 			}
 			StatusJPanel.setStatus("Decolagem!");
-		} catch (RPCException | InterruptedException erro) {
+		} catch (RPCException erro) {
 			System.err.println("Não foi possivel decolar a nave. Erro: " + erro.getMessage());
 		}
 	}

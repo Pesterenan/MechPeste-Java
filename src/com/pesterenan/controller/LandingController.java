@@ -19,7 +19,6 @@ import krpc.client.StreamException;
 public class LandingController extends FlightController implements Runnable {
 
 	private static final int ALTITUDE_POUSO_AUTOMATICO = 8000;
-	private static final int ALTITUDE_TREM_DE_POUSO = 200;
 
 	private ControlePID altitudeAcelPID = new ControlePID();
 	private ControlePID velocidadeAcelPID = new ControlePID();
@@ -58,35 +57,57 @@ public class LandingController extends FlightController implements Runnable {
 	}
 
 	private void sobrevoarArea() {
-		decolar();
-
-		while (executandoSobrevoo) {
-			try {
-				informarCtrlPIDs(altitudeDeSobrevoo);
-				double altPID = altitudeAcelPID.computarPID();
-				velocidadeAcelPID.setLimitePID(altPID * acelGravidade);
-				double velPID = velocidadeAcelPID.computarPID();
-				acelerar((float) (velPID));
-				System.out.println(altPID + " " + velPID);
-				if (descerDoSobrevoo == true) {
-					altitudeDeSobrevoo = 0;
-					checarPouso();
+		try {
+			decolar();
+			naveAtual.getAutoPilot().engage();
+			while (executandoSobrevoo) {
+				try {
+					if (velHorizontal.get() > 10) {
+						navegacao.mirarRetrogrado();
+					} else {
+						navegacao.mirarRadialDeFora();
+					}
+					informarCtrlPIDs(altitudeDeSobrevoo);
+					double altPID = altitudeAcelPID.computarPID();
+					velocidadeAcelPID.setLimitePID(altPID * acelGravidade);
+					double velPID = velocidadeAcelPID.computarPID();
+					acelerar((float) (velPID));
+					if (descerDoSobrevoo == true) {
+						naveAtual.getControl().setGear(true);
+						altitudeDeSobrevoo = 0;
+						checarPouso();
+					}
+					Thread.sleep(25);
+				} catch (RPCException | StreamException | IOException e) {
+					StatusJPanel.setStatus("Função abortada.");
+					naveAtual.getAutoPilot().disengage();
+					break;
 				}
-				Thread.sleep(25);
-			} catch (RPCException | InterruptedException | StreamException | IOException e) {
 			}
+		} catch (InterruptedException | RPCException e) {
+			StatusJPanel.setStatus("Decolagem abortada.");
+			try {
+				naveAtual.getAutoPilot().disengage();
+			} catch (RPCException e1) {
+			}
+			return;
 		}
 	}
 
 	private void pousarAutomaticamente() {
-		decolar();
 		try {
+			decolar();
 			acelerar(0.0f);
+			naveAtual.getAutoPilot().engage();
 			StatusJPanel.setStatus("Iniciando pouso automático em: " + corpoCeleste);
 			checarAltitudeParaPouso();
 			comecarPousoAutomatico();
-		} catch (RPCException | StreamException | InterruptedException e) {
-			System.err.println("Deu erro, não tem o que fazer.");
+		} catch (RPCException | StreamException | InterruptedException | IOException e) {
+			StatusJPanel.setStatus("Não foi possível pousar a nave, operação abortada.");
+			try {
+				naveAtual.getAutoPilot().disengage();
+			} catch (RPCException e1) {
+			}
 		}
 	}
 
@@ -104,23 +125,20 @@ public class LandingController extends FlightController implements Runnable {
 		}
 	}
 
-	private void comecarPousoAutomatico() {
+	private void comecarPousoAutomatico() throws InterruptedException, RPCException, StreamException, IOException {
 		StatusJPanel.setStatus("Iniciando Pouso Automático!");
-		try {
-			naveAtual.getAutoPilot().engage();
-			while (executandoPousoAutomatico) {
-				distanciaDaQueima = calcularDistanciaDaQueima();
-				informarCtrlPIDs(distanciaDaQueima);
-				checarAltitude();
-				checarPouso();
-				Thread.sleep(25);
-			}
-		} catch (RPCException | InterruptedException | StreamException | IOException e) {
+		while (executandoPousoAutomatico) {
+			distanciaDaQueima = calcularDistanciaDaQueima();
+			informarCtrlPIDs(distanciaDaQueima);
+			checarAltitude();
+			checarPouso();
+			Thread.sleep(25);
 		}
 	}
 
 	private void informarCtrlPIDs(double distanciaDaQueima) throws RPCException, StreamException {
-		altitudeAcelPID.setEntradaPID(ControlePID.interpolacaoLinear(distanciaDaQueima, altitudeSup.get(), 0.75));
+		altitudeAcelPID.setEntradaPID(altitudeSup.get());
+//		altitudeAcelPID.setEntradaPID(ControlePID.interpolacaoLinear(distanciaDaQueima, altitudeSup.get(), 0.75));
 		velocidadeAcelPID.setEntradaPID(velVertical.get());
 		double valorTEP = calcularTEP();
 		velocidadeAcelPID.ajustarPID(valorTEP * velP, valorTEP * velI, valorTEP * velD);
@@ -135,10 +153,8 @@ public class LandingController extends FlightController implements Runnable {
 		}
 
 		double limiarDoPouso = calcularAcelMaxima() * 3;
-		velocidadeAcelPID.setLimitePID(-6);
-		if (altitudeSup.get() - limiarDoPouso > limiarDoPouso) {
-//			velocidadeAcelPID.setLimitePID(velVertical.get());
-		} else {
+		velocidadeAcelPID.setLimitePID(-5);
+		if (altitudeSup.get() - limiarDoPouso < limiarDoPouso) {
 			naveAtual.getControl().setGear(true);
 		}
 

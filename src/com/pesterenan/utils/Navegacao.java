@@ -8,9 +8,6 @@ import com.pesterenan.controller.FlightController;
 
 import krpc.client.RPCException;
 import krpc.client.StreamException;
-import krpc.client.services.SpaceCenter;
-import krpc.client.services.SpaceCenter.Flight;
-import krpc.client.services.SpaceCenter.ReferenceFrame;
 import krpc.client.services.SpaceCenter.Vessel;
 
 public class Navegacao extends FlightController {
@@ -22,27 +19,16 @@ public class Navegacao extends FlightController {
 		super(getConexao());
 	}
 
-	public void mirarRetrogrado() {
-		try {
-			// Buscar Direção Retrógrada:
-			posicaoAlvo = centroEspacial.transformPosition(parametrosDeVoo.getRetrograde(),
-					naveAtual.getSurfaceVelocityReferenceFrame(), pontoRefOrbital);
-
-			vetorDirecaoHorizontal = Vetor.direcaoAlvoContraria(naveAtual.position(pontoRefSuperficie),
-					centroEspacial.transformPosition(posicaoAlvo, pontoRefOrbital, pontoRefSuperficie));
-
-			Vetor alinharDirecao = getElevacaoDirecaoDoVetor(vetorDirecaoHorizontal);
-
-			naveAtual.getAutoPilot().targetPitchAndHeading((float) alinharDirecao.y, (float) alinharDirecao.x);
-			naveAtual.getAutoPilot().setTargetRoll((float) 90);
-		} catch (RPCException | StreamException | IOException e) {
-			System.err.println("Não foi possível manobrar a nave.");
-		}
+	public void mirarRetrogrado() throws RPCException {
+		mirarNaDirecao(parametrosDeVoo.getRetrograde());
 	}
 
-	public void mirarRadialDeFora() {
+	public void mirarRadialDeFora() throws RPCException {
+		mirarNaDirecao(parametrosDeVoo.getRadial());
+	}
+	public void mirarNaDirecao(Triplet<Double,Double,Double> direcao) {
 		try {
-			posicaoAlvo = centroEspacial.transformPosition(parametrosDeVoo.getRadial(),
+			posicaoAlvo = centroEspacial.transformPosition(direcao,
 					naveAtual.getSurfaceVelocityReferenceFrame(), pontoRefOrbital);
 
 			vetorDirecaoHorizontal = Vetor.direcaoAlvoContraria(naveAtual.position(pontoRefSuperficie),
@@ -76,7 +62,7 @@ public class Navegacao extends FlightController {
 		Vetor vetorVelocidade = new Vetor(velocidade.y, velocidade.z, velocidade.x);
 		alvo = alvo.subtrai(vetorVelocidade);
 		double inclinacaoGraus = Math
-				.abs(ControlePID.interpolacaoLinear(90, 45, alvo.Magnitude() / 100 * 1.2));
+				.abs(ControlePID.interpolacaoLinear(90, 30, alvo.Magnitude() / 100 * 1.2));
 		return new Vetor(Vetor.anguloDirecao(alvo), inclinacaoGraus, Vetor.anguloDirecao(velocidade));
 	}
 

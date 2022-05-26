@@ -33,6 +33,7 @@ public class MechPeste implements PropertyChangeListener {
 	private static Thread threadModulos;
 	private static Thread threadTelemetria;
 	private static FlightController flightCtrl;
+	private static FlightController modulo;
 	private static DecolagemOrbitalController decolagemOrbitalCtrl;
 
 	public static void main(String[] args) throws StreamException, RPCException, IOException, InterruptedException {
@@ -76,7 +77,6 @@ public class MechPeste implements PropertyChangeListener {
 	}
 
 	public static void iniciarModulo(Map<String, String> comandos) {
-		FlightController modulo = null;
 		String executarModulo = comandos.get(Modulos.MODULO.get());
 
 		if (executarModulo.equals(Modulos.MODULO_MANOBRAS.get())) {
@@ -103,9 +103,10 @@ public class MechPeste implements PropertyChangeListener {
 	}
 
 	public static void finalizarTarefa() throws IOException {
-		if (getThreadModulos().isAlive()) {
+		if (getThreadModulos() != null && getThreadModulos().isAlive()) {
 			getThreadModulos().interrupt();
 			setThreadModulos(null);
+			modulo = null;
 		}
 	}
 
@@ -118,7 +119,11 @@ public class MechPeste implements PropertyChangeListener {
 	}
 
 	private static void setThreadModulos(Thread threadModulos) {
-		MechPeste.threadModulos = threadModulos;
+		if (threadModulos == null) {
+			MechPeste.threadModulos = null;
+		} else {
+			MechPeste.threadModulos = threadModulos;
+		}
 	}
 
 	private static Thread getThreadTelemetria() {
