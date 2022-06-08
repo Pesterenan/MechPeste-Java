@@ -2,101 +2,66 @@ package com.pesterenan.utils;
 /*Controlador Proporcional Integral Derivativo
 Autor: Renan Torres <pesterenan@gmail.com>
  Data: 22/08/2018 
-Atualizado: 26/02/2019*/
+Atualizado: 06/06/2022*/
 
 public class ControlePID {
-// Controlador PID escrito em Java para uso com o mod MechPeste
 	private double limiteMin = -1;
 	private double limiteMax = 1;
-// Vari�veis padr�o de ajuste do PID:
+
 	private double kp = 0.025;
 	private double ki = 0.05;
 	private double kd = 0.01;
-	private double amostragem = 25; // Tempo para amostragem
+	private double amostragem = 25;
 
-	private double valorEntrada = 0, valorSaida = 1, valorLimite = 100; // vari�veis de valores
-	private double termoIntegral, ultimaEntrada; // vari�veis de c�lculo de erro
-	private double ultimoCalculo = 0; // tempo do �ltimo c�lculo
+	private double valorSaida = 1;
+	private double termoIntegral = 0;
+	private double ultimaEntrada, ultimoCalculo = 0;
 
-	public ControlePID() {
+	private double limitarValor(double valor) {
+		return Utilities.limitValue(valor, this.limiteMin, this.limiteMax);
 	}
 
-	public static double interpolacaoLinear(double v0, double v1, double t) {
-		double dT = (t > 1 ? 1 : t < 0 ? 0 : t);
-		return (1 - dT) * v0 + dT * v1;
-	}
-
-	public double computarPID() {
-// M�todo que computa o incremento do PID
-		double agora = System.currentTimeMillis(); // Buscar tempo imediato
-		double mudancaTempo = agora - this.ultimoCalculo; // Comparar com o �ltimo c�lculo
+	/**
+	 * Computar o valor de saida do controlador, usando os valores de entrada e
+	 * limite
+	 * 
+	 * @returns Valor computado do controlador
+	 */
+	public double computarPID(double valorEntrada, double valorLimite) {
+		double agora = System.currentTimeMillis();
+		double mudancaTempo = agora - this.ultimoCalculo;
 
 		if (mudancaTempo >= this.amostragem) {
-// Vari�veis para o c�lculo do valor de sa�da:
-			double erro = this.valorLimite - this.valorEntrada;
-			termoIntegral += ki * erro;
-			if (termoIntegral > limiteMax) {
-				termoIntegral = limiteMax;
-			} else if (termoIntegral < limiteMin) {
-				termoIntegral = limiteMin;
-			}
-			double diferencaEntrada = (this.valorEntrada - this.ultimaEntrada);
+			double erro = valorLimite - valorEntrada;
+			double diferencaEntrada = (valorEntrada - this.ultimaEntrada);
 
-// Computar o valor de sa�da:
-			this.valorSaida = kp * erro + ki * termoIntegral - kd * diferencaEntrada;
-// Limitar valor de sa�da:
-			if (this.valorSaida > limiteMax) {
-				this.valorSaida = limiteMax;
-			} else if (this.valorSaida < limiteMin) {
-				this.valorSaida = limiteMin;
-			}
+			this.termoIntegral = limitarValor(this.termoIntegral + ki * erro);
+			this.valorSaida = limitarValor(kp * erro + ki * this.termoIntegral - kd * diferencaEntrada);
 
-// Guardando os valores atuais para o pr�ximo c�lculo:
-			this.ultimaEntrada = this.valorEntrada;
+			this.ultimaEntrada = valorEntrada;
 			this.ultimoCalculo = agora;
 		}
-// Retorna o valor de sa�da calculado:
-		return this.valorSaida;
-	}
-
-	public void setEntradaPID(double valor) {
-// Informar valor de entrada:
-		this.valorEntrada = valor;
-	}
-
-	public void setLimitePID(double valor) {
-// Limite para o valor de entrada alcan�ar:
-		this.valorLimite = valor;
+		return valorSaida;
 	}
 
 	public void limitarSaida(double min, double max) {
 		if (min > max)
 			return;
-		limiteMin = min;
-		limiteMax = max;
+		this.limiteMin = min;
+		this.limiteMax = max;
+		this.termoIntegral = limitarValor(this.termoIntegral);
 
-		if (termoIntegral > limiteMax) {
-			termoIntegral = limiteMax;
-		} else if (termoIntegral < limiteMin) {
-			termoIntegral = limiteMin;
-		}
-
-		if (this.valorSaida > limiteMax) {
-			this.valorSaida = limiteMax;
-		} else if (this.valorSaida < limiteMin) {
-			this.valorSaida = limiteMin;
-		}
 	}
 
 	public void ajustarPID(double Kp, double Ki, double Kd) {
 		if (Kp > 0) {
-			kp = Kp;
+			this.kp = Kp;
 		}
 		if (Ki >= 0) {
-			ki = Ki;
+			this.ki = Ki;
 		}
 		if (Kd >= 0) {
-			kd = Kd;
+			this.kd = Kd;
 		}
 	}
 

@@ -7,7 +7,6 @@ import java.util.List;
 
 import org.javatuples.Triplet;
 
-import com.pesterenan.MechPeste;
 import com.pesterenan.utils.ControlePID;
 import com.pesterenan.utils.Vetor;
 import com.pesterenan.view.GUI;
@@ -69,8 +68,8 @@ public class RoverAutonomoController {
 	private double tempoDeMissao;
 	private double tempoRestante;
 
-
-	public RoverAutonomoController(Connection conexao) throws IOException, RPCException, InterruptedException, StreamException {
+	public RoverAutonomoController(Connection conexao)
+			throws IOException, RPCException, InterruptedException, StreamException {
 		iniciarParametros(conexao);
 		definirAlvo();
 		controlarRover();
@@ -89,7 +88,7 @@ public class RoverAutonomoController {
 		parametrosRover = rover.flight(pontoRefOrbital);
 		velocidadeRover = conexao.addStream(parametrosRover, "getHorizontalSpeed");
 		tempoDoJogo = conexao.addStream(centroEspacial.getClass(), "getUT");
-	
+
 		// AJUSTAR CONTROLES PID:
 		ctrlAceleracao.ajustarPID(0.5, 0.1, 0.01);
 		ctrlAceleracao.limitarSaida(0, 1);
@@ -99,8 +98,6 @@ public class RoverAutonomoController {
 		ctrlRolagem.limitarSaida(-1, 1);
 		ctrlArfagem.ajustarPID(0.5, 0.015, 0.5);
 		ctrlArfagem.limitarSaida(-1, 1);
-		ctrlRolagem.setLimitePID(0);
-		ctrlArfagem.setLimitePID(0);
 		tempoAnterior = tempoDoJogo.get();
 		tempoRestante = 0;
 		kmsPercorridos = 0;
@@ -219,7 +216,6 @@ public class RoverAutonomoController {
 		while (executandoAutoRover) {
 			try {
 				definirVetorDirecao();
-				ctrlAceleracao.setEntradaPID(velocidadeRover.get());
 				antiTombamento();
 				logarDados();
 			} catch (Exception erro) {
@@ -232,7 +228,7 @@ public class RoverAutonomoController {
 					if (rover.getControl().getBrakes()) {
 						rover.getControl().setBrakes(false);
 					}
-					acelerarRover(ctrlAceleracao.computarPID());
+					acelerarRover(ctrlAceleracao.computarPID(velocidadeRover.get(), 0));
 					pilotarRover();
 				} else {
 					rover.getControl().setBrakes(true);
@@ -285,13 +281,13 @@ public class RoverAutonomoController {
 
 		// Controlar a velocidade para fazer curvas
 		if (diferencaAngulo > 20) {
-			ctrlAceleracao.setLimitePID(velocidadeCurva);
+//			ctrlAceleracao.setLimitePID(velocidadeCurva);
 		} else {
-			ctrlAceleracao.setLimitePID(velocidadeMaxima);
+//			ctrlAceleracao.setLimitePID(velocidadeMaxima);
 		}
 		if (diferencaAngulo > 3) {
 			// Dirigir o Rover ao Alvo
-			rover.getControl().setWheelSteering((float) ctrlDirecao.computarPID());
+//			rover.getControl().setWheelSteering((float) ctrlDirecao.computarPID());
 		} else {
 			rover.getControl().setWheelSteering(0f);
 		}
@@ -315,8 +311,8 @@ public class RoverAutonomoController {
 		// Definir o angulo entre os dois
 		anguloAlvo = (Vetor.anguloDirecao(direcaoTrajeto));
 		anguloRover = (Vetor.anguloDirecao(direcaoRover));
-		ctrlDirecao.setEntradaPID(anguloRover * 0.5);
-		ctrlDirecao.setLimitePID(anguloAlvo * 0.5);
+//		ctrlDirecao.setEntradaPID(anguloRover * 0.5);
+//		ctrlDirecao.setLimitePID(anguloAlvo * 0.5);
 	}
 
 	private void antiTombamento() throws RPCException {
@@ -364,10 +360,10 @@ public class RoverAutonomoController {
 		} else if (Double.compare(difFT, Double.POSITIVE_INFINITY) == 0) {
 			difFT = 20;
 		}
-		ctrlRolagem.setEntradaPID(difED);
-		ctrlArfagem.setEntradaPID(difFT);
-		rover.getControl().setRoll((float) (ctrlRolagem.computarPID()));
-		rover.getControl().setPitch((float) (ctrlArfagem.computarPID()));
+//		ctrlRolagem.setEntradaPID(difED);
+//		ctrlArfagem.setEntradaPID(difFT);
+//		rover.getControl().setRoll((float) (ctrlRolagem.computarPID()));
+//		rover.getControl().setPitch((float) (ctrlArfagem.computarPID()));
 	}
 
 	private void logarDados() throws IOException, RPCException, StreamException {

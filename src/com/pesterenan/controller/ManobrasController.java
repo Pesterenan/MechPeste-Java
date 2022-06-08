@@ -37,8 +37,8 @@ public class ManobrasController extends FlightController implements Runnable {
 
 	public void calcularManobra() {
 		try {
-			if (naveAtual.getSituation() == VesselSituation.LANDED ||
-					naveAtual.getSituation() == VesselSituation.SPLASHED) {
+			if (naveAtual.getSituation() == VesselSituation.LANDED
+					|| naveAtual.getSituation() == VesselSituation.SPLASHED) {
 				throw new InterruptedException();
 			}
 			if (this.funcao.equals(Modulos.EXECUTAR.get()))
@@ -90,11 +90,27 @@ public class ManobrasController extends FlightController implements Runnable {
 				orientarNaveParaNoDeManobra(noDeManobra);
 				executarQueima(noDeManobra, duracaoDaQueima);
 			}
-		} catch (UnsupportedOperationException | IndexOutOfBoundsException e) {
+		} catch (UnsupportedOperationException e) {
+			StatusJPanel.setStatus("A criação de Manobras não foi desbloqueada ainda.");
+			return;
+		} catch (IndexOutOfBoundsException e) {
 			StatusJPanel.setStatus("Não há Manobras disponíveis.");
 			return;
 		} catch (RPCException e) {
 			StatusJPanel.setStatus("Não foi possivel buscar dados da nave.");
+			return;
+		}
+	}
+
+	public void orientarNaveParaNoDeManobra(Node noDeManobra) {
+		StatusJPanel.setStatus("Orientando nave para o nó de Manobra...");
+		try {
+			naveAtual.getAutoPilot().setReferenceFrame(noDeManobra.getReferenceFrame());
+			naveAtual.getAutoPilot().setTargetDirection(new Triplet<Double, Double, Double>(0.0, 1.0, 0.0));
+			naveAtual.getAutoPilot().engage();
+			naveAtual.getAutoPilot().wait_();
+		} catch (RPCException e) {
+			System.err.println("Não foi possível orientar a nave para a manobra:\n\t" + e.getMessage());
 		}
 	}
 
@@ -106,35 +122,23 @@ public class ManobrasController extends FlightController implements Runnable {
 				motor.setActive(true);
 			}
 		}
-		double empuxoTotal = naveAtual.getAvailableThrust(); // pegar empuxo dispon�vel
-		double isp = naveAtual.getSpecificImpulse() * CONST_GRAV; // pegar isp e multiplicar � constante grav
-		double massaTotal = naveAtual.getMass(); // pegar massa atual
-		double massaSeca = massaTotal / Math.exp(noDeManobra.getRemainingDeltaV() / isp); // pegar massa seca
-		double taxaDeQueima = empuxoTotal / isp; // taxa de fluxo, empuxo / isp
+		double empuxo = naveAtual.getAvailableThrust();
+		double isp = naveAtual.getSpecificImpulse() * CONST_GRAV;
+		double massaTotal = naveAtual.getMass();
+		double massaSeca = massaTotal / Math.exp(noDeManobra.getDeltaV() / isp);
+		double taxaDeQueima = empuxo / isp;
 		double duracaoDaQueima = (massaTotal - massaSeca) / taxaDeQueima;
+
 		StatusJPanel.setStatus("Tempo de Queima da Manobra: " + duracaoDaQueima + " segundos");
 		return duracaoDaQueima;
 	}
 
-	public void orientarNaveParaNoDeManobra(Node noDeManobra) {
-		StatusJPanel.setStatus("Orientando nave para o nó de Manobra...");
+	public void executarQueima(Node noDeManobra, double duracaoDaQueima) throws RPCException {
 		try {
-			naveAtual.getControl().setSAS(true);
-			naveAtual.getAutoPilot().setReferenceFrame(noDeManobra.getReferenceFrame());
-			naveAtual.getAutoPilot().setTargetDirection(new Triplet<Double, Double, Double>(0.0, 1.0, 0.0));
-			naveAtual.getAutoPilot().engage();
-			naveAtual.getAutoPilot().wait_();
-		} catch (RPCException e) {
-			StatusJPanel.setStatus("Não foi possível orientar a nave para a manobra:\n\t" + e.getMessage());
-		}
-	}
-
-	public void executarQueima(Node noDeManobra, double duracaoDaQueima) {
-		try {
-			double inicioDaQueima = noDeManobra.getTimeTo();
+			double inicioDaQueima = noDeManobra.getTimeTo() - (duracaoDaQueima / 2.0);
 			// Caso estiver muito distante da manobra, dar Warp:
-			if (inicioDaQueima + duracaoDaQueima > 60) {
-				centroEspacial.warpTo((centroEspacial.getUT() + inicioDaQueima - duracaoDaQueima - 10), 100000, 4);
+			if (inicioDaQueima > 60) {
+				centroEspacial.warpTo((centroEspacial.getUT() + inicioDaQueima - 10), 100000, 4);
 			}
 			// Mostrar tempo de ignição:
 			StatusJPanel.setStatus("Duração da queima: " + duracaoDaQueima + " segundos.");
@@ -148,12 +152,13 @@ public class ManobrasController extends FlightController implements Runnable {
 			Stream<Triplet<Double, Double, Double>> queimaRestante = getConexao().addStream(noDeManobra,
 					"remainingBurnVector", noDeManobra.getReferenceFrame());
 			StatusJPanel.setStatus("Executando manobra!");
-			aceleracaoCtrl.setLimitePID(0);
+//			aceleracaoCtrl.setLimitePID(0);
 			double duracao = duracaoDaQueima;
-			while (duracao <= 0 || noDeManobra != null) {
-				aceleracaoCtrl.setEntradaPID(-queimaRestante.get().getValue1() * 100 / noDeManobra.getDeltaV());
+			while (duracao >= 0 || noDeManobra != null) {
+//				aceleracaoCtrl.setEntradaPID(-queimaRestante.get().getValue1() * 100 / noDeManobra.getDeltaV());
 				if (queimaRestante.get().getValue1() > 1 && noDeManobra != null) {
-					acelerar(aceleracaoCtrl.computarPID());
+					acelerar(aceleracaoCtrl
+							.computarPID(-queimaRestante.get().getValue1() * 100 / noDeManobra.getDeltaV(), 0));
 				} else {
 					queimaRestante.remove();
 					break;
@@ -169,8 +174,12 @@ public class ManobrasController extends FlightController implements Runnable {
 			noDeManobra.remove();
 			StatusJPanel.setStatus(Status.PRONTO.get());
 		} catch (StreamException | RPCException e) {
+			acelerar(0.0f);
+			naveAtual.getAutoPilot().disengage();
 			StatusJPanel.setStatus("Não foi possivel buscar os dados da nave.");
 		} catch (InterruptedException e) {
+			acelerar(0.0f);
+			naveAtual.getAutoPilot().disengage();
 			StatusJPanel.setStatus("Manobra cancelada.");
 		}
 	}

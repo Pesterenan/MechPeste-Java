@@ -93,7 +93,12 @@ public class ManobrasJPanel extends JPanel implements ActionListener {
 	public void actionPerformed(ActionEvent e) {
 		String evtComando = e.getActionCommand();
 		Map<String, String> comandos = new HashMap<>();
-		comandos.put(Modulos.MODULO.get(),Modulos.MODULO_MANOBRAS.get());
+		if (evtComando.equals(Modulos.AJUSTAR.get())) {
+			comandos.put(Modulos.MODULO.get(),Modulos.MODULO_PILOTO.get());			
+		} else {
+			
+			comandos.put(Modulos.MODULO.get(),Modulos.MODULO_MANOBRAS.get());
+		}
 		comandos.put(Modulos.FUNCAO.get(),evtComando);
 		MechPeste.iniciarModulo(comandos);
 	}

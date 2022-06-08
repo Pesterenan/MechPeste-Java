@@ -14,9 +14,9 @@ import java.io.IOException;
 import java.util.Map;
 
 import com.pesterenan.controller.DecolagemOrbitalController;
-import com.pesterenan.controller.ManobrasController;
-import com.pesterenan.controller.LandingController;
 import com.pesterenan.controller.FlightController;
+import com.pesterenan.controller.LandingController;
+import com.pesterenan.controller.ManobrasController;
 import com.pesterenan.utils.Modulos;
 import com.pesterenan.view.MainGui;
 import com.pesterenan.view.StatusJPanel;
@@ -34,7 +34,6 @@ public class MechPeste implements PropertyChangeListener {
 	private static Thread threadTelemetria;
 	private static FlightController flightCtrl;
 	private static FlightController modulo;
-	private static DecolagemOrbitalController decolagemOrbitalCtrl;
 
 	public static void main(String[] args) throws StreamException, RPCException, IOException, InterruptedException {
 		MechPeste.getInstance();

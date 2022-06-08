@@ -12,6 +12,7 @@ public enum Modulos {
 	MODULO_DECOLAGEM("Executar Decolagem"), 
 	MODULO_MANOBRAS("Módulo Manobras"), 
 	MODULO_POUSO("Módulo Pouso"),
+	MODULO_PILOTO("Módulo Piloto"),
 	ALTITUDE_SOBREVOO("Altitude Sobrevoo"), 
 	MODULO_POUSO_SOBREVOAR("Sobrevoar");
 	String t;

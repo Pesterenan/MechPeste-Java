@@ -9,6 +9,7 @@ import java.util.Map;
 import com.pesterenan.utils.ControlePID;
 import com.pesterenan.utils.Modulos;
 import com.pesterenan.utils.Navegacao;
+import com.pesterenan.utils.Utilities;
 import com.pesterenan.utils.Vetor;
 import com.pesterenan.view.MainGui;
 import com.pesterenan.view.StatusJPanel;
@@ -38,8 +39,6 @@ public class LandingController extends FlightController implements Runnable {
 		this.comandos = comandos;
 		this.altitudeAcelPID.limitarSaida(0, 1);
 		this.velocidadeAcelPID.limitarSaida(0, 1);
-		this.velocidadeAcelPID.setLimitePID(0);
-		this.altitudeAcelPID.setLimitePID(0);
 		StatusJPanel.setStatus(STATUS_POUSO_AUTOMATICO.get());
 	}
 
@@ -62,16 +61,15 @@ public class LandingController extends FlightController implements Runnable {
 			naveAtual.getAutoPilot().engage();
 			while (executandoSobrevoo) {
 				try {
-					if (velHorizontal.get() > 10) {
+					if (velHorizontal.get() > 15) {
 						navegacao.mirarRetrogrado();
 					} else {
 						navegacao.mirarRadialDeFora();
 					}
-					informarCtrlPIDs(altitudeDeSobrevoo);
-					double altPID = altitudeAcelPID.computarPID();
-					velocidadeAcelPID.setLimitePID(altPID * acelGravidade);
-					double velPID = velocidadeAcelPID.computarPID();
-					acelerar((float) (velPID));
+					ajustarCtrlPIDs();
+					double altPID = altitudeAcelPID.computarPID(altitudeSup.get(), altitudeDeSobrevoo);
+					double velPID = velocidadeAcelPID.computarPID(velVertical.get(), altPID * acelGravidade);
+					acelerar(velPID);
 					if (descerDoSobrevoo == true) {
 						naveAtual.getControl().setGear(true);
 						altitudeDeSobrevoo = 0;
@@ -114,9 +112,9 @@ public class LandingController extends FlightController implements Runnable {
 	private void checarAltitudeParaPouso() throws RPCException, StreamException, InterruptedException {
 		while (!executandoPousoAutomatico) {
 			distanciaDaQueima = calcularDistanciaDaQueima();
+			naveAtual.getControl().setBrakes(true);
+			navegacao.mirarRetrogrado();
 			if (altitudeSup.get() < ALTITUDE_POUSO_AUTOMATICO) {
-				navegacao.mirarRetrogrado();
-				naveAtual.getControl().setBrakes(true);
 				if (altitudeSup.get() < distanciaDaQueima && velVertical.get() < -1) {
 					executandoPousoAutomatico = true;
 				}
@@ -129,23 +127,20 @@ public class LandingController extends FlightController implements Runnable {
 		StatusJPanel.setStatus("Iniciando Pouso Automático!");
 		while (executandoPousoAutomatico) {
 			distanciaDaQueima = calcularDistanciaDaQueima();
-			informarCtrlPIDs(distanciaDaQueima);
 			checarAltitude();
 			checarPouso();
 			Thread.sleep(25);
 		}
 	}
 
-	private void informarCtrlPIDs(double distanciaDaQueima) throws RPCException, StreamException {
-		altitudeAcelPID.setEntradaPID(altitudeSup.get());
-//		altitudeAcelPID.setEntradaPID(ControlePID.interpolacaoLinear(distanciaDaQueima, altitudeSup.get(), 0.75));
-		velocidadeAcelPID.setEntradaPID(velVertical.get());
+	private void ajustarCtrlPIDs() throws RPCException, StreamException {
 		double valorTEP = calcularTEP();
 		velocidadeAcelPID.ajustarPID(valorTEP * velP, valorTEP * velI, valorTEP * velD);
-		altitudeAcelPID.setLimitePID(distanciaDaQueima);
 	}
 
 	private void checarAltitude() throws RPCException, StreamException, IOException, InterruptedException {
+		distanciaDaQueima = calcularDistanciaDaQueima();
+		ajustarCtrlPIDs();
 		if (velHorizontal.get() > 3) {
 			navegacao.mirarRetrogrado();
 		} else {
@@ -153,15 +148,14 @@ public class LandingController extends FlightController implements Runnable {
 		}
 
 		double limiarDoPouso = calcularAcelMaxima() * 3;
-		velocidadeAcelPID.setLimitePID(-5);
 		if (altitudeSup.get() - limiarDoPouso < limiarDoPouso) {
 			naveAtual.getControl().setGear(true);
 		}
 
-		double acel = altitudeAcelPID.computarPID();
-		double vel = velocidadeAcelPID.computarPID();
+		double acel = altitudeAcelPID.computarPID(altitudeSup.get(), distanciaDaQueima);
+		double vel = velocidadeAcelPID.computarPID(velVertical.get(), -5);
 		double limite = (altitudeSup.get() - limiarDoPouso) / limiarDoPouso;
-		acelerar(ControlePID.interpolacaoLinear(vel, acel, limite));
+		acelerar(Utilities.linearInterpolation(vel, acel, limite));
 	}
 
 	private void checarPouso() throws RPCException, IOException, InterruptedException {

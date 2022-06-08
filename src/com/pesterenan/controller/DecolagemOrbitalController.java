@@ -9,12 +9,12 @@ import java.util.Map;
 import com.pesterenan.MechPeste;
 import com.pesterenan.utils.ControlePID;
 import com.pesterenan.utils.Modulos;
+import com.pesterenan.utils.Utilities;
 import com.pesterenan.view.StatusJPanel;
 
 import krpc.client.RPCException;
 import krpc.client.StreamException;
 import krpc.client.services.SpaceCenter.Engine;
-import krpc.client.services.SpaceCenter.VesselSituation;
 
 public class DecolagemOrbitalController extends FlightController implements Runnable {
 
@@ -28,14 +28,13 @@ public class DecolagemOrbitalController extends FlightController implements Runn
 	private float altApoastroFinal = 80000;
 	private float inclinacaoAtual = 90;
 	private float direcao = 90;
-	private final ControlePID aceleracaoCtrl;
+	private final ControlePID aceleracaoCtrl = new ControlePID();;
 
 	public DecolagemOrbitalController(Map<String, String> comandos) {
 		super(getConexao());
 		StatusJPanel.setStatus(STATUS_DECOLAGEM_ORBITAL.get());
 		setAltApoastroFinal(Float.parseFloat(comandos.get(Modulos.APOASTRO.get())));
 		setDirecao(Float.parseFloat(comandos.get(Modulos.DIRECAO.get())));
-		aceleracaoCtrl = new ControlePID();
 		aceleracaoCtrl.limitarSaida(0.1, 1.0);
 	}
 
@@ -70,6 +69,7 @@ public class DecolagemOrbitalController extends FlightController implements Runn
 
 	private void curvaGravitacional() throws RPCException, StreamException, InterruptedException {
 		acelerar(1f);
+		inclinacaoAtual = INC_PARA_CIMA;
 		naveAtual.getAutoPilot().engage();
 		naveAtual.getAutoPilot().targetPitchAndHeading(inclinacaoAtual, getDirecao());
 		while (inclinacaoAtual > 1) {
@@ -77,14 +77,12 @@ public class DecolagemOrbitalController extends FlightController implements Runn
 				double progresso = (altitude.get() - altInicioCurva) / (getAltApoastroFinal() - altInicioCurva);
 				double incrementoCircular = Math.sqrt(1 - Math.pow(progresso - 1, 2));
 //				inclinacaoAtual = (float) (INC_PARA_CIMA - (incrementoCircular * INC_PARA_CIMA));
-				inclinacaoAtual = (float) ControlePID.interpolacaoLinear(INC_PARA_CIMA, 0, incrementoCircular);
-				naveAtual.getAutoPilot().targetPitchAndHeading((float) inclinacaoAtual, getDirecao());
+				inclinacaoAtual = (float) Utilities.linearInterpolation(INC_PARA_CIMA, 0, incrementoCircular);
+				naveAtual.getAutoPilot().targetPitchAndHeading(inclinacaoAtual, getDirecao());
 				StatusJPanel.setStatus(String.format("A inclinação do foguete é: %.1f", inclinacaoAtual));
-				// Informar ao Controlador PID da aceleração a porcentagem do caminho
-				aceleracaoCtrl.setEntradaPID(apoastro.get() * 100 / getAltApoastroFinal());
 				// Acelerar a nave de acordo com o PID, ou cortar o motor caso passe do apoastro
 				if (apoastro.get() < getAltApoastroFinal()) {
-					acelerar((float) aceleracaoCtrl.computarPID());
+					acelerar((float) aceleracaoCtrl.computarPID(apoastro.get() * 100 / getAltApoastroFinal(), 100));
 				} else {
 					acelerar(0.0f);
 					break;
