@@ -36,6 +36,7 @@ public class Navegacao extends FlightController {
 
 			Vetor alinharDirecao = getElevacaoDirecaoDoVetor(vetorDirecaoHorizontal);
 			naveAtual.getAutoPilot().targetPitchAndHeading((float) alinharDirecao.y, (float) alinharDirecao.x);
+			naveAtual.getAutoPilot().setTargetRoll(90);
 		} catch (RPCException | StreamException | IOException e) {
 			System.err.println("Não foi possível manobrar a nave.");
 		}
@@ -59,8 +60,8 @@ public class Navegacao extends FlightController {
 				centroEspacial.transformPosition(parametrosDeVoo.getVelocity(), pontoRefOrbital, pontoRefSuperficie));
 		Vetor vetorVelocidade = new Vetor(velocidade.y, velocidade.z, velocidade.x);
 		alvo = alvo.subtrai(vetorVelocidade);
-		double inclinacaoGraus = Math.abs(Utilities.linearInterpolation(90, 30, vetorVelocidade.Magnitude() / 100 * 1.5));
-		return new Vetor(Vetor.anguloDirecao(alvo), Utilities.limitValue(inclinacaoGraus, 30, 90), Vetor.anguloDirecao(vetorVelocidade));
+		double inclinacaoGraus = Utilities.remap(1, 100, 90, 30, velHorizontal.get());
+		return new Vetor(Vetor.anguloDirecao(alvo), Utilities.clamp(inclinacaoGraus, 30, 90), Vetor.anguloDirecao(vetorVelocidade));
 	}
 
 }

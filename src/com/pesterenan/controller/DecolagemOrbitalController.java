@@ -18,24 +18,19 @@ import krpc.client.services.SpaceCenter.Engine;
 
 public class DecolagemOrbitalController extends FlightController implements Runnable {
 
-	public static final int MIN_APOASTRO_FINAL = 10000;
-	public static final int MAX_APOASTRO_FINAL = 2000000;
-	public static final int MAX_DIRECAO = 360;
-	public static final int MIN_DIRECAO = 0;
 	private static final float INC_PARA_CIMA = 90;
 
+	private float inclinacaoAtual;
 	private float altInicioCurva = 100;
 	private float altApoastroFinal = 80000;
-	private float inclinacaoAtual = 90;
 	private float direcao = 90;
-	private final ControlePID aceleracaoCtrl = new ControlePID();;
 
 	public DecolagemOrbitalController(Map<String, String> comandos) {
 		super(getConexao());
+		this.inclinacaoAtual = INC_PARA_CIMA;
 		StatusJPanel.setStatus(STATUS_DECOLAGEM_ORBITAL.get());
 		setAltApoastroFinal(Float.parseFloat(comandos.get(Modulos.APOASTRO.get())));
 		setDirecao(Float.parseFloat(comandos.get(Modulos.DIRECAO.get())));
-		aceleracaoCtrl.limitarSaida(0.1, 1.0);
 	}
 
 	@Override
@@ -60,7 +55,8 @@ public class DecolagemOrbitalController extends FlightController implements Runn
 		StatusJPanel.setStatus("Planejando Manobra de circularização...");
 		naveAtual.getAutoPilot().disengage();
 		naveAtual.getControl().setSAS(true);
-		naveAtual.getControl().setRCS(false);
+		naveAtual.getControl().setRCS(true);
+
 		Map<String, String> comandos = new HashMap<>();
 		comandos.put(Modulos.MODULO.get(), Modulos.MODULO_MANOBRAS.get());
 		comandos.put(Modulos.FUNCAO.get(), Modulos.APOASTRO.get());
@@ -68,39 +64,36 @@ public class DecolagemOrbitalController extends FlightController implements Runn
 	}
 
 	private void curvaGravitacional() throws RPCException, StreamException, InterruptedException {
-		acelerar(1f);
-		inclinacaoAtual = INC_PARA_CIMA;
+		naveAtual.getAutoPilot().targetPitchAndHeading(this.inclinacaoAtual, getDirecao());
+		naveAtual.getAutoPilot().setTargetRoll(90);
 		naveAtual.getAutoPilot().engage();
-		naveAtual.getAutoPilot().targetPitchAndHeading(inclinacaoAtual, getDirecao());
-		while (inclinacaoAtual > 1) {
-			if (altitude.get() > altInicioCurva && altitude.get() < getAltApoastroFinal()) {
-				double progresso = (altitude.get() - altInicioCurva) / (getAltApoastroFinal() - altInicioCurva);
-				double incrementoCircular = Math.sqrt(1 - Math.pow(progresso - 1, 2));
-//				inclinacaoAtual = (float) (INC_PARA_CIMA - (incrementoCircular * INC_PARA_CIMA));
-				inclinacaoAtual = (float) Utilities.linearInterpolation(INC_PARA_CIMA, 0, incrementoCircular);
-				naveAtual.getAutoPilot().targetPitchAndHeading(inclinacaoAtual, getDirecao());
-				StatusJPanel.setStatus(String.format("A inclinação do foguete é: %.1f", inclinacaoAtual));
-				// Acelerar a nave de acordo com o PID, ou cortar o motor caso passe do apoastro
-				if (apoastro.get() < getAltApoastroFinal()) {
-					acelerar((float) aceleracaoCtrl.computarPID(apoastro.get() * 100 / getAltApoastroFinal(), 100));
-				} else {
-					acelerar(0.0f);
-					break;
-				}
-				if (oMotorTemCombustivel()) {
-					StatusJPanel.setStatus("Separando estágio...");
-					Thread.sleep(1000);
-					naveAtual.getControl().activateNextStage();
-					Thread.sleep(1000);
-				}
-				;
+		acelerar(1f);
+
+		while (this.inclinacaoAtual > 1) {
+			double altitudeAtual = Utilities.remap(altInicioCurva, getAltApoastroFinal(), 1, 0.1, altitude.get());
+			double curvaCircular = Utilities.easeInCirc(altitudeAtual);
+			this.inclinacaoAtual = (float) (curvaCircular * INC_PARA_CIMA);
+			naveAtual.getAutoPilot().targetPitchAndHeading(this.inclinacaoAtual, getDirecao());
+
+			acelerar(Utilities.remap(getAltApoastroFinal() * 0.95, getAltApoastroFinal(), 1, 0.1, apoastro.get()));
+			if (apoastro.get() > getAltApoastroFinal()) {
+				acelerar(0.0f);
+				break;
 			}
 
+			if (estagioSemCombustivel()) {
+				StatusJPanel.setStatus("Separando estágio...");
+				Thread.sleep(1000);
+				naveAtual.getControl().activateNextStage();
+				Thread.sleep(1000);
+			}
+
+			StatusJPanel.setStatus(String.format("A inclinação do foguete é: %.1f", inclinacaoAtual));
 			Thread.sleep(25);
 		}
 	}
 
-	private boolean oMotorTemCombustivel() throws RPCException, StreamException {
+	private boolean estagioSemCombustivel() throws RPCException, StreamException {
 		for (Engine motor : naveAtual.getParts().getEngines()) {
 			if (motor.getPart().getStage() == naveAtual.getControl().getCurrentStage() && !motor.getHasFuel()) {
 				return true;
@@ -114,7 +107,9 @@ public class DecolagemOrbitalController extends FlightController implements Runn
 	}
 
 	public void setDirecao(float direcao) {
-		if (direcao >= 0 && direcao < MAX_DIRECAO) {
+		final int MAX_DIRECAO = 360;
+		final int MIN_DIRECAO = 0;
+		if (direcao >= MIN_DIRECAO && direcao < MAX_DIRECAO) {
 			this.direcao = direcao;
 		} else {
 			this.direcao = getDirecao();
@@ -126,6 +121,8 @@ public class DecolagemOrbitalController extends FlightController implements Runn
 	}
 
 	public void setAltApoastroFinal(float altApoastroFinal) {
+		final int MIN_APOASTRO_FINAL = 10000;
+		final int MAX_APOASTRO_FINAL = 2000000;
 		if (altApoastroFinal >= MIN_APOASTRO_FINAL && altApoastroFinal <= MAX_APOASTRO_FINAL) {
 			this.altApoastroFinal = altApoastroFinal;
 		} else {

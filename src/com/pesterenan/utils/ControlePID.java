@@ -18,7 +18,7 @@ public class ControlePID {
 	private double ultimaEntrada, ultimoCalculo = 0;
 
 	private double limitarValor(double valor) {
-		return Utilities.limitValue(valor, this.limiteMin, this.limiteMax);
+		return Utilities.clamp(valor, this.limiteMin, this.limiteMax);
 	}
 
 	/**
