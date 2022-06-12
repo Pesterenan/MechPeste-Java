@@ -26,6 +26,19 @@ public class Vetor {
 	}
 
 	/**
+	 * Cria um vetor informando valores X,Y,Z manualmente
+	 * 
+	 * @param X - Valor eixo X
+	 * @param Y - Valor eixo Y
+	 * @param Z - Valor eixo Z
+	 */
+	public Vetor(Vetor v) {
+		this.x = v.x;
+		this.y = v.y;
+		this.z = v.z;
+	}
+
+	/**
 	 * Cria um vetor com valores de uma tupla (Triplet)
 	 * 
 	 * @param tupla - Triplet com valores X,Y,Z em conjunto
@@ -43,7 +56,7 @@ public class Vetor {
 	 */
 	@Override
 	public String toString() {
-		return "( X: " + x + ", Y: " + y + ", Z:" + z + ")";
+		return String.format("( X: %.2f Y: %.2f Z: %.2f)", x, y, z);
 	}
 
 	/**

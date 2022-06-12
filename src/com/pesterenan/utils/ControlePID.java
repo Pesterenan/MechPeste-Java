@@ -1,102 +1,73 @@
 package com.pesterenan.utils;
 /*Controlador Proporcional Integral Derivativo
-	Autor: Renan Torres <pesterenan@gmail.com>
- 	Data: 22/08/2018 
-	Atualizado: 26/02/2019*/
+Autor: Renan Torres <pesterenan@gmail.com>
+ Data: 22/08/2018 
+Atualizado: 06/06/2022*/
 
 public class ControlePID {
-	// Controlador PID escrito em Java para uso com o mod MechPeste
-	private double saidaMin = -1;
-	private double saidaMax = 1;
-	// Vari�veis padr�o de ajuste do PID:
+	private double limiteMin = -1;
+	private double limiteMax = 1;
+
 	private double kp = 0.025;
-	private double ki = 0.001;
-	private double kd = 0.1;
-	private double amostraTempo = 25; // Tempo para amostragem
+	private double ki = 0.05;
+	private double kd = 0.01;
+	private double amostragem = 25;
 
-	private double valorEntrada, valorSaida, valorLimite; // vari�veis de valores
-	private double termoIntegral, ultimaEntrada; // vari�veis de c�lculo de erro
-	private double ultimoCalculo = 0; // tempo do �ltimo c�lculo
+	private double valorSaida = 1;
+	private double termoIntegral = 0;
+	private double ultimaEntrada, ultimoCalculo = 0;
 
-	public double computarPID() {
-		// M�todo que computa o incremento do PID
-		double agora = System.currentTimeMillis(); // Buscar tempo imediato
-		double mudancaTempo = agora - this.ultimoCalculo; // Comparar com o �ltimo c�lculo
+	private double limitarValor(double valor) {
+		return Utilities.clamp(valor, this.limiteMin, this.limiteMax);
+	}
 
-		if (mudancaTempo >= this.amostraTempo) {
-			// Vari�veis para o c�lculo do valor de sa�da:
-			double erro = this.valorLimite - this.valorEntrada;
-			termoIntegral += ki * erro;
-			if (termoIntegral > saidaMax) {
-				termoIntegral = saidaMax;
-			} else if (termoIntegral < saidaMin) {
-				termoIntegral = saidaMin;
-			}
-			double diferencaEntrada = (this.valorEntrada - this.ultimaEntrada);
+	/**
+	 * Computar o valor de saida do controlador, usando os valores de entrada e
+	 * limite
+	 * 
+	 * @returns Valor computado do controlador
+	 */
+	public double computarPID(double valorEntrada, double valorLimite) {
+		double agora = System.currentTimeMillis();
+		double mudancaTempo = agora - this.ultimoCalculo;
 
-			// Computar o valor de sa�da:
-			this.valorSaida = kp * erro + ki * termoIntegral - kd * diferencaEntrada;
+		if (mudancaTempo >= this.amostragem) {
+			double erro = valorLimite - valorEntrada;
+			double diferencaEntrada = (valorEntrada - this.ultimaEntrada);
 
-			// Limitar valor de sa�da:
-			if (this.valorSaida > saidaMax) {
-				this.valorSaida = saidaMax;
-			} else if (this.valorSaida < saidaMin) {
-				this.valorSaida = saidaMin;
-			}
+			this.termoIntegral = limitarValor(this.termoIntegral + ki * erro);
+			this.valorSaida = limitarValor(kp * erro + ki * this.termoIntegral - kd * diferencaEntrada);
 
-			// Guardando os valores atuais para o pr�ximo c�lculo:
-			this.ultimaEntrada = this.valorEntrada;
+			this.ultimaEntrada = valorEntrada;
 			this.ultimoCalculo = agora;
 		}
-		// Retorna o valor de sa�da calculado:
-		return this.valorSaida;
+		return valorSaida;
 	}
 
-	public void setEntradaPID(double valor) {
-		// Informar valor de entrada:
-		this.valorEntrada = valor;
-	}
-
-	public void setLimitePID(double valor) {
-		// Limite para o valor de entrada alcan�ar:
-		this.valorLimite = valor;
-	}
-
-	public void limitarSaida(double Min, double Max) {
-		if (Min > Max)
+	public void limitarSaida(double min, double max) {
+		if (min > max)
 			return;
-		saidaMin = Min;
-		saidaMax = Max;
+		this.limiteMin = min;
+		this.limiteMax = max;
+		this.termoIntegral = limitarValor(this.termoIntegral);
 
-		if (termoIntegral > saidaMax) {
-			termoIntegral = saidaMax;
-		} else if (termoIntegral < saidaMin) {
-			termoIntegral = saidaMin;
-		}
-
-		if (this.valorSaida > saidaMax) {
-			this.valorSaida = saidaMax;
-		} else if (this.valorSaida < saidaMin) {
-			this.valorSaida = saidaMin;
-		}
 	}
 
 	public void ajustarPID(double Kp, double Ki, double Kd) {
 		if (Kp > 0) {
-			kp = Kp;
+			this.kp = Kp;
 		}
 		if (Ki >= 0) {
-			ki = Ki;
+			this.ki = Ki;
 		}
 		if (Kd >= 0) {
-			kd = Kd;
+			this.kd = Kd;
 		}
 	}
 
-	public void setAmostraTempo(double novaAmostraTempo) {
-		// Tempo para fazer a amostragem dos valores em milissegundos:
-		if (novaAmostraTempo > 0) {
-			this.amostraTempo = novaAmostraTempo;
+	public void setAmostragem(double milissegundos) {
+		if (milissegundos > 0) {
+			this.amostragem = milissegundos;
 		}
 	}
 }
