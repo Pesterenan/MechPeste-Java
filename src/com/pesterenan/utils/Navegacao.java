@@ -26,10 +26,11 @@ public class Navegacao extends FlightController {
 	public void mirarRadialDeFora() throws RPCException {
 		mirarNaDirecao(parametrosDeVoo.getRadial());
 	}
-	public void mirarNaDirecao(Triplet<Double,Double,Double> direcao) {
+
+	public void mirarNaDirecao(Triplet<Double, Double, Double> direcao) {
 		try {
-			posicaoAlvo = centroEspacial.transformPosition(direcao,
-					naveAtual.getSurfaceVelocityReferenceFrame(), pontoRefOrbital);
+			posicaoAlvo = centroEspacial.transformPosition(direcao, naveAtual.getSurfaceVelocityReferenceFrame(),
+					pontoRefOrbital);
 
 			vetorDirecaoHorizontal = Vetor.direcaoAlvoContraria(naveAtual.position(pontoRefSuperficie),
 					centroEspacial.transformPosition(posicaoAlvo, pontoRefOrbital, pontoRefSuperficie));
@@ -61,7 +62,8 @@ public class Navegacao extends FlightController {
 		Vetor vetorVelocidade = new Vetor(velocidade.y, velocidade.z, velocidade.x);
 		alvo = alvo.subtrai(vetorVelocidade);
 		double inclinacaoGraus = Utilities.remap(1, 100, 90, 30, velHorizontal.get());
-		return new Vetor(Vetor.anguloDirecao(alvo), Utilities.clamp(inclinacaoGraus, 30, 90), Vetor.anguloDirecao(vetorVelocidade));
+		return new Vetor(Vetor.anguloDirecao(alvo), Utilities.clamp(inclinacaoGraus, 30, 90),
+				Vetor.anguloDirecao(vetorVelocidade));
 	}
 
 }

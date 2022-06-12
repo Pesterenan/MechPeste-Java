@@ -10,7 +10,7 @@ import javax.swing.WindowConstants;
 public class MainGui extends JFrame {
 
 	private static MainGui mainGui = null;
-	
+
 	private static final long serialVersionUID = 1L;
 
 	private final Dimension tamanhoApp = new Dimension(450, 250);
@@ -30,7 +30,7 @@ public class MainGui extends JFrame {
 		pack();
 		setVisible(true);
 	}
-	
+
 	public static MainGui getInstance() {
 		if (mainGui == null) {
 			mainGui = new MainGui();

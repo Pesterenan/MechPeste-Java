@@ -1,5 +1,8 @@
 package com.pesterenan.view;
 
+import static com.pesterenan.utils.Dicionario.CONECTAR;
+import static com.pesterenan.utils.Status.CONECTANDO;
+
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -12,11 +15,6 @@ import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.border.BevelBorder;
-
-import com.pesterenan.utils.Status;
-
-import static com.pesterenan.utils.Status.*;
-import static com.pesterenan.utils.Dicionario.*;
 
 public class StatusJPanel extends JPanel implements ActionListener {
 
@@ -35,8 +33,8 @@ public class StatusJPanel extends JPanel implements ActionListener {
 				BorderFactory.createBevelBorder(BevelBorder.LOWERED)));
 
 		GridBagLayout gridBagLayout = new GridBagLayout();
-		gridBagLayout.columnWeights = new double[]{0.0, 0.0};
-		gridBagLayout.columnWidths = new int[]{0, 0};
+		gridBagLayout.columnWeights = new double[] { 0.0, 0.0 };
+		gridBagLayout.columnWidths = new int[] { 0, 0 };
 		setLayout(gridBagLayout);
 		GridBagConstraints gc = new GridBagConstraints();
 		gc.weightx = 1;
@@ -73,6 +71,5 @@ public class StatusJPanel extends JPanel implements ActionListener {
 	public static void botConectarVisivel(boolean estado) {
 		botConectar.setVisible(estado);
 	}
-
 
 }

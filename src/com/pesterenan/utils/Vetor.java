@@ -24,7 +24,7 @@ public class Vetor {
 		this.y = y;
 		this.z = z;
 	}
-	
+
 	/**
 	 * Cria um vetor informando valores X,Y,Z manualmente
 	 * 
@@ -56,7 +56,7 @@ public class Vetor {
 	 */
 	@Override
 	public String toString() {
-		return String.format("( X: %.2f Y: %.2f Z: %.2f)", x,y,z);
+		return String.format("( X: %.2f Y: %.2f Z: %.2f)", x, y, z);
 	}
 
 	/**

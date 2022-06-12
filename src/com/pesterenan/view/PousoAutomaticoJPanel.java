@@ -2,6 +2,9 @@ package com.pesterenan.view;
 
 import static com.pesterenan.utils.Dicionario.TELEMETRIA;
 
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.HashMap;
@@ -15,9 +18,6 @@ import javax.swing.JTextField;
 import com.pesterenan.MechPeste;
 import com.pesterenan.controller.LandingController;
 import com.pesterenan.utils.Modulos;
-import java.awt.GridBagLayout;
-import java.awt.GridBagConstraints;
-import java.awt.Insets;
 
 public class PousoAutomaticoJPanel extends JPanel implements ActionListener {
 

@@ -18,26 +18,26 @@ public class Utilities {
 	public static double clamp(double value, double min, double max) {
 		return (value > max ? max : value < min ? min : value);
 	}
-	
+
 	// Easing functions
 	public static double easeInCirc(double value) {
 		return 1 - Math.sqrt(1 - Math.pow(clamp(value, 0, 1), 2));
 	}
-	
+
 	public static double easeInSine(double value) {
-		  return 1 - Math.cos((value * Math.PI) / 2);
+		return 1 - Math.cos((value * Math.PI) / 2);
 	}
-	
+
 	public static double easeInQuad(double value) {
 		return value * value;
 	}
-	
+
 	public static double easeInCubic(double value) {
 		return value * value * value;
 	}
-	
+
 	public static double easeInExpo(double value) {
 		return value == 0 ? 0 : Math.pow(2, 10 * value - 10);
 	}
-	
+
 }

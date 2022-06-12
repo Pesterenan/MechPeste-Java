@@ -27,10 +27,10 @@ public class ManobrasJPanel extends JPanel implements ActionListener {
 
 	public ManobrasJPanel() {
 		GridBagLayout gridBagLayout = new GridBagLayout();
-		gridBagLayout.columnWidths = new int[]{136, 100, 0};
-		gridBagLayout.rowHeights = new int[]{23, 23, 30, 0, 0};
-		gridBagLayout.columnWeights = new double[]{1.0, 0.0, Double.MIN_VALUE};
-		gridBagLayout.rowWeights = new double[]{0.0, 0.0, 0.0, 0.0, Double.MIN_VALUE};
+		gridBagLayout.columnWidths = new int[] { 136, 100, 0 };
+		gridBagLayout.rowHeights = new int[] { 23, 23, 30, 0, 0 };
+		gridBagLayout.columnWeights = new double[] { 1.0, 0.0, Double.MIN_VALUE };
+		gridBagLayout.rowWeights = new double[] { 0.0, 0.0, 0.0, 0.0, Double.MIN_VALUE };
 		setLayout(gridBagLayout);
 		GridBagConstraints gbc_lblExecutar = new GridBagConstraints();
 		gbc_lblExecutar.anchor = GridBagConstraints.WEST;
@@ -46,7 +46,7 @@ public class ManobrasJPanel extends JPanel implements ActionListener {
 		add(btnExecutar, gbc_btnExecutar);
 		btnExecutar.addActionListener(this);
 		btnExecutar.setActionCommand(Modulos.EXECUTAR.get());
-		
+
 		GridBagConstraints gbc_lblCircularizar = new GridBagConstraints();
 		gbc_lblCircularizar.anchor = GridBagConstraints.WEST;
 		gbc_lblCircularizar.insets = new Insets(0, 0, 5, 5);
@@ -61,7 +61,7 @@ public class ManobrasJPanel extends JPanel implements ActionListener {
 		add(btnApoastro, gbc_btnApoastro);
 		btnApoastro.addActionListener(this);
 		btnApoastro.setActionCommand(Modulos.APOASTRO.get());
-		
+
 		GridBagConstraints gbc_btnPeriastro = new GridBagConstraints();
 		gbc_btnPeriastro.fill = GridBagConstraints.HORIZONTAL;
 		gbc_btnPeriastro.insets = new Insets(0, 0, 5, 0);
@@ -70,14 +70,14 @@ public class ManobrasJPanel extends JPanel implements ActionListener {
 		add(btnPeriastro, gbc_btnPeriastro);
 		btnPeriastro.addActionListener(this);
 		btnPeriastro.setActionCommand(Modulos.PERIASTRO.get());
-		
+
 		GridBagConstraints gbc_lblAjustar = new GridBagConstraints();
 		gbc_lblAjustar.anchor = GridBagConstraints.WEST;
 		gbc_lblAjustar.insets = new Insets(0, 0, 0, 5);
 		gbc_lblAjustar.gridx = 0;
 		gbc_lblAjustar.gridy = 3;
 		add(lblAjustar, gbc_lblAjustar);
-		
+
 		GridBagConstraints gbc_btnAjustar = new GridBagConstraints();
 		gbc_btnAjustar.fill = GridBagConstraints.HORIZONTAL;
 		gbc_btnAjustar.gridx = 1;
@@ -86,7 +86,7 @@ public class ManobrasJPanel extends JPanel implements ActionListener {
 		btnAjustar.addActionListener(this);
 		btnAjustar.setActionCommand(Modulos.AJUSTAR.get());
 		btnAjustar.setEnabled(false);
-		
+
 	}
 
 	@Override
@@ -94,12 +94,12 @@ public class ManobrasJPanel extends JPanel implements ActionListener {
 		String evtComando = e.getActionCommand();
 		Map<String, String> comandos = new HashMap<>();
 		if (evtComando.equals(Modulos.AJUSTAR.get())) {
-			comandos.put(Modulos.MODULO.get(),Modulos.MODULO_PILOTO.get());			
+			comandos.put(Modulos.MODULO.get(), Modulos.MODULO_PILOTO.get());
 		} else {
-			
-			comandos.put(Modulos.MODULO.get(),Modulos.MODULO_MANOBRAS.get());
+
+			comandos.put(Modulos.MODULO.get(), Modulos.MODULO_MANOBRAS.get());
 		}
-		comandos.put(Modulos.FUNCAO.get(),evtComando);
+		comandos.put(Modulos.FUNCAO.get(), evtComando);
 		MechPeste.iniciarModulo(comandos);
 	}
 

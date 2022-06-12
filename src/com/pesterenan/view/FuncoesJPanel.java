@@ -6,31 +6,19 @@ import static com.pesterenan.utils.Dicionario.POUSO_AUTOMATICO;
 import static com.pesterenan.utils.Dicionario.ROVER_AUTONOMO;
 import static com.pesterenan.utils.Dicionario.SAIR;
 
+import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
 
-import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JPanel;
-import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
-
-import com.pesterenan.utils.Dicionario;
-
-import java.awt.Insets;
-import javax.swing.border.CompoundBorder;
-import javax.swing.border.EtchedBorder;
-import java.awt.Color;
-import javax.swing.BoxLayout;
-import java.awt.BorderLayout;
-import javax.swing.SwingConstants;
-import java.awt.FlowLayout;
-import java.awt.Rectangle;
-import java.awt.Component;
 
 public class FuncoesJPanel extends JPanel implements ActionListener {
 
@@ -75,7 +63,7 @@ public class FuncoesJPanel extends JPanel implements ActionListener {
 
 		JButton btnDecolagem = new JButton(DECOLAGEM_ORBITAL.get());
 		btnDecolagem.addActionListener(this);
-		btnDecolagem.setActionCommand(DECOLAGEM_ORBITAL.get());		
+		btnDecolagem.setActionCommand(DECOLAGEM_ORBITAL.get());
 		GridBagConstraints gbc_btnDecolagem = new GridBagConstraints();
 		gbc_btnDecolagem.fill = GridBagConstraints.HORIZONTAL;
 		gbc_btnDecolagem.anchor = GridBagConstraints.NORTH;

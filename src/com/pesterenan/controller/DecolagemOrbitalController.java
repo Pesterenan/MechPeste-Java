@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.pesterenan.MechPeste;
-import com.pesterenan.utils.ControlePID;
 import com.pesterenan.utils.Modulos;
 import com.pesterenan.utils.Utilities;
 import com.pesterenan.view.StatusJPanel;
