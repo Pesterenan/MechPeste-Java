@@ -1,5 +1,11 @@
 package com.pesterenan.view;
 
+import static com.pesterenan.utils.Dicionario.DECOLAGEM_ORBITAL;
+import static com.pesterenan.utils.Dicionario.MANOBRAS;
+import static com.pesterenan.utils.Dicionario.POUSO_AUTOMATICO;
+import static com.pesterenan.utils.Dicionario.TELEMETRIA;
+import static com.pesterenan.utils.Dicionario.TXT_PARAMETROS;
+
 import java.awt.CardLayout;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -8,8 +14,6 @@ import javax.swing.BorderFactory;
 import javax.swing.JPanel;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
-
-import static com.pesterenan.utils.Dicionario.*;
 
 public class ParametrosJPanel extends JPanel implements PropertyChangeListener {
 
@@ -21,7 +25,7 @@ public class ParametrosJPanel extends JPanel implements PropertyChangeListener {
 	private JPanel decolagem = new DecolagemJPanel();
 	private JPanel manobras = new ManobrasJPanel();
 	private JPanel pouso = new PousoAutomaticoJPanel();
-	
+
 	private CardLayout layout = new CardLayout();
 
 	public ParametrosJPanel() {
@@ -37,16 +41,16 @@ public class ParametrosJPanel extends JPanel implements PropertyChangeListener {
 
 	@Override
 	public void propertyChange(PropertyChangeEvent evt) {
-		if (evt.getPropertyName().equals(DECOLAGEM_ORBITAL.get())){
+		if (evt.getPropertyName().equals(DECOLAGEM_ORBITAL.get())) {
 			layout.show(this, DECOLAGEM_ORBITAL.get());
 		}
-		if (evt.getPropertyName().equals(POUSO_AUTOMATICO.get())){
+		if (evt.getPropertyName().equals(POUSO_AUTOMATICO.get())) {
 			layout.show(this, POUSO_AUTOMATICO.get());
 		}
-		if (evt.getPropertyName().equals(MANOBRAS.get())){
+		if (evt.getPropertyName().equals(MANOBRAS.get())) {
 			layout.show(this, MANOBRAS.get());
 		}
-		if (evt.getPropertyName().equals(TELEMETRIA.get())){
+		if (evt.getPropertyName().equals(TELEMETRIA.get())) {
 			layout.show(this, TELEMETRIA.get());
 		}
 	}

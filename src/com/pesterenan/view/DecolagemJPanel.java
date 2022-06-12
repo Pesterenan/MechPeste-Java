@@ -1,8 +1,6 @@
 package com.pesterenan.view;
 
 import static com.pesterenan.utils.Dicionario.TELEMETRIA;
-import static com.pesterenan.utils.Modulos.APOASTRO;
-import static com.pesterenan.utils.Modulos.DIRECAO;
 
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -99,7 +97,7 @@ public class DecolagemJPanel extends JPanel implements ActionListener {
 		try {
 			Float.parseFloat(apoastroTextField.getText());
 			Float.parseFloat(direcaoTextField.getText());
-		} catch(NumberFormatException e) {
+		} catch (NumberFormatException e) {
 			StatusJPanel.setStatus("Erro: Os campos só aceitam números.");
 			return false;
 		}

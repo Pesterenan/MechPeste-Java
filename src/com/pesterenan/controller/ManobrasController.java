@@ -4,7 +4,6 @@ import java.util.List;
 
 import org.javatuples.Triplet;
 
-import com.pesterenan.utils.ControlePID;
 import com.pesterenan.utils.Modulos;
 import com.pesterenan.utils.Status;
 import com.pesterenan.utils.Utilities;
@@ -152,21 +151,19 @@ public class ManobrasController extends FlightController implements Runnable {
 			Stream<Triplet<Double, Double, Double>> queimaRestante = getConexao().addStream(noDeManobra,
 					"remainingBurnVector", noDeManobra.getReferenceFrame());
 			StatusJPanel.setStatus("Executando manobra!");
-			double limiteParaDesacelerar = 
-				noDeManobra.getDeltaV() > 1000 
-				? 0.05 
-				: noDeManobra.getDeltaV() > 250 
-				? 0.10 
-				: 0.25;
-				
+			double limiteParaDesacelerar = noDeManobra.getDeltaV() > 1000 ? 0.05
+					: noDeManobra.getDeltaV() > 250 ? 0.10 : 0.25;
+
 			while (!noDeManobra.equals(null)) {
 				if (queimaRestante.get().getValue1() > 1) {
-					acelerar(Utilities.remap(noDeManobra.getDeltaV() * limiteParaDesacelerar, 0, 1, 0.1, queimaRestante.get().getValue1()));
+					acelerar(Utilities.remap(noDeManobra.getDeltaV() * limiteParaDesacelerar, 0, 1, 0.1,
+							queimaRestante.get().getValue1()));
 				} else {
 					queimaRestante.remove();
 					break;
 				}
-				MainGui.getParametros().getComponent(0).firePropertyChange("distancia", 0, queimaRestante.get().getValue1());
+				MainGui.getParametros().getComponent(0).firePropertyChange("distancia", 0,
+						queimaRestante.get().getValue1());
 				Thread.sleep(25);
 			}
 			acelerar(0.0f);

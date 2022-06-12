@@ -8,8 +8,8 @@ import krpc.client.Connection;
 import krpc.client.RPCException;
 import krpc.client.Stream;
 import krpc.client.services.KRPC;
-import krpc.client.services.SpaceCenter;
 import krpc.client.services.KRPC.GameScene;
+import krpc.client.services.SpaceCenter;
 import krpc.client.services.SpaceCenter.Flight;
 import krpc.client.services.SpaceCenter.ReferenceFrame;
 import krpc.client.services.SpaceCenter.Vessel;
@@ -28,9 +28,7 @@ public class Nave {
 	protected float bateriaTotal, acelGravidade;
 	protected String corpoCeleste;
 	protected int porcentagemCarga;
-	
 
-	
 	public Nave(Connection con) {
 		setConexao(con);
 		try {
@@ -41,7 +39,7 @@ public class Nave {
 			checarConexao();
 		}
 	}
-	
+
 	protected void checarConexao() {
 		KRPC krpc = KRPC.newInstance(getConexao());
 		try {
