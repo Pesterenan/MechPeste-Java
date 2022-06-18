@@ -1,4 +1,4 @@
-package com.pesterenan.controller;
+package com.pesterenan.controllers;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -9,7 +9,7 @@ import org.javatuples.Triplet;
 
 import com.pesterenan.utils.ControlePID;
 import com.pesterenan.utils.Vetor;
-import com.pesterenan.view.GUI;
+import com.pesterenan.views.GUI;
 
 import krpc.client.Connection;
 import krpc.client.RPCException;

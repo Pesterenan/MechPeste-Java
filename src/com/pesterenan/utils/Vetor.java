@@ -131,6 +131,10 @@ public class Vetor {
 	public double dotP(Vetor outroVetor) {
 		return (x * outroVetor.x + y * outroVetor.y + z * outroVetor.z);
 	}
+	
+	public double determinant(Vetor outroVetor) {
+		return (x * outroVetor.y - y * outroVetor.x - z * outroVetor.z);
+	}
 
 	/**
 	 * Soma os componentes de outro vetor com o vetor informado

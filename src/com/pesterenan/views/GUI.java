@@ -1,4 +1,4 @@
-package com.pesterenan.view;
+package com.pesterenan.views;
 
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
@@ -25,7 +25,7 @@ import javax.swing.border.TitledBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import com.pesterenan.controller.RoverAutonomoController;
+import com.pesterenan.controllers.RoverAutonomoController;
 
 public class GUI extends JFrame implements ActionListener, ChangeListener {
 	private static final long serialVersionUID = 6999337104582004411L;

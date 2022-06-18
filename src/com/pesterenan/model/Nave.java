@@ -2,7 +2,7 @@ package com.pesterenan.model;
 
 import static com.pesterenan.utils.Status.ERRO_CONEXAO;
 
-import com.pesterenan.view.StatusJPanel;
+import com.pesterenan.views.StatusJPanel;
 
 import krpc.client.Connection;
 import krpc.client.RPCException;

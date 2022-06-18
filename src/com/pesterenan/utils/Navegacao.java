@@ -4,7 +4,7 @@ import java.io.IOException;
 
 import org.javatuples.Triplet;
 
-import com.pesterenan.controller.FlightController;
+import com.pesterenan.controllers.FlightController;
 
 import krpc.client.RPCException;
 import krpc.client.StreamException;

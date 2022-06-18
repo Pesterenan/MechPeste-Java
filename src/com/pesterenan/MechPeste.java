@@ -1,6 +1,5 @@
 package com.pesterenan;
 
-import static com.pesterenan.utils.Dicionario.CONECTAR;
 import static com.pesterenan.utils.Dicionario.ERRO_AO_CONECTAR;
 import static com.pesterenan.utils.Dicionario.MECHPESTE;
 import static com.pesterenan.utils.Dicionario.TELEMETRIA;
@@ -8,41 +7,39 @@ import static com.pesterenan.utils.Status.CONECTADO;
 import static com.pesterenan.utils.Status.CONECTANDO;
 import static com.pesterenan.utils.Status.ERRO_CONEXAO;
 
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.io.IOException;
 import java.util.Map;
 
-import com.pesterenan.controller.DecolagemOrbitalController;
-import com.pesterenan.controller.FlightController;
-import com.pesterenan.controller.LandingController;
-import com.pesterenan.controller.ManobrasController;
+import com.pesterenan.controllers.FlightController;
+import com.pesterenan.controllers.LandingController;
+import com.pesterenan.controllers.LiftoffController;
+import com.pesterenan.controllers.ManeuverController;
 import com.pesterenan.utils.Modulos;
-import com.pesterenan.view.MainGui;
-import com.pesterenan.view.StatusJPanel;
+import com.pesterenan.views.MainGui;
+import com.pesterenan.views.StatusJPanel;
 
 import krpc.client.Connection;
 import krpc.client.RPCException;
 import krpc.client.StreamException;
 
-public class MechPeste implements PropertyChangeListener {
+public class MechPeste {
 
 	private static MechPeste mechPeste = null;
 
 	private static Connection conexao;
 	private static Thread threadModulos;
 	private static Thread threadTelemetria;
-	private static FlightController flightCtrl;
+	private static FlightController flightCtrl = null;
 	private static FlightController modulo;
 
 	public static void main(String[] args) throws StreamException, RPCException, IOException, InterruptedException {
+
 		MechPeste.getInstance();
+
 	}
 
 	private MechPeste() {
 		MainGui.getInstance();
-		MainGui.getStatus().addPropertyChangeListener(this);
-		MainGui.getFuncoes().addPropertyChangeListener(this);
 		iniciarConexao();
 	}
 
@@ -54,23 +51,23 @@ public class MechPeste implements PropertyChangeListener {
 	}
 
 	public void iniciarConexao() {
-		if (getConexao() == null) {
-			try {
-				StatusJPanel.setStatus(CONECTANDO.get());
-				MechPeste.conexao = Connection.newInstance(MECHPESTE.get());
-				StatusJPanel.setStatus(CONECTADO.get());
-				StatusJPanel.botConectarVisivel(false);
-				iniciarTelemetria();
-			} catch (IOException e) {
-				System.err.println(ERRO_AO_CONECTAR.get() + e.getMessage());
-				StatusJPanel.setStatus(ERRO_CONEXAO.get());
-				StatusJPanel.botConectarVisivel(true);
-			}
+		try {
+			StatusJPanel.setStatus(CONECTANDO.get());
+			MechPeste.conexao = Connection.newInstance(MECHPESTE.get());
+			StatusJPanel.setStatus(CONECTADO.get());
+			StatusJPanel.botConectarVisivel(false);
+			iniciarTelemetria();
+		} catch (IOException e) {
+			System.err.println(ERRO_AO_CONECTAR.get() + e.getMessage());
+			StatusJPanel.setStatus(ERRO_CONEXAO.get());
+			StatusJPanel.botConectarVisivel(true);
 		}
 	}
 
 	private void iniciarTelemetria() {
+		flightCtrl = null;
 		flightCtrl = new FlightController(getConexao());
+		setThreadTelemetria(null);
 		setThreadTelemetria(new Thread(flightCtrl));
 		getThreadTelemetria().start();
 	}
@@ -79,10 +76,10 @@ public class MechPeste implements PropertyChangeListener {
 		String executarModulo = comandos.get(Modulos.MODULO.get());
 
 		if (executarModulo.equals(Modulos.MODULO_MANOBRAS.get())) {
-			modulo = new ManobrasController(comandos.get(Modulos.FUNCAO.get()));
+			modulo = new ManeuverController(comandos.get(Modulos.FUNCAO.get()));
 		}
 		if (executarModulo.equals(Modulos.MODULO_DECOLAGEM.get())) {
-			modulo = new DecolagemOrbitalController(comandos);
+			modulo = new LiftoffController(comandos);
 		}
 		if (executarModulo.equals(Modulos.MODULO_POUSO_SOBREVOAR.get())
 				|| executarModulo.equals(Modulos.MODULO_POUSO.get())) {
@@ -93,20 +90,16 @@ public class MechPeste implements PropertyChangeListener {
 		MainGui.getParametros().firePropertyChange(TELEMETRIA.get(), 0, 1);
 	}
 
-	@Override
-	public void propertyChange(PropertyChangeEvent evt) {
-		String evtNomeProp = evt.getPropertyName();
-		if (evtNomeProp.equals(CONECTAR.get())) {
-			iniciarConexao();
+	public static void finalizarTarefa() {
+		try {
+			if (getThreadModulos() != null && getThreadModulos().isAlive()) {
+				getThreadModulos().interrupt();
+				setThreadModulos(null);
+				modulo = null;
+			}
+		} catch (Exception e) {
 		}
-	}
 
-	public static void finalizarTarefa() throws IOException {
-		if (getThreadModulos() != null && getThreadModulos().isAlive()) {
-			getThreadModulos().interrupt();
-			setThreadModulos(null);
-			modulo = null;
-		}
 	}
 
 	public static Connection getConexao() {
@@ -118,11 +111,7 @@ public class MechPeste implements PropertyChangeListener {
 	}
 
 	private static void setThreadModulos(Thread threadModulos) {
-		if (threadModulos == null) {
-			MechPeste.threadModulos = null;
-		} else {
-			MechPeste.threadModulos = threadModulos;
-		}
+		MechPeste.threadModulos = threadModulos;
 	}
 
 	private static Thread getThreadTelemetria() {

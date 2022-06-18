@@ -1,4 +1,4 @@
-package com.pesterenan.controller;
+package com.pesterenan.controllers;
 
 import static com.pesterenan.utils.Status.STATUS_POUSO_AUTOMATICO;
 
@@ -11,8 +11,8 @@ import com.pesterenan.utils.Modulos;
 import com.pesterenan.utils.Navegacao;
 import com.pesterenan.utils.Utilities;
 import com.pesterenan.utils.Vetor;
-import com.pesterenan.view.MainGui;
-import com.pesterenan.view.StatusJPanel;
+import com.pesterenan.views.MainGui;
+import com.pesterenan.views.StatusJPanel;
 
 import krpc.client.RPCException;
 import krpc.client.StreamException;
@@ -57,7 +57,7 @@ public class LandingController extends FlightController implements Runnable {
 
 	private void sobrevoarArea() {
 		try {
-			decolar();
+			liftoff();
 			naveAtual.getAutoPilot().engage();
 			while (executandoSobrevoo) {
 				try {
@@ -69,7 +69,7 @@ public class LandingController extends FlightController implements Runnable {
 					ajustarCtrlPIDs();
 					double altPID = altitudeAcelPID.computarPID(altitudeSup.get(), altitudeDeSobrevoo);
 					double velPID = velocidadeAcelPID.computarPID(velVertical.get(), altPID * acelGravidade);
-					acelerar(velPID);
+					throttle(velPID);
 					if (descerDoSobrevoo == true) {
 						naveAtual.getControl().setGear(true);
 						altitudeDeSobrevoo = 0;
@@ -94,8 +94,8 @@ public class LandingController extends FlightController implements Runnable {
 
 	private void pousarAutomaticamente() {
 		try {
-			decolar();
-			acelerar(0.0f);
+			liftoff();
+			throttle(0.0f);
 			naveAtual.getAutoPilot().engage();
 			StatusJPanel.setStatus("Iniciando pouso automático em: " + corpoCeleste);
 			checarAltitudeParaPouso();
@@ -155,7 +155,7 @@ public class LandingController extends FlightController implements Runnable {
 		double acel = altitudeAcelPID.computarPID(altitudeSup.get(), distanciaDaQueima);
 		double vel = velocidadeAcelPID.computarPID(velVertical.get(), -5);
 		double limite = (altitudeSup.get() - limiarDoPouso) / limiarDoPouso;
-		acelerar(Utilities.linearInterpolation(vel, acel, limite));
+		throttle(Utilities.linearInterpolation(vel, acel, limite));
 	}
 
 	private void checarPouso() throws RPCException, IOException, InterruptedException {
@@ -166,7 +166,7 @@ public class LandingController extends FlightController implements Runnable {
 			executandoPousoAutomatico = false;
 			executandoSobrevoo = false;
 			descerDoSobrevoo = false;
-			acelerar(0.0f);
+			throttle(0.0f);
 			naveAtual.getControl().setSAS(true);
 			naveAtual.getControl().setRCS(true);
 			naveAtual.getControl().setBrakes(false);

@@ -1,8 +1,8 @@
-package com.pesterenan.controller;
+package com.pesterenan.controllers;
 
 import com.pesterenan.model.Nave;
-import com.pesterenan.view.MainGui;
-import com.pesterenan.view.StatusJPanel;
+import com.pesterenan.views.MainGui;
+import com.pesterenan.views.StatusJPanel;
 
 import krpc.client.Connection;
 import krpc.client.RPCException;
@@ -51,48 +51,53 @@ public class FlightController extends Nave implements Runnable {
 			} catch (InterruptedException e) {
 			} catch (RPCException | StreamException | NullPointerException e) {
 				checarConexao();
-				iniciarStreams(this.naveAtual);
+				trocaDeNaves();
 			}
 		}
 	}
 
-	private void trocaDeNaves() throws RPCException {
-		if (!centroEspacial.getActiveVessel().equals(this.naveAtual)) {
-			this.naveAtual = centroEspacial.getActiveVessel();
-			iniciarStreams(this.naveAtual);
+	private void trocaDeNaves() {
+		try {
+			if (!centroEspacial.getActiveVessel().equals(this.naveAtual)) {
+				this.naveAtual = centroEspacial.getActiveVessel();
+				iniciarStreams(this.naveAtual);
+			}
+		} catch (RPCException e) {
+			StatusJPanel.botConectarVisivel(true);
+			StatusJPanel.setStatus("Não foi possível trocar de nave.");
 		}
 	}
 
 	private void enviarTelemetria() throws RPCException, StreamException {
 		porcentagemCarga = (int) Math.ceil(bateriaAtual.get() * 100 / bateriaTotal);
-		MainGui.getParametros().getComponent(0).firePropertyChange("altitude", 0.0, altitude.get());
-		MainGui.getParametros().getComponent(0).firePropertyChange("altitudeSup", 0.0, altitudeSup.get());
-		MainGui.getParametros().getComponent(0).firePropertyChange("apoastro", 0.0, apoastro.get());
-		MainGui.getParametros().getComponent(0).firePropertyChange("periastro", 0.0, periastro.get());
-		MainGui.getParametros().getComponent(0).firePropertyChange("velVertical", 0.0, velVertical.get());
-		MainGui.getParametros().getComponent(0).firePropertyChange("velHorizontal", 0.0, velHorizontal.get());
-		MainGui.getParametros().getComponent(0).firePropertyChange("bateria", 0.0, porcentagemCarga);
-		MainGui.getParametros().getComponent(0).firePropertyChange("tempoMissao", 0.0, tempoMissao.get());
+		MainGui.getParametros().getTelemetria().firePropertyChange("altitude", 0.0, altitude.get());
+		MainGui.getParametros().getTelemetria().firePropertyChange("altitudeSup", 0.0, altitudeSup.get());
+		MainGui.getParametros().getTelemetria().firePropertyChange("apoastro", 0.0, apoastro.get());
+		MainGui.getParametros().getTelemetria().firePropertyChange("periastro", 0.0, periastro.get());
+		MainGui.getParametros().getTelemetria().firePropertyChange("velVertical", 0.0, velVertical.get());
+		MainGui.getParametros().getTelemetria().firePropertyChange("velHorizontal", 0.0, velHorizontal.get());
+		MainGui.getParametros().getTelemetria().firePropertyChange("bateria", 0.0, porcentagemCarga);
+		MainGui.getParametros().getTelemetria().firePropertyChange("tempoMissao", 0.0, tempoMissao.get());
 
 	}
 
-	protected void acelerar(float acel) throws RPCException {
+	protected void throttle(float acel) throws RPCException {
 		naveAtual.getControl().setThrottle(acel);
 	}
 
-	protected void acelerar(double acel) throws RPCException {
-		acelerar((float) acel);
+	protected void throttle(double acel) throws RPCException {
+		throttle((float) acel);
 	}
 
-	protected void decolar() throws InterruptedException {
+	protected void liftoff() throws InterruptedException {
 		try {
 			naveAtual.getControl().setSAS(true);
-			acelerar(1f);
+			throttle(1f);
 			if (naveAtual.getSituation().equals(VesselSituation.PRE_LAUNCH)) {
-				float contagemRegressiva = 5f;
-				while (contagemRegressiva > 0) {
-					StatusJPanel.setStatus(String.format("Lançamento em: %.1f segundos...", contagemRegressiva));
-					contagemRegressiva -= 0.1;
+				float launchCount = 5f;
+				while (launchCount > 0) {
+					StatusJPanel.setStatus(String.format("Lançamento em: %.1f segundos...", launchCount));
+					launchCount -= 0.1;
 					Thread.sleep(100);
 				}
 				naveAtual.getControl().activateNextStage();
