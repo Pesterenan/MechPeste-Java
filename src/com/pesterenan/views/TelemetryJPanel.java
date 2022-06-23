@@ -104,11 +104,11 @@ public class TelemetryJPanel extends JPanel implements PropertyChangeListener {
 	private String converterMetros(Object obj) {
 		Double metros = Math.abs((double) obj);
 		String casasDecimais = "%.2f";
-		if (metros > 1000000000) {
+		if (metros >= 1000000000) {
 			return String.format(casasDecimais + "Gm", metros / 1000000000);
-		} else if (metros > 1000000) {
+		} else if (metros >= 1000000) {
 			return String.format(casasDecimais + "Mm", metros / 1000000);
-		} else if (metros > 1000) {
+		} else if (metros >= 1000) {
 			return String.format(casasDecimais + "km", metros / 1000);
 		} else {
 			return new String(String.format(casasDecimais + "m", metros));
