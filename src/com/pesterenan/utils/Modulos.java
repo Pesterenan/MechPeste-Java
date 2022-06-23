@@ -18,7 +18,10 @@ public enum Modulos {
 	INCLINACAO("Inclinação"), 
 	CIRCULAR("Circular"),
 	QUADRATICA("Quadrática"),
-	CUBICA("Cúbica"),SINUSOIDAL("Sinusoidal"), EXPONENCIAL("Exponencial");
+	CUBICA("Cúbica"),
+	SINUSOIDAL("Sinusoidal"), 
+	EXPONENCIAL("Exponencial"), 
+	ROLAGEM("Rolagem");
 
 	String t;
 

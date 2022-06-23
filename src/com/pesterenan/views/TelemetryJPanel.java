@@ -1,5 +1,8 @@
 package com.pesterenan.views;
 
+import static com.pesterenan.views.ParametersJPanel.BTN_DIMENSION;
+import static com.pesterenan.views.ParametersJPanel.dmsParameters;
+
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -13,7 +16,7 @@ import javax.swing.border.TitledBorder;
 
 import com.pesterenan.MechPeste;
 
-public class TelemetriaJPanel extends JPanel implements PropertyChangeListener {
+public class TelemetryJPanel extends JPanel implements PropertyChangeListener {
 
 	private static final long serialVersionUID = 1L;
 	private JLabel tempoValorLabel = new JLabel("");
@@ -27,14 +30,14 @@ public class TelemetriaJPanel extends JPanel implements PropertyChangeListener {
 	private JLabel distanciaValorLabel;
 	private JLabel label_10;
 
-	public TelemetriaJPanel() {
+	public TelemetryJPanel() {
 
 		initComponents();
 	}
 
 	private void initComponents() {
-		setPreferredSize(ParametrosJPanel.dmsParametros);
-		setSize(ParametrosJPanel.dmsParametros);
+		setPreferredSize(dmsParameters);
+		setSize(dmsParameters);
 		setBorder(new TitledBorder(null, "Telemetria:", TitledBorder.LEADING, TitledBorder.TOP, null, null));
 
 		addPropertyChangeListener(this);
@@ -86,7 +89,7 @@ public class TelemetriaJPanel extends JPanel implements PropertyChangeListener {
 		label_10 = new JLabel("");
 		add(label_10);
 		JButton btnCancelar = new JButton("Cancelar");
-		btnCancelar.setSize(ParametrosJPanel.BTN_DIMENSION);
+		btnCancelar.setSize(BTN_DIMENSION);
 		btnCancelar.setPreferredSize(btnCancelar.getSize());
 		btnCancelar.setMinimumSize(btnCancelar.getSize());
 		btnCancelar.setMaximumSize(btnCancelar.getSize());

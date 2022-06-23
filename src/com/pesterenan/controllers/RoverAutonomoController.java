@@ -9,7 +9,6 @@ import org.javatuples.Triplet;
 
 import com.pesterenan.utils.ControlePID;
 import com.pesterenan.utils.Vetor;
-import com.pesterenan.views.GUI;
 
 import krpc.client.Connection;
 import krpc.client.RPCException;
@@ -63,10 +62,7 @@ public class RoverAutonomoController {
 	int pontos;
 	private boolean carregando;
 	private Stream<Double> tempoDoJogo;
-	private float kmsPercorridos;
 	private double tempoAnterior;
-	private double tempoDeMissao;
-	private double tempoRestante;
 
 	public RoverAutonomoController(Connection conexao)
 			throws IOException, RPCException, InterruptedException, StreamException {
@@ -99,8 +95,6 @@ public class RoverAutonomoController {
 		ctrlArfagem.ajustarPID(0.5, 0.015, 0.5);
 		ctrlArfagem.limitarSaida(-1, 1);
 		tempoAnterior = tempoDoJogo.get();
-		tempoRestante = 0;
-		kmsPercorridos = 0;
 		antiTombamento();
 	}
 
@@ -113,20 +107,16 @@ public class RoverAutonomoController {
 			}
 			if (listaDeMarcadoresASeguir.isEmpty()) {
 				executandoAutoRover = false;
-				GUI.setStatus("Sem alvos dispon�veis");
 			} else {
 				checarDistancia();
 			}
 		} else {
 			try {
 				naveAlvo = centroEspacial.getTargetVessel();
-				GUI.setStatus("Est� indo na dire��o de: " + naveAlvo.getName());
-				GUI.setParametros("nome", naveAlvo.getName());
 				distParaAlvo = new Vetor(naveAlvo.position(pontoRefSuperficie));
 				fazerListaDoCaminho();
 			} catch (NullPointerException e) {
 				executandoAutoRover = false;
-				GUI.setStatus("Sem alvos dispon�veis");
 			}
 		}
 	}
@@ -145,7 +135,6 @@ public class RoverAutonomoController {
 			rover.getControl().setWheelSteering(0.0f);
 			if (velocidadeRover.get() < 1 && rover.getControl().getBrakes()) {
 				Thread.sleep(1000);
-				GUI.setStatus("Carregando Baterias...");
 				double segCarga = 0;
 				List<SolarPanel> paineis = new ArrayList<SolarPanel>();
 				paineis = rover.getParts().getSolarPanels();
@@ -158,7 +147,6 @@ public class RoverAutonomoController {
 					}
 				}
 				if (paineis.isEmpty()) {
-					GUI.setStatus("N�o h� pain�is solares para carregar as baterias.");
 					executandoAutoRover = false;
 				}
 				segCarga = ((cargaTotal - cargaAtual) / segCarga);
@@ -171,7 +159,6 @@ public class RoverAutonomoController {
 				rover.getControl().setLights(true);
 			}
 		}
-		GUI.setParametros("carga", porcentagemCarga);
 	}
 
 	private void checarDistancia() throws RPCException, IOException {
@@ -185,8 +172,6 @@ public class RoverAutonomoController {
 		}
 		distParaAlvo = (posicionarMarcador(alvoMarcador));
 		fazerListaDoCaminho();
-		GUI.setStatus("Localizado marcador mais pr�ximo: " + alvoMarcador.getName());
-		GUI.setParametros("nome", alvoMarcador.getName());
 
 	}
 
@@ -219,7 +204,6 @@ public class RoverAutonomoController {
 				antiTombamento();
 				logarDados();
 			} catch (Exception erro) {
-				GUI.setStatus("Sem alvo selecionado");
 				executandoAutoRover = false;
 			}
 			carregarBaterias();
@@ -372,17 +356,9 @@ public class RoverAutonomoController {
 		} else {
 			distParaAlvo = posParaRover(new Vetor(naveAlvo.position(pontoRefSuperficie)));
 		}
-		double distanciaRestante = distParaAlvo.Magnitude3d();
 		double mudancaDeTempo = tempoDoJogo.get() - tempoAnterior;
 		if (mudancaDeTempo > 1) {
-			kmsPercorridos += (float) (mudancaDeTempo * velocidadeRover.get());
-			tempoRestante = distanciaRestante / velocidadeMaxima;
-			tempoDeMissao += mudancaDeTempo;
 			tempoAnterior = tempoDoJogo.get();
-			GUI.setParametros("distancia", distanciaRestante);
-			GUI.setParametros("distPercorrida", kmsPercorridos);
-			GUI.setParametros("tempoRestante", tempoRestante);
-			GUI.setParametros("tempoDeMissao", tempoDeMissao);
 		}
 	}
 

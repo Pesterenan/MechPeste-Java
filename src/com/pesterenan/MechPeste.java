@@ -26,21 +26,19 @@ public class MechPeste {
 
 	private static MechPeste mechPeste = null;
 
-	private static Connection conexao;
+	private static Connection connection;
 	private static Thread threadModulos;
 	private static Thread threadTelemetria;
 	private static FlightController flightCtrl = null;
 	private static FlightController modulo;
 
 	public static void main(String[] args) throws StreamException, RPCException, IOException, InterruptedException {
-
 		MechPeste.getInstance();
-
 	}
 
 	private MechPeste() {
 		MainGui.getInstance();
-		iniciarConexao();
+		startConnection();
 	}
 
 	public static MechPeste getInstance() {
@@ -50,13 +48,13 @@ public class MechPeste {
 		return mechPeste;
 	}
 
-	public void iniciarConexao() {
+	public void startConnection() {
+		StatusJPanel.setStatus(CONECTANDO.get());
 		try {
-			StatusJPanel.setStatus(CONECTANDO.get());
-			MechPeste.conexao = Connection.newInstance(MECHPESTE.get());
+			MechPeste.connection = Connection.newInstance(MECHPESTE.get());
 			StatusJPanel.setStatus(CONECTADO.get());
 			StatusJPanel.botConectarVisivel(false);
-			iniciarTelemetria();
+			startTelemetry();
 		} catch (IOException e) {
 			System.err.println(ERRO_AO_CONECTAR.get() + e.getMessage());
 			StatusJPanel.setStatus(ERRO_CONEXAO.get());
@@ -64,7 +62,7 @@ public class MechPeste {
 		}
 	}
 
-	private void iniciarTelemetria() {
+	private void startTelemetry() {
 		flightCtrl = null;
 		flightCtrl = new FlightController(getConexao());
 		setThreadTelemetria(null);
@@ -87,6 +85,7 @@ public class MechPeste {
 		}
 		setThreadModulos(new Thread(modulo));
 		getThreadModulos().start();
+		System.out.println(Thread.getAllStackTraces());
 		MainGui.getParametros().firePropertyChange(TELEMETRIA.get(), 0, 1);
 	}
 
@@ -103,7 +102,7 @@ public class MechPeste {
 	}
 
 	public static Connection getConexao() {
-		return conexao;
+		return connection;
 	}
 
 	private static Thread getThreadModulos() {

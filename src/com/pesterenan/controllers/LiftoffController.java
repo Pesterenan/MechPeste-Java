@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.pesterenan.MechPeste;
+import com.pesterenan.utils.ControlePID;
 import com.pesterenan.utils.Modulos;
 import com.pesterenan.utils.Utilities;
 import com.pesterenan.views.StatusJPanel;
@@ -23,13 +24,16 @@ public class LiftoffController extends FlightController implements Runnable {
 	private float startCurveAlt = 100;
 	private float finalApoapsisAlt = 80000;
 	private float heading = 90;
+	private float roll = 90;
 	private String gravityCurveModel = Modulos.CIRCULAR.get();
+	private ControlePID thrControl = new ControlePID();
 
 	public LiftoffController(Map<String, String> commands) {
 		super(getConexao());
 		this.currentPitch = PITCH_UP;
 		setFinalApoapsisAlt(Float.parseFloat(commands.get(Modulos.APOASTRO.get())));
 		setHeading(Float.parseFloat(commands.get(Modulos.DIRECAO.get())));
+		setRoll(Float.parseFloat(commands.get(Modulos.ROLAGEM.get())));
 		setGravityCurveModel(commands.get(Modulos.INCLINACAO.get()));
 		StatusJPanel.setStatus(STATUS_DECOLAGEM_ORBITAL.get());
 	}
@@ -39,7 +43,7 @@ public class LiftoffController extends FlightController implements Runnable {
 		try {
 			liftoff();
 			gravityCurve();
-			circularizeOnAp();
+			finalizeOrbit();
 		} catch (RPCException | InterruptedException | StreamException | IOException e) {
 			StatusJPanel.setStatus("Decolagem abortada.");
 			try {
@@ -52,12 +56,18 @@ public class LiftoffController extends FlightController implements Runnable {
 		}
 	}
 
-	private void circularizeOnAp() throws RPCException, StreamException, IOException, InterruptedException {
-		StatusJPanel.setStatus("Planejando Manobra de circularização...");
+	private void finalizeOrbit() throws RPCException, StreamException, IOException, InterruptedException {
+		StatusJPanel.setStatus("Mantendo apoastro alvo até sair da atmosfera...");
 		naveAtual.getAutoPilot().disengage();
 		naveAtual.getControl().setSAS(true);
 		naveAtual.getControl().setRCS(true);
+		while (parametrosDeVoo.getStaticPressure() > 100) {
+			naveAtual.getAutoPilot().setTargetDirection(parametrosDeVoo.getPrograde());
+			throttle(thrControl.computarPID(apoastro.get(), getFinalApoapsis()));
+			Thread.sleep(500);
+		}
 
+		StatusJPanel.setStatus("Planejando Manobra de circularização...");
 		Map<String, String> commands = new HashMap<>();
 		commands.put(Modulos.MODULO.get(), Modulos.MODULO_MANOBRAS.get());
 		commands.put(Modulos.FUNCAO.get(), Modulos.APOASTRO.get());
@@ -66,23 +76,20 @@ public class LiftoffController extends FlightController implements Runnable {
 
 	private void gravityCurve() throws RPCException, StreamException, InterruptedException {
 		naveAtual.getAutoPilot().targetPitchAndHeading(this.currentPitch, getHeading());
-		naveAtual.getAutoPilot().setTargetRoll(270);
-		
-		
+		naveAtual.getAutoPilot().setTargetRoll(this.getRoll());
+
 		naveAtual.getAutoPilot().engage();
 		throttle(1f);
 
 		while (this.currentPitch > 1) {
+			if (apoastro.get() > getFinalApoapsis()) {
+				break;
+			}
 			double currentAltitude = Utilities.remap(startCurveAlt, getFinalApoapsis(), 1, 0.01, altitude.get());
 			double inclinationCurve = calculateInclinationCurve(currentAltitude);
 			this.currentPitch = (float) (inclinationCurve * PITCH_UP);
 			naveAtual.getAutoPilot().targetPitchAndHeading(this.currentPitch, getHeading());
-
-			throttle(Utilities.remap(getFinalApoapsis() * 0.95, getFinalApoapsis(), 1, 0.1, apoastro.get()));
-			if (apoastro.get() > getFinalApoapsis()) {
-				throttle(0.0f);
-				break;
-			}
+			throttle(thrControl.computarPID(apoastro.get(), getFinalApoapsis()));
 
 			if (stageWithoutFuel()) {
 				StatusJPanel.setStatus("Separando estágio...");
@@ -90,9 +97,8 @@ public class LiftoffController extends FlightController implements Runnable {
 				naveAtual.getControl().activateNextStage();
 				Thread.sleep(1000);
 			}
-
 			StatusJPanel.setStatus(String.format("A inclinação do foguete é: %.1f", currentPitch));
-			Thread.sleep(25);
+			Thread.sleep(250);
 		}
 	}
 
@@ -109,7 +115,7 @@ public class LiftoffController extends FlightController implements Runnable {
 		if (gravityCurveModel.equals(Modulos.EXPONENCIAL.get())) {
 			return Utilities.easeInExpo(currentAltitude);
 		}
-			return Utilities.easeInCirc(currentAltitude);
+		return Utilities.easeInCirc(currentAltitude);
 	}
 
 	private boolean stageWithoutFuel() throws RPCException, StreamException {
@@ -129,6 +135,10 @@ public class LiftoffController extends FlightController implements Runnable {
 		return finalApoapsisAlt;
 	}
 
+	public float getRoll() {
+		return this.roll;
+	}
+
 	private void setGravityCurveModel(String model) {
 		this.gravityCurveModel = model;
 	}
@@ -137,6 +147,12 @@ public class LiftoffController extends FlightController implements Runnable {
 		final int MIN_HEADING = 0;
 		final int MAX_HEADING = 360;
 		this.heading = (float) Utilities.clamp(heading, MIN_HEADING, MAX_HEADING);
+	}
+
+	public void setRoll(float heading) {
+		final int MIN_HEADING = 0;
+		final int MAX_HEADING = 360;
+		this.roll = (float) Utilities.clamp(heading, MIN_HEADING, MAX_HEADING);
 	}
 
 	public void setFinalApoapsisAlt(float finalApoapsisAlt) {

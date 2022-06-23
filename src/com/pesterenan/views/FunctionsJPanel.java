@@ -16,70 +16,69 @@ import javax.swing.JPanel;
 import javax.swing.LayoutStyle.ComponentPlacement;
 import javax.swing.border.TitledBorder;
 
-public class FuncoesJPanel extends JPanel implements ActionListener {
+public class FunctionsJPanel extends JPanel implements ActionListener {
 
 	private static final long serialVersionUID = 1L;
 	public static final int BUTTON_WIDTH = 135;
 
-	private JButton btnDecolagemOrbital;
-	private JButton btnPousoAutomtico;
-	private JButton btnManobras;
-	private JButton btnPilotarRover;
+	private JButton btnLiftoff;
+	private JButton btnLanding;
+	private JButton btnManeuver;
+	private JButton btnRover;
 
-	public FuncoesJPanel() {
+	public FunctionsJPanel() {
 		initComponents();
 	}
 
 	private void initComponents() {
-		setMinimumSize(new Dimension(0, 0));
 		setPreferredSize(new Dimension(148, 216));
 		setBorder(new TitledBorder(null, "Fun\u00E7\u00F5es", TitledBorder.LEADING, TitledBorder.TOP, null, null));
 
-		btnDecolagemOrbital = new JButton(DECOLAGEM_ORBITAL.get());
-		btnDecolagemOrbital.addActionListener(this);
+		btnLiftoff = new JButton(DECOLAGEM_ORBITAL.get());
+		btnLiftoff.addActionListener(this);
 
-		btnPousoAutomtico = new JButton(POUSO_AUTOMATICO.get());
-		btnPousoAutomtico.addActionListener(this);
+		btnLanding = new JButton(POUSO_AUTOMATICO.get());
+		btnLanding.addActionListener(this);
 
-		btnManobras = new JButton(MANOBRAS.get());
-		btnManobras.addActionListener(this);
+		btnManeuver = new JButton(MANOBRAS.get());
+		btnManeuver.addActionListener(this);
 
-		btnPilotarRover = new JButton(ROVER_AUTONOMO.get());
-		btnPilotarRover.addActionListener(this);
-		btnPilotarRover.setEnabled(false);
+		btnRover = new JButton(ROVER_AUTONOMO.get());
+		btnRover.addActionListener(this);
+		btnRover.setEnabled(false);
 
-		GroupLayout gl_pnlFuncoes = new GroupLayout(this);
-		gl_pnlFuncoes.setHorizontalGroup(gl_pnlFuncoes.createParallelGroup(Alignment.LEADING).addGroup(gl_pnlFuncoes
+		GroupLayout gl_pnlFunctions = new GroupLayout(this);
+		gl_pnlFunctions.setHorizontalGroup(gl_pnlFunctions.createParallelGroup(Alignment.LEADING).addGroup(gl_pnlFunctions
 				.createSequentialGroup()
-				.addGroup(gl_pnlFuncoes.createParallelGroup(Alignment.LEADING)
-						.addComponent(btnDecolagemOrbital, GroupLayout.PREFERRED_SIZE, BUTTON_WIDTH,
+				.addGroup(gl_pnlFunctions.createParallelGroup(Alignment.LEADING)
+						.addComponent(btnLiftoff, GroupLayout.PREFERRED_SIZE, BUTTON_WIDTH,
 								GroupLayout.PREFERRED_SIZE)
-						.addComponent(btnPousoAutomtico, GroupLayout.PREFERRED_SIZE, BUTTON_WIDTH,
+						.addComponent(btnLanding, GroupLayout.PREFERRED_SIZE, BUTTON_WIDTH,
 								GroupLayout.PREFERRED_SIZE)
-						.addComponent(btnManobras, GroupLayout.PREFERRED_SIZE, BUTTON_WIDTH, GroupLayout.PREFERRED_SIZE)
-						.addComponent(btnPilotarRover, GroupLayout.PREFERRED_SIZE, BUTTON_WIDTH,
+						.addComponent(btnManeuver, GroupLayout.PREFERRED_SIZE, BUTTON_WIDTH, GroupLayout.PREFERRED_SIZE)
+						.addComponent(btnRover, GroupLayout.PREFERRED_SIZE, BUTTON_WIDTH,
 								GroupLayout.PREFERRED_SIZE))
 				.addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)));
-		gl_pnlFuncoes.setVerticalGroup(gl_pnlFuncoes.createParallelGroup(Alignment.LEADING)
-				.addGroup(gl_pnlFuncoes.createSequentialGroup().addComponent(btnDecolagemOrbital)
-						.addPreferredGap(ComponentPlacement.RELATED).addComponent(btnPousoAutomtico)
-						.addPreferredGap(ComponentPlacement.RELATED).addComponent(btnManobras)
-						.addPreferredGap(ComponentPlacement.RELATED).addComponent(btnPilotarRover)
+		gl_pnlFunctions.setVerticalGroup(gl_pnlFunctions.createParallelGroup(Alignment.LEADING)
+				.addGroup(gl_pnlFunctions.createSequentialGroup().addComponent(btnLiftoff)
+						.addPreferredGap(ComponentPlacement.RELATED).addComponent(btnLanding)
+						.addPreferredGap(ComponentPlacement.RELATED).addComponent(btnManeuver)
+						.addPreferredGap(ComponentPlacement.RELATED).addComponent(btnRover)
 						.addContainerGap(100, Short.MAX_VALUE)));
-		setLayout(gl_pnlFuncoes);
+		setLayout(gl_pnlFunctions);
 	}
 
 	public void actionPerformed(ActionEvent e) {
-		if (e.getSource() == btnPilotarRover) {
+		if (e.getSource() == btnRover) {
 			handleBtnPilotarRoverActionPerformed(e);
 		}
-		if (e.getSource() == btnManobras) {
+		if (e.getSource() == btnManeuver) {
 			handleBtnManobrasActionPerformed(e);
 		}
-		if (e.getSource() == btnPousoAutomtico) {
+		if (e.getSource() == btnLanding) {
 			handleBtnPousoAutomticoActionPerformed(e);
 		}
-		if (e.getSource() == btnDecolagemOrbital) {
+		if (e.getSource() == btnLiftoff) {
 			handleBtnDecolagemOrbitalActionPerformed(e);
 		}
 	}

@@ -4,8 +4,6 @@ import static com.pesterenan.utils.Dicionario.MECHPESTE;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseMotionAdapter;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -19,10 +17,10 @@ public class MainGui extends JFrame {
 	private static final long serialVersionUID = 1L;
 
 	private final Dimension dmsMainGui = new Dimension(480, 280);
-	private JPanel ctpMain = new JPanel();
-	private static JPanel pnlStatus;
-	private static JPanel pnlFuncoes;
-	private static ParametrosJPanel pnlParametros;
+	private JPanel ctpMainGui = new JPanel();
+	private static StatusJPanel pnlStatus;
+	private static FunctionsJPanel pnlFuncoes;
+	private static ParametersJPanel pnlParametros;
 
 	public static MainGui getInstance() {
 		if (mainGui == null) {
@@ -47,36 +45,28 @@ public class MainGui extends JFrame {
 		setResizable(false);
 		setLocation(100, 100);
 		setSize(dmsMainGui);
-		ctpMain.addMouseMotionListener(new CtpMainMouseMotionListener());
-		setContentPane(ctpMain);
+		setContentPane(ctpMainGui);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-		pnlFuncoes = new FuncoesJPanel();
-		pnlParametros = new ParametrosJPanel();
+		pnlFuncoes = new FunctionsJPanel();
+		pnlParametros = new ParametersJPanel();
 		pnlStatus = new StatusJPanel();
-		ctpMain.setLayout(new BorderLayout(0, 0));
-		ctpMain.add(pnlFuncoes, BorderLayout.WEST);
-		ctpMain.add(pnlParametros, BorderLayout.CENTER);
-		ctpMain.add(pnlStatus, BorderLayout.SOUTH);
+		ctpMainGui.setLayout(new BorderLayout(0, 0));
+		ctpMainGui.add(pnlFuncoes, BorderLayout.WEST);
+		ctpMainGui.add(pnlParametros, BorderLayout.CENTER);
+		ctpMainGui.add(pnlStatus, BorderLayout.SOUTH);
 	}
 
-	public static ParametrosJPanel getParametros() {
+	public static ParametersJPanel getParametros() {
 		return pnlParametros;
 	}
 
-	public static JPanel getStatus() {
+	public static StatusJPanel getStatus() {
 		return pnlStatus;
 	}
 
-	public static JPanel getFuncoes() {
+	public static FunctionsJPanel getFuncoes() {
 		return pnlFuncoes;
 	}
 
-	private class CtpMainMouseMotionListener extends MouseMotionAdapter {
-
-		@Override
-		public void mouseMoved(MouseEvent e) {
-			ctpMain.setToolTipText(e.getPoint().toString());
-		}
-	}
 }

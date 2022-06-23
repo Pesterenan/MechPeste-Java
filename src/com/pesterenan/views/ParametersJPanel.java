@@ -13,64 +13,64 @@ import java.beans.PropertyChangeListener;
 
 import javax.swing.JPanel;
 
-public class ParametrosJPanel extends JPanel implements PropertyChangeListener {
+public class ParametersJPanel extends JPanel implements PropertyChangeListener {
 
 	private static final long serialVersionUID = 1L;
 
-	private JPanel parametros = this;
-	private CardLayout layout = new CardLayout(0, 0);
-	public static Dimension dmsParametros = new Dimension(314, 216);
+	private JPanel pnlParameters = this;
+	private CardLayout cardLayout = new CardLayout(0, 0);
+	public static Dimension dmsParameters = new Dimension(314, 216);
 	public static final Dimension BTN_DIMENSION = new Dimension(110, 25);
-	private TelemetriaJPanel pnlTelemetria = new TelemetriaJPanel();
-	private JPanel pnlDecolagem = new DecolagemJPanel();
-	private JPanel pnlPouso = new PousoAutomaticoJPanel();
-	private JPanel pnlManobras = new ManobrasJPanel();
+	private TelemetryJPanel pnlTelemetry = new TelemetryJPanel();
+	private JPanel pnlLiftoff = new LiftoffJPanel();
+	private JPanel pnlLanding = new PousoAutomaticoJPanel();
+	private JPanel pnlManeuver = new ManeuverJPanel();
 	private JPanel pnlRover = new JPanel();
 
-	public ParametrosJPanel() {
+	public ParametersJPanel() {
 		initComponents();
 	}
 
 	private void initComponents() {
 		setMinimumSize(new Dimension(0, 0));
-		setSize(dmsParametros);
+		setSize(dmsParameters);
 		setBorder(null);
-		setLayout(layout);
-		parametros.addPropertyChangeListener(this);
+		setLayout(cardLayout);
+		pnlParameters.addPropertyChangeListener(this);
 
-		add(pnlTelemetria, TELEMETRIA.get());
-		add(pnlDecolagem, DECOLAGEM_ORBITAL.get());
-		add(pnlPouso, POUSO_AUTOMATICO.get());
-		add(pnlManobras, MANOBRAS.get());
+		add(pnlTelemetry, TELEMETRIA.get());
+		add(pnlLiftoff, DECOLAGEM_ORBITAL.get());
+		add(pnlLanding, POUSO_AUTOMATICO.get());
+		add(pnlManeuver, MANOBRAS.get());
 		add(pnlRover, ROVER_AUTONOMO.get());
 
 	}
 
 	public void propertyChange(PropertyChangeEvent evt) {
-		if (evt.getSource() == parametros) {
+		if (evt.getSource() == pnlParameters) {
 			handlePnlTelemetriaPropertyChange(evt);
 		}
 	}
 
 	protected void handlePnlTelemetriaPropertyChange(PropertyChangeEvent evt) {
 		if (evt.getPropertyName().equals(DECOLAGEM_ORBITAL.get())) {
-			layout.show(parametros, DECOLAGEM_ORBITAL.get());
+			cardLayout.show(pnlParameters, DECOLAGEM_ORBITAL.get());
 		}
 		if (evt.getPropertyName().equals(POUSO_AUTOMATICO.get())) {
-			layout.show(parametros, POUSO_AUTOMATICO.get());
+			cardLayout.show(pnlParameters, POUSO_AUTOMATICO.get());
 		}
 		if (evt.getPropertyName().equals(MANOBRAS.get())) {
-			layout.show(parametros, MANOBRAS.get());
+			cardLayout.show(pnlParameters, MANOBRAS.get());
 		}
 		if (evt.getPropertyName().equals(ROVER_AUTONOMO.get())) {
-			layout.show(parametros, ROVER_AUTONOMO.get());
+			cardLayout.show(pnlParameters, ROVER_AUTONOMO.get());
 		}
 		if (evt.getPropertyName().equals(TELEMETRIA.get())) {
-			layout.show(parametros, TELEMETRIA.get());
+			cardLayout.show(pnlParameters, TELEMETRIA.get());
 		}
 	}
 
-	public TelemetriaJPanel getTelemetria() {
-		return pnlTelemetria;
+	public TelemetryJPanel getTelemetria() {
+		return pnlTelemetry;
 	}
 }

@@ -66,7 +66,7 @@ public class StatusJPanel extends JPanel {
 		public void actionPerformed(ActionEvent e) {
 			setStatus(CONECTANDO.get());
 			MechPeste.finalizarTarefa();
-			MechPeste.getInstance().iniciarConexao();
+			MechPeste.getInstance().startConnection();
 		}
 	}
 }

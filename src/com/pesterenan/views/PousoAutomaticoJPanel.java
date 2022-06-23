@@ -1,5 +1,6 @@
 package com.pesterenan.views;
 
+import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.HashMap;
@@ -13,14 +14,12 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.LayoutStyle.ComponentPlacement;
 import javax.swing.SwingConstants;
+import javax.swing.border.EtchedBorder;
 import javax.swing.border.TitledBorder;
 
 import com.pesterenan.MechPeste;
 import com.pesterenan.utils.Dicionario;
 import com.pesterenan.utils.Modulos;
-import java.awt.Dimension;
-import javax.swing.border.EtchedBorder;
-import java.awt.Color;
 
 public class PousoAutomaticoJPanel extends JPanel implements ActionListener {
 
@@ -39,27 +38,27 @@ public class PousoAutomaticoJPanel extends JPanel implements ActionListener {
 	}
 
 	private void initComponents() {
-		setPreferredSize(ParametrosJPanel.dmsParametros);
-		setSize(ParametrosJPanel.dmsParametros);
+		setPreferredSize(ParametersJPanel.dmsParameters);
+		setSize(ParametersJPanel.dmsParameters);
 		setBorder(new TitledBorder(null, "Pouso Autom\u00E1tico", TitledBorder.LEADING, TitledBorder.TOP, null, null));
 
 		txfHover.setHorizontalAlignment(SwingConstants.CENTER);
 		txfHover.setColumns(10);
 
 		btnHover.addActionListener(this);
-		btnHover.setSize(ParametrosJPanel.BTN_DIMENSION);
+		btnHover.setSize(ParametersJPanel.BTN_DIMENSION);
 		btnHover.setPreferredSize(btnHover.getSize());
 		btnHover.setMinimumSize(btnHover.getSize());
 		btnHover.setMaximumSize(btnHover.getSize());
 
 		btnBack.addActionListener(this);
-		btnBack.setSize(ParametrosJPanel.BTN_DIMENSION);
+		btnBack.setSize(ParametersJPanel.BTN_DIMENSION);
 		btnBack.setPreferredSize(btnBack.getSize());
 		btnBack.setMinimumSize(btnBack.getSize());
 		btnBack.setMaximumSize(btnBack.getSize());
 
 		btnAutoLanding.addActionListener(this);
-		btnAutoLanding.setSize(ParametrosJPanel.BTN_DIMENSION);
+		btnAutoLanding.setSize(ParametersJPanel.BTN_DIMENSION);
 		btnAutoLanding.setPreferredSize(btnAutoLanding.getSize());
 		btnAutoLanding.setMinimumSize(btnAutoLanding.getSize());
 		btnAutoLanding.setMaximumSize(btnAutoLanding.getSize());

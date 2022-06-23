@@ -36,7 +36,6 @@ public class ManeuverController extends FlightController implements Runnable {
 
 	public void calculateManeuver() {
 		try {
-			System.out.println(naveAtual.getAutoPilot().getTargetRoll());
 			if (naveAtual.getSituation() == VesselSituation.LANDED
 					|| naveAtual.getSituation() == VesselSituation.SPLASHED) {
 				throw new InterruptedException();
@@ -100,15 +99,15 @@ public class ManeuverController extends FlightController implements Runnable {
 
 	public void orientToManeuverNode(Node noDeManobra) {
 		try {
-		StatusJPanel.setStatus("Orientando nave para o nó de Manobra...");
 			float roll = naveAtual.getAutoPilot().getTargetRoll();
 			naveAtual.getAutoPilot().setReferenceFrame(noDeManobra.getReferenceFrame());
 			naveAtual.getAutoPilot().setTargetDirection(new Triplet<Double, Double, Double>(0.0, 1.0, 0.0));
-			naveAtual.getAutoPilot().setTargetRoll((roll + 180) % 360);
-			System.out.println(naveAtual.getAutoPilot().getTargetRoll());
+			naveAtual.getAutoPilot().setTargetRoll((roll + 180));
 			naveAtual.getAutoPilot().engage();
-			Thread.sleep(100);
-			naveAtual.getAutoPilot().wait_();
+			while (naveAtual.getAutoPilot().getError() > 5) {
+				StatusJPanel.setStatus("Orientando nave para o nó de Manobra...");
+				Thread.sleep(250);				
+			}
 		} catch (InterruptedException | RPCException e) {
 			try {
 				naveAtual.getAutoPilot().setReferenceFrame(pontoRefSuperficie);
@@ -141,8 +140,8 @@ public class ManeuverController extends FlightController implements Runnable {
 	public void executeBurn(Node noDeManobra, double duracaoDaQueima) throws RPCException {
 		try {
 			double inicioDaQueima = noDeManobra.getTimeTo() - (duracaoDaQueima / 2.0);
-			// Caso estiver muito distante da manobra, dar Warp:
-			if (inicioDaQueima > 60) {
+			StatusJPanel.setStatus("Warp temporal para próxima manobra...");
+			if (inicioDaQueima > 30) {
 				centroEspacial.warpTo((centroEspacial.getUT() + inicioDaQueima - 10), 100000, 4);
 			}
 			// Mostrar tempo de ignição:
@@ -157,11 +156,11 @@ public class ManeuverController extends FlightController implements Runnable {
 			Stream<Triplet<Double, Double, Double>> queimaRestante = getConexao().addStream(noDeManobra,
 					"remainingBurnVector", noDeManobra.getReferenceFrame());
 			StatusJPanel.setStatus("Executando manobra!");
-			double limiteParaDesacelerar = noDeManobra.getDeltaV() > 1000 ? 0.05
+			double limiteParaDesacelerar = noDeManobra.getDeltaV() > 1000 ? 0.025
 					: noDeManobra.getDeltaV() > 250 ? 0.10 : 0.25;
 
 			while (!noDeManobra.equals(null)) {
-				if (queimaRestante.get().getValue1() > 1) {
+				if (queimaRestante.get().getValue1() > 0.5) {
 					throttle(Utilities.remap(noDeManobra.getDeltaV() * limiteParaDesacelerar, 0, 1, 0.1,
 							queimaRestante.get().getValue1()));
 				} else {

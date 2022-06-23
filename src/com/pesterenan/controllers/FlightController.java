@@ -8,7 +8,6 @@ import krpc.client.Connection;
 import krpc.client.RPCException;
 import krpc.client.StreamException;
 import krpc.client.services.SpaceCenter.Vessel;
-import krpc.client.services.SpaceCenter.VesselSituation;
 
 public class FlightController extends Nave implements Runnable {
 
@@ -47,7 +46,7 @@ public class FlightController extends Nave implements Runnable {
 			try {
 				trocaDeNaves();
 				enviarTelemetria();
-				Thread.sleep(100);
+				Thread.sleep(250);
 			} catch (InterruptedException e) {
 			} catch (RPCException | StreamException | NullPointerException e) {
 				checarConexao();
@@ -81,38 +80,4 @@ public class FlightController extends Nave implements Runnable {
 
 	}
 
-	protected void throttle(float acel) throws RPCException {
-		naveAtual.getControl().setThrottle(acel);
-	}
-
-	protected void throttle(double acel) throws RPCException {
-		throttle((float) acel);
-	}
-
-	protected void liftoff() throws InterruptedException {
-		try {
-			naveAtual.getControl().setSAS(true);
-			throttle(1f);
-			if (naveAtual.getSituation().equals(VesselSituation.PRE_LAUNCH)) {
-				float launchCount = 5f;
-				while (launchCount > 0) {
-					StatusJPanel.setStatus(String.format("Lançamento em: %.1f segundos...", launchCount));
-					launchCount -= 0.1;
-					Thread.sleep(100);
-				}
-				naveAtual.getControl().activateNextStage();
-			}
-			StatusJPanel.setStatus("Decolagem!");
-		} catch (RPCException erro) {
-			System.err.println("Não foi possivel decolar a nave. Erro: " + erro.getMessage());
-		}
-	}
-
-	protected double calcularTEP() throws RPCException, StreamException {
-		return naveAtual.getAvailableThrust() / ((massaTotal.get() * acelGravidade));
-	}
-
-	protected double calcularAcelMaxima() throws RPCException, StreamException {
-		return calcularTEP() * acelGravidade - acelGravidade;
-	}
 }
