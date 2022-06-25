@@ -1,9 +1,6 @@
 package com.pesterenan.model;
 
-import static com.pesterenan.utils.Status.ERRO_CONEXAO;
-
 import com.pesterenan.views.StatusJPanel;
-
 import krpc.client.Connection;
 import krpc.client.RPCException;
 import krpc.client.Stream;
@@ -15,6 +12,8 @@ import krpc.client.services.SpaceCenter.Flight;
 import krpc.client.services.SpaceCenter.ReferenceFrame;
 import krpc.client.services.SpaceCenter.Vessel;
 import krpc.client.services.SpaceCenter.VesselSituation;
+
+import static com.pesterenan.utils.Status.ERRO_CONEXAO;
 
 public class Nave {
 	private static Connection conexao;

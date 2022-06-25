@@ -1,15 +1,5 @@
 package com.pesterenan;
 
-import static com.pesterenan.utils.Dicionario.ERRO_AO_CONECTAR;
-import static com.pesterenan.utils.Dicionario.MECHPESTE;
-import static com.pesterenan.utils.Dicionario.TELEMETRIA;
-import static com.pesterenan.utils.Status.CONECTADO;
-import static com.pesterenan.utils.Status.CONECTANDO;
-import static com.pesterenan.utils.Status.ERRO_CONEXAO;
-
-import java.io.IOException;
-import java.util.Map;
-
 import com.pesterenan.controllers.FlightController;
 import com.pesterenan.controllers.LandingController;
 import com.pesterenan.controllers.LiftoffController;
@@ -17,10 +7,15 @@ import com.pesterenan.controllers.ManeuverController;
 import com.pesterenan.utils.Modulos;
 import com.pesterenan.views.MainGui;
 import com.pesterenan.views.StatusJPanel;
-
 import krpc.client.Connection;
 import krpc.client.RPCException;
 import krpc.client.StreamException;
+
+import java.io.IOException;
+import java.util.Map;
+
+import static com.pesterenan.utils.Dicionario.*;
+import static com.pesterenan.utils.Status.*;
 
 public class MechPeste {
 

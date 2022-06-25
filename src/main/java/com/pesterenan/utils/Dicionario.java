@@ -1,7 +1,7 @@
 package com.pesterenan.utils;
 
 public enum Dicionario {
-	MECHPESTE("MechPeste"), 
+	MECHPESTE("com.pesterenan.MechPeste"),
 	CONECTAR("Conectar"), 
 	ERRO_AO_CONECTAR("Erro ao se conectar ao jogo:\n\t"),
 	DECOLAGEM_ORBITAL("Decolagem Orbital"), 

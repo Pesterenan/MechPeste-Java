@@ -1,18 +1,18 @@
-# **MechPeste**
+# **com.pesterenan.MechPeste**
 
 Esse pequeno Mod de funções utiliza o mod KRPC como ponte de conexão para o game Kerbal Space Program de modo a poder controlar os foguetes e naves utilizando scripts de automação e navegação.
 Há funções de decolagem orbital, pouso automático (suicide burn), manobras, e pilotagem automática de rovers.
 
 ## **Requisitos**
 ---
-É necessário ter o [Java](https://java.com/pt-BR/) atualizado para rodar o arquivo "MechPeste.jar" e também ter o mod [KRPC](https://github.com/krpc/krpc/releases/download/v0.4.8/krpc-0.4.8.zip) instalado na pasta do Kerbal.
+É necessário ter o [Java](https://java.com/pt-BR/) atualizado para rodar o arquivo "com.pesterenan.MechPeste.jar" e também ter o mod [KRPC](https://github.com/krpc/krpc/releases/download/v0.4.8/krpc-0.4.8.zip) instalado na pasta do Kerbal.
 
 ## **Como utilizar:**
 ---
-Baixe a versão mais recente na aba de Releases ao lado >> e depois é so abrir o arquivo "MechPeste.jar".
+Baixe a versão mais recente na aba de Releases ao lado >> e depois é so abrir o arquivo "com.pesterenan.MechPeste.jar".
 Se o jogo estiver aberto ele tentará se conectar ao mod KRPC e então é só clicar numa das funções para utilizar com a nave.
 
-Caso ainda não tenha criado um server, clique em "Add Server" e depois em "Start Server" dentro do jogo no mod KRPC, assim o MechPeste conseguirá se conectar.
+Caso ainda não tenha criado um server, clique em "Add Server" e depois em "Start Server" dentro do jogo no mod KRPC, assim o com.pesterenan.MechPeste conseguirá se conectar.
 
 ## *Funções* 
 ### *Decolagem Orbital*

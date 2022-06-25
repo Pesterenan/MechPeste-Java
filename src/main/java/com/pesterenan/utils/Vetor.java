@@ -210,7 +210,7 @@ public class Vetor {
 	}
 
 	/**
-	 * Calcula o Vetor da direção CONTRÁRIA do ponto de origem até o alvo.
+	 * Calcula o Vetor da direção CONTRARIAN do ponto de origem até o alvo.
 	 * 
 	 * @param origem - Tupla contendo os componentes da posição do ponto de origem.
 	 * @param alvo   - Tupla contendo os componentes da posição do alvo.

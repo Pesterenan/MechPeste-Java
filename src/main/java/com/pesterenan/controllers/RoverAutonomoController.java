@@ -1,29 +1,19 @@
 package com.pesterenan.controllers;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-
-import org.javatuples.Triplet;
-
 import com.pesterenan.utils.ControlePID;
 import com.pesterenan.utils.Vetor;
-
 import krpc.client.Connection;
 import krpc.client.RPCException;
 import krpc.client.Stream;
 import krpc.client.StreamException;
 import krpc.client.services.SpaceCenter;
-import krpc.client.services.SpaceCenter.Flight;
-import krpc.client.services.SpaceCenter.ReferenceFrame;
-import krpc.client.services.SpaceCenter.SASMode;
-import krpc.client.services.SpaceCenter.SolarPanel;
-import krpc.client.services.SpaceCenter.SolarPanelState;
-import krpc.client.services.SpaceCenter.SpeedMode;
-import krpc.client.services.SpaceCenter.Vessel;
-import krpc.client.services.SpaceCenter.Waypoint;
-import krpc.client.services.SpaceCenter.WaypointManager;
+import krpc.client.services.SpaceCenter.*;
+import org.javatuples.Triplet;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 // M�dulo de Piloto autom�tico de Rovers
 // Autor: Renan Torres <pesterenan@gmail.com>
