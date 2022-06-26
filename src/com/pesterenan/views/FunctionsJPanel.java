@@ -1,9 +1,9 @@
 package com.pesterenan.views;
 
-import static com.pesterenan.utils.Dicionario.DECOLAGEM_ORBITAL;
-import static com.pesterenan.utils.Dicionario.MANOBRAS;
-import static com.pesterenan.utils.Dicionario.POUSO_AUTOMATICO;
-import static com.pesterenan.utils.Dicionario.ROVER_AUTONOMO;
+import static com.pesterenan.utils.Dictionary.ORBITAL_LIFTOFF;
+import static com.pesterenan.utils.Dictionary.MANEUVERS;
+import static com.pesterenan.utils.Dictionary.AUTOMATIC_LAND;
+import static com.pesterenan.utils.Dictionary.AUTOMATIC_ROVER;
 
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
@@ -34,16 +34,16 @@ public class FunctionsJPanel extends JPanel implements ActionListener {
 		setPreferredSize(new Dimension(148, 216));
 		setBorder(new TitledBorder(null, "Fun\u00E7\u00F5es", TitledBorder.LEADING, TitledBorder.TOP, null, null));
 
-		btnLiftoff = new JButton(DECOLAGEM_ORBITAL.get());
+		btnLiftoff = new JButton(ORBITAL_LIFTOFF.get());
 		btnLiftoff.addActionListener(this);
 
-		btnLanding = new JButton(POUSO_AUTOMATICO.get());
+		btnLanding = new JButton(AUTOMATIC_LAND.get());
 		btnLanding.addActionListener(this);
 
-		btnManeuver = new JButton(MANOBRAS.get());
+		btnManeuver = new JButton(MANEUVERS.get());
 		btnManeuver.addActionListener(this);
 
-		btnRover = new JButton(ROVER_AUTONOMO.get());
+		btnRover = new JButton(AUTOMATIC_ROVER.get());
 		btnRover.addActionListener(this);
 		btnRover.setEnabled(false);
 
@@ -84,18 +84,18 @@ public class FunctionsJPanel extends JPanel implements ActionListener {
 	}
 
 	protected void handleBtnDecolagemOrbitalActionPerformed(ActionEvent e) {
-		MainGui.getParametros().firePropertyChange(DECOLAGEM_ORBITAL.get(), false, true);
+		MainGui.getParameters().firePropertyChange(ORBITAL_LIFTOFF.get(), false, true);
 	}
 
 	protected void handleBtnPousoAutomticoActionPerformed(ActionEvent e) {
-		MainGui.getParametros().firePropertyChange(POUSO_AUTOMATICO.get(), false, true);
+		MainGui.getParameters().firePropertyChange(AUTOMATIC_LAND.get(), false, true);
 	}
 
 	protected void handleBtnManobrasActionPerformed(ActionEvent e) {
-		MainGui.getParametros().firePropertyChange(MANOBRAS.get(), false, true);
+		MainGui.getParameters().firePropertyChange(MANEUVERS.get(), false, true);
 	}
 
 	protected void handleBtnPilotarRoverActionPerformed(ActionEvent e) {
-		MainGui.getParametros().firePropertyChange(ROVER_AUTONOMO.get(), false, true);
+		MainGui.getParameters().firePropertyChange(AUTOMATIC_ROVER.get(), false, true);
 	}
 }

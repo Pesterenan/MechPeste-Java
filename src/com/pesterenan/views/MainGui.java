@@ -1,6 +1,6 @@
 package com.pesterenan.views;
 
-import static com.pesterenan.utils.Dicionario.MECHPESTE;
+import static com.pesterenan.utils.Dictionary.MECHPESTE;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
@@ -18,9 +18,9 @@ public class MainGui extends JFrame {
 
 	private final Dimension dmsMainGui = new Dimension(480, 280);
 	private JPanel ctpMainGui = new JPanel();
-	private static StatusJPanel pnlStatus;
-	private static FunctionsJPanel pnlFuncoes;
-	private static ParametersJPanel pnlParametros;
+	private static StatusJPanel statusPanel;
+	private static FunctionsJPanel functionsPanel;
+	private static ParametersJPanel parametersPanel;
 
 	public static MainGui getInstance() {
 		if (mainGui == null) {
@@ -48,25 +48,25 @@ public class MainGui extends JFrame {
 		setContentPane(ctpMainGui);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-		pnlFuncoes = new FunctionsJPanel();
-		pnlParametros = new ParametersJPanel();
-		pnlStatus = new StatusJPanel();
+		functionsPanel = new FunctionsJPanel();
+		parametersPanel = new ParametersJPanel();
+		statusPanel = new StatusJPanel();
 		ctpMainGui.setLayout(new BorderLayout(0, 0));
-		ctpMainGui.add(pnlFuncoes, BorderLayout.WEST);
-		ctpMainGui.add(pnlParametros, BorderLayout.CENTER);
-		ctpMainGui.add(pnlStatus, BorderLayout.SOUTH);
+		ctpMainGui.add(functionsPanel, BorderLayout.WEST);
+		ctpMainGui.add(parametersPanel, BorderLayout.CENTER);
+		ctpMainGui.add(statusPanel, BorderLayout.SOUTH);
 	}
 
-	public static ParametersJPanel getParametros() {
-		return pnlParametros;
+	public static ParametersJPanel getParameters() {
+		return parametersPanel;
 	}
 
 	public static StatusJPanel getStatus() {
-		return pnlStatus;
+		return statusPanel;
 	}
 
 	public static FunctionsJPanel getFuncoes() {
-		return pnlFuncoes;
+		return functionsPanel;
 	}
 
 }

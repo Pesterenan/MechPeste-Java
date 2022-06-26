@@ -18,8 +18,8 @@ import javax.swing.border.EtchedBorder;
 import javax.swing.border.TitledBorder;
 
 import com.pesterenan.MechPeste;
-import com.pesterenan.utils.Dicionario;
-import com.pesterenan.utils.Modulos;
+import com.pesterenan.utils.Dictionary;
+import com.pesterenan.utils.Modules;
 
 public class PousoAutomaticoJPanel extends JPanel implements ActionListener {
 
@@ -124,12 +124,12 @@ public class PousoAutomaticoJPanel extends JPanel implements ActionListener {
 
 	protected void handleBtnAutoLandingActionPerformed(ActionEvent e) {
 		Map<String, String> commands = new HashMap<>();
-		commands.put(Modulos.MODULO.get(), Modulos.MODULO_POUSO.get());
-		MechPeste.iniciarModulo(commands);
+		commands.put(Modules.MODULE.get(), Modules.LANDING_MODULE.get());
+		MechPeste.startModule(commands);
 	}
 
 	protected void handleBtnBackActionPerformed(ActionEvent e) {
-		MainGui.getParametros().firePropertyChange(Dicionario.TELEMETRIA.get(), false, true);
+		MainGui.getParameters().firePropertyChange(Dictionary.TELEMETRY.get(), false, true);
 	}
 
 	protected void handleBtnHoverActionPerformed(ActionEvent e) {
@@ -144,9 +144,9 @@ public class PousoAutomaticoJPanel extends JPanel implements ActionListener {
 			return;
 		}
 		Map<String, String> commands = new HashMap<>();
-		commands.put(Modulos.MODULO.get(), Modulos.MODULO_POUSO_SOBREVOAR.get());
-		commands.put(Modulos.ALTITUDE_SOBREVOO.get(), txfHover.getText());
-		MechPeste.iniciarModulo(commands);
+		commands.put(Modules.MODULE.get(), Modules.LANGING_FLIGHT_MODULE.get());
+		commands.put(Modules.FLIGHT_ALTITUDE.get(), txfHover.getText());
+		MechPeste.startModule(commands);
 		btnHover.setText("Descer");
 	}
 }

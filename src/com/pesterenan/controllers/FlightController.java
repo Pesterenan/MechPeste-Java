@@ -15,68 +15,68 @@ public class FlightController extends Nave implements Runnable {
 
 	public FlightController(Connection con) {
 		super(con);
-		iniciarStreams(this.naveAtual);
+		startStreams(this.currentShip);
 	}
 
-	private void iniciarStreams(Vessel naveAtual) {
+	private void startStreams(Vessel currentShip) {
 		try {
-			pontoRefOrbital = naveAtual.getOrbit().getBody().getReferenceFrame();
-			pontoRefSuperficie = naveAtual.getSurfaceReferenceFrame();
-			parametrosDeVoo = naveAtual.flight(pontoRefOrbital);
-			altitude = getConexao().addStream(parametrosDeVoo, "getMeanAltitude");
-			altitudeSup = getConexao().addStream(parametrosDeVoo, "getSurfaceAltitude");
-			apoastro = getConexao().addStream(naveAtual.getOrbit(), "getApoapsisAltitude");
-			periastro = getConexao().addStream(naveAtual.getOrbit(), "getPeriapsisAltitude");
-			velVertical = getConexao().addStream(parametrosDeVoo, "getVerticalSpeed");
-			velHorizontal = getConexao().addStream(parametrosDeVoo, "getHorizontalSpeed");
-			massaTotal = getConexao().addStream(naveAtual, "getMass");
-			tempoMissao = getConexao().addStream(naveAtual, "getMET");
-			bateriaAtual = getConexao().addStream(naveAtual.getResources(), "amount", "ElectricCharge");
-			bateriaTotal = naveAtual.getResources().max("ElectricCharge");
-			acelGravidade = naveAtual.getOrbit().getBody().getSurfaceGravity();
-			corpoCeleste = naveAtual.getOrbit().getBody().getName();
+			orbitalRefSpot = currentShip.getOrbit().getBody().getReferenceFrame();
+			surfaceRefSpot = currentShip.getSurfaceReferenceFrame();
+			flightParameters = currentShip.flight(orbitalRefSpot);
+			altitude = getConnection().addStream(flightParameters, "getMeanAltitude");
+			surfAltitude = getConnection().addStream(flightParameters, "getSurfaceAltitude");
+			apoapsis = getConnection().addStream(currentShip.getOrbit(), "getApoapsisAltitude");
+			periapsis = getConnection().addStream(currentShip.getOrbit(), "getPeriapsisAltitude");
+			verticalSpeed = getConnection().addStream(flightParameters, "getVerticalSpeed");
+			horizontalSpeed = getConnection().addStream(flightParameters, "getHorizontalSpeed");
+			totalMass = getConnection().addStream(currentShip, "getMass");
+			missionTime = getConnection().addStream(currentShip, "getMET");
+			currentBattery = getConnection().addStream(currentShip.getResources(), "amount", "ElectricCharge");
+			totalBattery = currentShip.getResources().max("ElectricCharge");
+			gravityAcceleration = currentShip.getOrbit().getBody().getSurfaceGravity();
+			celestialBody = currentShip.getOrbit().getBody().getName();
 		} catch (StreamException | RPCException | NullPointerException | IllegalArgumentException e) {
-			checarConexao();
+			checkConnection();
 		}
 	}
 
 	@Override
 	public void run() {
-		while (!getConexao().equals(null)) {
+		while (!getConnection().equals(null)) {
 			try {
-				trocaDeNaves();
-				enviarTelemetria();
+				switchShip();
+				sendTelemetry();
 				Thread.sleep(250);
 			} catch (InterruptedException e) {
 			} catch (RPCException | StreamException | NullPointerException e) {
-				checarConexao();
-				trocaDeNaves();
+				checkConnection();
+				switchShip();
 			}
 		}
 	}
 
-	private void trocaDeNaves() {
+	private void switchShip() {
 		try {
-			if (!centroEspacial.getActiveVessel().equals(this.naveAtual)) {
-				this.naveAtual = centroEspacial.getActiveVessel();
-				iniciarStreams(this.naveAtual);
+			if (!spaceCenter.getActiveVessel().equals(this.currentShip)) {
+				this.currentShip = spaceCenter.getActiveVessel();
+				startStreams(this.currentShip);
 			}
 		} catch (RPCException e) {
-			StatusJPanel.botConectarVisivel(true);
+			StatusJPanel.visibleConnectButton(true);
 			StatusJPanel.setStatus("Não foi possível trocar de nave.");
 		}
 	}
 
-	private void enviarTelemetria() throws RPCException, StreamException {
-		porcentagemCarga = (int) Math.ceil(bateriaAtual.get() * 100 / bateriaTotal);
-		MainGui.getParametros().getTelemetria().firePropertyChange("altitude", 0.0, altitude.get());
-		MainGui.getParametros().getTelemetria().firePropertyChange("altitudeSup", 0.0, altitudeSup.get());
-		MainGui.getParametros().getTelemetria().firePropertyChange("apoastro", 0.0, apoastro.get());
-		MainGui.getParametros().getTelemetria().firePropertyChange("periastro", 0.0, periastro.get());
-		MainGui.getParametros().getTelemetria().firePropertyChange("velVertical", 0.0, velVertical.get());
-		MainGui.getParametros().getTelemetria().firePropertyChange("velHorizontal", 0.0, velHorizontal.get());
-		MainGui.getParametros().getTelemetria().firePropertyChange("bateria", 0.0, porcentagemCarga);
-		MainGui.getParametros().getTelemetria().firePropertyChange("tempoMissao", 0.0, tempoMissao.get());
+	private void sendTelemetry() throws RPCException, StreamException {
+		chargePercentage = (int) Math.ceil(currentBattery.get() * 100 / totalBattery);
+		MainGui.getParameters().getTelemetry().firePropertyChange("altitude", 0.0, altitude.get());
+		MainGui.getParameters().getTelemetry().firePropertyChange("surfAltitude", 0.0, surfAltitude.get());
+		MainGui.getParameters().getTelemetry().firePropertyChange("apoapsis", 0.0, apoapsis.get());
+		MainGui.getParameters().getTelemetry().firePropertyChange("periapsis", 0.0, periapsis.get());
+		MainGui.getParameters().getTelemetry().firePropertyChange("verticalSpeed", 0.0, verticalSpeed.get());
+		MainGui.getParameters().getTelemetry().firePropertyChange("horizontalSpeed", 0.0, horizontalSpeed.get());
+		MainGui.getParameters().getTelemetry().firePropertyChange("bateria", 0.0, chargePercentage);
+		MainGui.getParameters().getTelemetry().firePropertyChange("missionTime", 0.0, missionTime.get());
 
 	}
 

@@ -1,6 +1,6 @@
 package com.pesterenan.views;
 
-import static com.pesterenan.utils.Dicionario.TELEMETRIA;
+import static com.pesterenan.utils.Dictionary.TELEMETRY;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -20,7 +20,7 @@ import javax.swing.LayoutStyle.ComponentPlacement;
 import javax.swing.border.TitledBorder;
 
 import com.pesterenan.MechPeste;
-import com.pesterenan.utils.Modulos;
+import com.pesterenan.utils.Modules;
 
 public class LiftoffJPanel extends JPanel implements ActionListener {
 
@@ -46,7 +46,7 @@ public class LiftoffJPanel extends JPanel implements ActionListener {
 		setBorder(new TitledBorder(null, "Decolagem Orbital", TitledBorder.LEADING, TitledBorder.TOP, null, null));
 		lblFinalApoapsis.setLabelFor(txfFinalApoapsis);
 		txfFinalApoapsis.setText("80000");
-		txfFinalApoapsis.setToolTipText("Altura de apoastro final em metros para a decolagem.");
+		txfFinalApoapsis.setToolTipText("Altura de apoapsis final em metros para a decolagem.");
 
 		btnTakeOff.addActionListener(this);
 		btnTakeOff.setSize(ParametersJPanel.BTN_DIMENSION);
@@ -61,8 +61,8 @@ public class LiftoffJPanel extends JPanel implements ActionListener {
 
 		cbGravityCurveModel.setToolTipText(
 				"Escolha o modelo da curva gravitacional a ser realizada.\r\nVai da mais leve (Sinusoidal) até a mais exagerada (Exponencial).");
-		cbGravityCurveModel.setModel(new DefaultComboBoxModel<String>(new String[] { Modulos.SINUSOIDAL.get(),
-				Modulos.QUADRATICA.get(), Modulos.CUBICA.get(), Modulos.CIRCULAR.get(), Modulos.EXPONENCIAL.get() }));
+		cbGravityCurveModel.setModel(new DefaultComboBoxModel<String>(new String[] { Modules.SINUSOIDAL.get(),
+				Modules.QUADRATIC.get(), Modules.CUBIC.get(), Modules.CIRCLE.get(), Modules.EXPONENTIAL.get() }));
 		cbGravityCurveModel.setSelectedIndex(3);
 
 		lblRoll.setToolTipText("Direção para qual a nave irá \"rolar\" durante o lançamento, em graus.");
@@ -152,16 +152,16 @@ public class LiftoffJPanel extends JPanel implements ActionListener {
 	protected void handleBtnTakeOffActionPerformed(ActionEvent e) {
 		if (validateTextFields()) {
 			Map<String, String> commands = new HashMap<>();
-			commands.put(Modulos.MODULO.get(), Modulos.MODULO_DECOLAGEM.get());
-			commands.put(Modulos.APOASTRO.get(), txfFinalApoapsis.getText());
-			commands.put(Modulos.DIRECAO.get(), txfHeading.getText());
-			commands.put(Modulos.ROLAGEM.get(), String.valueOf(sldRoll.getValue()));
-			commands.put(Modulos.INCLINACAO.get(), cbGravityCurveModel.getSelectedItem().toString());
-			MechPeste.iniciarModulo(commands);
+			commands.put(Modules.MODULE.get(), Modules.LIFTOFF_MODULE.get());
+			commands.put(Modules.APOAPSIS.get(), txfFinalApoapsis.getText());
+			commands.put(Modules.DIRECTION.get(), txfHeading.getText());
+			commands.put(Modules.ROLL.get(), String.valueOf(sldRoll.getValue()));
+			commands.put(Modules.INCLINATION.get(), cbGravityCurveModel.getSelectedItem().toString());
+			MechPeste.startModule(commands);
 		}
 	}
 
 	protected void handleBtnBackActionPerformed(ActionEvent e) {
-		MainGui.getParametros().firePropertyChange(TELEMETRIA.get(), false, true);
+		MainGui.getParameters().firePropertyChange(TELEMETRY.get(), false, true);
 	}
 }

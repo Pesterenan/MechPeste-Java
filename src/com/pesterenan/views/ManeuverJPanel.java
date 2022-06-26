@@ -1,6 +1,6 @@
 package com.pesterenan.views;
 
-import static com.pesterenan.utils.Dicionario.TELEMETRIA;
+import static com.pesterenan.utils.Dictionary.TELEMETRY;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -16,7 +16,7 @@ import javax.swing.LayoutStyle.ComponentPlacement;
 import javax.swing.border.TitledBorder;
 
 import com.pesterenan.MechPeste;
-import com.pesterenan.utils.Modulos;
+import com.pesterenan.utils.Modules;
 
 public class ManeuverJPanel extends JPanel implements ActionListener {
 	private static final long serialVersionUID = 1L;
@@ -42,25 +42,25 @@ public class ManeuverJPanel extends JPanel implements ActionListener {
 		btnExecute.setPreferredSize(btnExecute.getSize());
 		btnExecute.setMinimumSize(btnExecute.getSize());
 		btnExecute.setMaximumSize(btnExecute.getSize());
-		btnExecute.setActionCommand(Modulos.EXECUTAR.get());
+		btnExecute.setActionCommand(Modules.EXECUTE.get());
 		btnApoapsis.addActionListener(this);
 		btnApoapsis.setSize(ParametersJPanel.BTN_DIMENSION);
 		btnApoapsis.setPreferredSize(btnApoapsis.getSize());
 		btnApoapsis.setMinimumSize(btnApoapsis.getSize());
 		btnApoapsis.setMaximumSize(btnApoapsis.getSize());
-		btnApoapsis.setActionCommand(Modulos.APOASTRO.get());
+		btnApoapsis.setActionCommand(Modules.APOAPSIS.get());
 		btnPeriapsis.addActionListener(this);
 		btnPeriapsis.setSize(ParametersJPanel.BTN_DIMENSION);
 		btnPeriapsis.setPreferredSize(btnPeriapsis.getSize());
 		btnPeriapsis.setMinimumSize(btnPeriapsis.getSize());
 		btnPeriapsis.setMaximumSize(btnPeriapsis.getSize());
-		btnPeriapsis.setActionCommand(Modulos.PERIASTRO.get());
+		btnPeriapsis.setActionCommand(Modules.PERIAPSIS.get());
 		btnAdjustInc.addActionListener(this);
 		btnAdjustInc.setSize(ParametersJPanel.BTN_DIMENSION);
 		btnAdjustInc.setPreferredSize(btnAdjustInc.getSize());
 		btnAdjustInc.setMinimumSize(btnAdjustInc.getSize());
 		btnAdjustInc.setMaximumSize(btnAdjustInc.getSize());
-		btnAdjustInc.setActionCommand(Modulos.AJUSTAR.get());
+		btnAdjustInc.setActionCommand(Modules.AJUST.get());
 		btnAdjustInc.setEnabled(false);
 		btnBack.addActionListener(this);
 
@@ -107,16 +107,16 @@ public class ManeuverJPanel extends JPanel implements ActionListener {
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		if (e.getSource() == btnExecute) {
-			handleManeuverFunction(Modulos.EXECUTAR.get());
+			handleManeuverFunction(Modules.EXECUTE.get());
 		}
 		if (e.getSource() == btnApoapsis) {
-			handleManeuverFunction(Modulos.APOASTRO.get());
+			handleManeuverFunction(Modules.APOAPSIS.get());
 		}
 		if (e.getSource() == btnPeriapsis) {
-			handleManeuverFunction(Modulos.PERIASTRO.get());
+			handleManeuverFunction(Modules.PERIAPSIS.get());
 		}
 		if (e.getSource() == btnAdjustInc) {
-			handleManeuverFunction(Modulos.AJUSTAR.get());
+			handleManeuverFunction(Modules.AJUST.get());
 		}
 		if (e.getSource() == btnBack) {
 			handleBtnVoltarActionPerformed(e);
@@ -124,13 +124,13 @@ public class ManeuverJPanel extends JPanel implements ActionListener {
 	}
 
 	protected void handleBtnVoltarActionPerformed(ActionEvent e) {
-		MainGui.getParametros().firePropertyChange(TELEMETRIA.get(), false, true);
+		MainGui.getParameters().firePropertyChange(TELEMETRY.get(), false, true);
 	}
 
 	protected void handleManeuverFunction(String maneuverFunction) {
 		Map<String, String> commands = new HashMap<>();
-		commands.put(Modulos.MODULO.get(), Modulos.MODULO_MANOBRAS.get());
-		commands.put(Modulos.FUNCAO.get(), maneuverFunction);
-		MechPeste.iniciarModulo(commands);
+		commands.put(Modules.MODULE.get(), Modules.MANEUVER_MODULE.get());
+		commands.put(Modules.FUNCTION.get(), maneuverFunction);
+		MechPeste.startModule(commands);
 	}
 }

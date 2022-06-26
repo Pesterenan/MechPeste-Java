@@ -1,7 +1,7 @@
 package com.pesterenan.views;
 
-import static com.pesterenan.utils.Dicionario.CONECTAR;
-import static com.pesterenan.utils.Status.CONECTANDO;
+import static com.pesterenan.utils.Dictionary.CONNECT;
+import static com.pesterenan.utils.Status.CONNECTING;
 
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
@@ -22,7 +22,7 @@ public class StatusJPanel extends JPanel {
 	private static final long serialVersionUID = 1L;
 
 	private static JLabel lblStatus = new JLabel("Pronto.");
-	private static JButton btnConnect = new JButton(CONECTAR.get());
+	private static JButton btnConnect = new JButton(CONNECT.get());
 	private Dimension dmsStatus = new Dimension(464, 25);
 
 	public StatusJPanel() {
@@ -58,14 +58,14 @@ public class StatusJPanel extends JPanel {
 		lblStatus.setText(newStatus);
 	}
 
-	public static void botConectarVisivel(boolean visible) {
+	public static void visibleConnectButton(boolean visible) {
 		btnConnect.setVisible(visible);
 	}
 
 	private class BotConectarActionListener implements ActionListener {
 		public void actionPerformed(ActionEvent e) {
-			setStatus(CONECTANDO.get());
-			MechPeste.finalizarTarefa();
+			setStatus(CONNECTING.get());
+			MechPeste.endTask();
 			MechPeste.getInstance().startConnection();
 		}
 	}

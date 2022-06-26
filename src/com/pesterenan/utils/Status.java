@@ -1,19 +1,19 @@
 package com.pesterenan.utils;
 
 public enum Status {
-	CONECTANDO("Conectando..."), CONECTADO("Conectado."),
-	ERRO_CONEXAO("Erro na conexão. O jogo não está sendo executado."),
-	ERRO_DECOLAGEM_ORBITAL("Erro ao executar a Decolagem Orbital!"),
-	ERRO_POUSO_AUTO("Erro ao executar o Pouso Automático!"), ERRO_ROVER("Erro ao executar o Controle de Rover!"),
-	ERRO_MANOBRAS("Erro ao executar a manobra!"), EXEC_POUSO_AUTO("Executando Suicide Burn..."),
-	STATUS_DECOLAGEM_ORBITAL("Executando Decolagem Orbital..."),
-	STATUS_POUSO_AUTOMATICO("Executando Pouso Automático..."), EXEC_ROVER("Executando Auto Rover..."),
-	JA_EXECUTANDO("Já está em execução"), PRONTO("Pronto."), EXEC_MANOBRAS("Executando Manobras...");
+	CONNECTING("Conectando..."), CONNECTED("Conectado."),
+	CONNECTION_ERROR("Erro na conexão. O jogo não está sendo executado."),
+	ORBITAL_LIFTOFF_ERROR("Erro ao executar a Decolagem Orbital!"),
+	AUTOMATIC_LAND_ERROR("Erro ao executar o Pouso Automático!"), ROVER_ERROR("Erro ao executar o Controle de Rover!"),
+	MANEUVER_ERROR("Erro ao executar a manobra!"), EXEC_POUSO_AUTO("Executando Suicide Burn..."),
+	ORBITAL_LIFTOFF_STATUS("Executando Decolagem Orbital..."),
+	AUTOMATIC_LAND_STATUS("Executando Pouso Automático..."), EXECUTING_ROVER("Executando Auto Rover..."),
+	ALREADY_EXECUTING("Já está em execução"), READY("Pronto."), EXECUTING_MANEUVERS("Executando Manobras...");
 
 	String t;
 
-	private Status(String texto) {
-		this.t = texto;
+	private Status(String text) {
+		this.t = text;
 	}
 
 	public String get() {

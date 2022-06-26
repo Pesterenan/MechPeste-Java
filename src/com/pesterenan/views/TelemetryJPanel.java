@@ -19,15 +19,15 @@ import com.pesterenan.MechPeste;
 public class TelemetryJPanel extends JPanel implements PropertyChangeListener {
 
 	private static final long serialVersionUID = 1L;
-	private JLabel tempoValorLabel = new JLabel("");
-	private JLabel altitudeValorLabel;
-	private JLabel altitudeSupValorLabel;
-	private JLabel apoastroValorLabel;
-	private JLabel periastroValorLabel;
-	private JLabel velVValorLabel;
-	private JLabel velHValorLabel;
-	private JLabel bateriaValorLabel;
-	private JLabel distanciaValorLabel;
+	private JLabel timeValueLabel = new JLabel("");
+	private JLabel altitudeValueLabel;
+	private JLabel altitudeSupValueLabel;
+	private JLabel apoastroValueLabel;
+	private JLabel periapsisValueLabel;
+	private JLabel verticalSpeedValueLabel;
+	private JLabel horizontalValueLabel;
+	private JLabel batteryValueLabel;
+	private JLabel distanceValueLabel;
 	private JLabel label_10;
 
 	public TelemetryJPanel() {
@@ -45,46 +45,46 @@ public class TelemetryJPanel extends JPanel implements PropertyChangeListener {
 		JLabel altitudeLabel = new JLabel("Altitude: ");
 		add(altitudeLabel);
 
-		altitudeValorLabel = new JLabel("");
-		add(altitudeValorLabel);
+		altitudeValueLabel = new JLabel("");
+		add(altitudeValueLabel);
 		JLabel altitudeSupLabel = new JLabel("Alt. Superfície: ");
 		add(altitudeSupLabel);
 
-		altitudeSupValorLabel = new JLabel("");
-		add(altitudeSupValorLabel);
+		altitudeSupValueLabel = new JLabel("");
+		add(altitudeSupValueLabel);
 		JLabel apoastroLabel = new JLabel("Apoastro: ");
 		add(apoastroLabel);
 
-		apoastroValorLabel = new JLabel("");
-		add(apoastroValorLabel);
+		apoastroValueLabel = new JLabel("");
+		add(apoastroValueLabel);
 		JLabel periastroLabel = new JLabel("Periastro: ");
 		add(periastroLabel);
 
-		periastroValorLabel = new JLabel("");
-		add(periastroValorLabel);
+		periapsisValueLabel = new JLabel("");
+		add(periapsisValueLabel);
 		JLabel velVLabel = new JLabel("Vel. Vertical: ");
 		add(velVLabel);
 
-		velVValorLabel = new JLabel("");
-		add(velVValorLabel);
+		verticalSpeedValueLabel = new JLabel("");
+		add(verticalSpeedValueLabel);
 		JLabel velHLabel = new JLabel("Vel. Horizontal:");
 		add(velHLabel);
 
-		velHValorLabel = new JLabel("");
-		add(velHValorLabel);
+		horizontalValueLabel = new JLabel("");
+		add(horizontalValueLabel);
 		JLabel bateriaLabel = new JLabel("Bateria: ");
 		add(bateriaLabel);
 
-		bateriaValorLabel = new JLabel("");
-		add(bateriaValorLabel);
+		batteryValueLabel = new JLabel("");
+		add(batteryValueLabel);
 		JLabel tempoLabel = new JLabel("Tempo de Missão: ");
 		add(tempoLabel);
-		add(tempoValorLabel);
+		add(timeValueLabel);
 		JLabel distanciaLabel = new JLabel("Distancia ate o pouso:");
 		add(distanciaLabel);
 
-		distanciaValorLabel = new JLabel("");
-		add(distanciaValorLabel);
+		distanceValueLabel = new JLabel("");
+		add(distanceValueLabel);
 
 		label_10 = new JLabel("");
 		add(label_10);
@@ -95,32 +95,32 @@ public class TelemetryJPanel extends JPanel implements PropertyChangeListener {
 		btnCancelar.setMaximumSize(btnCancelar.getSize());
 		btnCancelar.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				MechPeste.finalizarTarefa();
+				MechPeste.endTask();
 			}
 		});
 		add(btnCancelar);
 	}
 
-	private String converterMetros(Object obj) {
+	private String convertMeters(Object obj) {
 		Double metros = Math.abs((double) obj);
-		String casasDecimais = "%.2f";
+		String decimalPlaces = "%.2f";
 		if (metros >= 1000000000) {
-			return String.format(casasDecimais + "Gm", metros / 1000000000);
+			return String.format(decimalPlaces + "Gm", metros / 1000000000);
 		} else if (metros >= 1000000) {
-			return String.format(casasDecimais + "Mm", metros / 1000000);
+			return String.format(decimalPlaces + "Mm", metros / 1000000);
 		} else if (metros >= 1000) {
-			return String.format(casasDecimais + "km", metros / 1000);
+			return String.format(decimalPlaces + "km", metros / 1000);
 		} else {
-			return new String(String.format(casasDecimais + "m", metros));
+			return new String(String.format(decimalPlaces + "m", metros));
 		}
 	}
 
-	private String formatarTempoDecorrido(Double segundosTotais) {
-		int anos = (segundosTotais.intValue() / 9201600);
-		int dias = (segundosTotais.intValue() / 21600) % 426;
-		int horas = (segundosTotais.intValue() / 3600) % 6;
-		int minutos = (segundosTotais.intValue() % 3600) / 60;
-		int segundos = segundosTotais.intValue() % 60;
+	private String formatElapsedTime(Double totalSeconds) {
+		int anos = (totalSeconds.intValue() / 9201600);
+		int dias = (totalSeconds.intValue() / 21600) % 426;
+		int horas = (totalSeconds.intValue() / 3600) % 6;
+		int minutos = (totalSeconds.intValue() % 3600) / 60;
+		int segundos = totalSeconds.intValue() % 60;
 		return String.format("%dA-%dd-%02d:%02d:%02d", anos, dias, horas, minutos, segundos);
 	}
 
@@ -128,32 +128,32 @@ public class TelemetryJPanel extends JPanel implements PropertyChangeListener {
 	public void propertyChange(PropertyChangeEvent evt) {
 		switch (evt.getPropertyName()) {
 		case "altitude":
-			altitudeValorLabel.setText(converterMetros(evt.getNewValue()));
+			altitudeValueLabel.setText(convertMeters(evt.getNewValue()));
 			break;
-		case "altitudeSup":
-			altitudeSupValorLabel.setText(converterMetros(evt.getNewValue()));
+		case "surfAltitude":
+			altitudeSupValueLabel.setText(convertMeters(evt.getNewValue()));
 			break;
 		case "bateria":
-			bateriaValorLabel.setText(String.format("%.0f", evt.getNewValue()) + "%");
+			batteryValueLabel.setText(String.format("%.0f", evt.getNewValue()) + "%");
 			break;
-		case "apoastro":
-			apoastroValorLabel.setText(converterMetros(evt.getNewValue()));
+		case "apoapsis":
+			apoastroValueLabel.setText(convertMeters(evt.getNewValue()));
 			break;
-		case "periastro":
-			periastroValorLabel.setText(converterMetros(evt.getNewValue()));
+		case "periapsis":
+			periapsisValueLabel.setText(convertMeters(evt.getNewValue()));
 			break;
 		case "tempoRestante":
-		case "tempoMissao":
-			tempoValorLabel.setText(formatarTempoDecorrido((Double) evt.getNewValue()));
+		case "missionTime":
+			timeValueLabel.setText(formatElapsedTime((Double) evt.getNewValue()));
 			break;
-		case "velVertical":
-			velVValorLabel.setText(converterMetros(evt.getNewValue()) + "/s");
+		case "verticalSpeed":
+			verticalSpeedValueLabel.setText(convertMeters(evt.getNewValue()) + "/s");
 			break;
-		case "velHorizontal":
-			velHValorLabel.setText(converterMetros(evt.getNewValue()) + "/s");
+		case "horizontalSpeed":
+			horizontalValueLabel.setText(convertMeters(evt.getNewValue()) + "/s");
 			break;
 		case "distancia":
-			distanciaValorLabel.setText(converterMetros(evt.getNewValue()));
+			distanceValueLabel.setText(convertMeters(evt.getNewValue()));
 		}
 	}
 

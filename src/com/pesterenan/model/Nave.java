@@ -1,6 +1,6 @@
 package com.pesterenan.model;
 
-import static com.pesterenan.utils.Status.ERRO_CONEXAO;
+import static com.pesterenan.utils.Status.CONNECTION_ERROR;
 
 import com.pesterenan.views.StatusJPanel;
 
@@ -17,36 +17,36 @@ import krpc.client.services.SpaceCenter.Vessel;
 import krpc.client.services.SpaceCenter.VesselSituation;
 
 public class Nave {
-	private static Connection conexao;
+	private static Connection connection;
 
-	protected static SpaceCenter centroEspacial;
-	protected Vessel naveAtual;
-	protected Flight parametrosDeVoo;
-	protected ReferenceFrame pontoRefOrbital;
-	protected ReferenceFrame pontoRefSuperficie;
-	protected Stream<Double> altitude, altitudeSup, apoastro, periastro;
-	protected Stream<Double> velVertical, tempoMissao, velHorizontal;
-	protected Stream<Float> massaTotal, bateriaAtual;
-	protected float bateriaTotal, acelGravidade;
-	protected String corpoCeleste;
-	protected int porcentagemCarga;
+	protected static SpaceCenter spaceCenter;
+	protected Vessel currentShip;
+	protected Flight flightParameters;
+	protected ReferenceFrame orbitalRefSpot;
+	protected ReferenceFrame surfaceRefSpot;
+	protected Stream<Double> altitude, surfAltitude, apoapsis, periapsis;
+	protected Stream<Double> verticalSpeed, missionTime, horizontalSpeed;
+	protected Stream<Float> totalMass, currentBattery;
+	protected float totalBattery, gravityAcceleration;
+	protected String celestialBody;
+	protected int chargePercentage;
 
-	public Nave(Connection con) {
-		setConexao(con);
+	public Nave(Connection conn) {
+		setConnection(conn);
 		try {
-			centroEspacial = SpaceCenter.newInstance(getConexao());
-			this.naveAtual = centroEspacial.getActiveVessel();
+			spaceCenter = SpaceCenter.newInstance(getConnection());
+			this.currentShip = spaceCenter.getActiveVessel();
 		} catch (RPCException e) {
 			System.err.println("Erro ao buscar Nave Atual: \n\t" + e.getMessage());
-			checarConexao();
+			checkConnection();
 		}
 	}
 
-	protected void checarConexao() {
-		KRPC krpc = KRPC.newInstance(getConexao());
+	protected void checkConnection() {
+		KRPC krpc = KRPC.newInstance(getConnection());
 		try {
 			if (krpc.getCurrentGameScene().equals(GameScene.FLIGHT)) {
-				this.naveAtual = centroEspacial.getActiveVessel();
+				this.currentShip = spaceCenter.getActiveVessel();
 			} else {
 				try {
 					Thread.sleep(5000);
@@ -54,39 +54,39 @@ public class Nave {
 				}
 			}
 		} catch (RPCException e) {
-			StatusJPanel.setStatus(ERRO_CONEXAO.get());
-			StatusJPanel.botConectarVisivel(true);
+			StatusJPanel.setStatus(CONNECTION_ERROR.get());
+			StatusJPanel.visibleConnectButton(true);
 		}
 	}
 
-	public static Connection getConexao() {
-		return conexao;
+	public static Connection getConnection() {
+		return connection;
 	}
 
-	private void setConexao(Connection con) {
-		conexao = con;
+	private void setConnection(Connection conn) {
+		connection = conn;
 	}
 
-	protected void throttle(float acel) throws RPCException {
-		naveAtual.getControl().setThrottle(acel);
+	protected void throttle(float acceleration) throws RPCException {
+		currentShip.getControl().setThrottle(acceleration);
 	}
 
-	protected void throttle(double acel) throws RPCException {
-		throttle((float) acel);
+	protected void throttle(double acceleration) throws RPCException {
+		throttle((float) acceleration);
 	}
 
 	protected void liftoff() throws InterruptedException {
 		try {
-			naveAtual.getControl().setSAS(true);
+			currentShip.getControl().setSAS(true);
 			throttle(1f);
-			if (naveAtual.getSituation().equals(VesselSituation.PRE_LAUNCH)) {
+			if (currentShip.getSituation().equals(VesselSituation.PRE_LAUNCH)) {
 				float launchCount = 5f;
 				while (launchCount > 0) {
 					StatusJPanel.setStatus(String.format("Lançamento em: %.1f segundos...", launchCount));
 					launchCount -= 0.1;
 					Thread.sleep(100);
 				}
-				naveAtual.getControl().activateNextStage();
+				currentShip.getControl().activateNextStage();
 			}
 			StatusJPanel.setStatus("Decolagem!");
 		} catch (RPCException erro) {
@@ -94,11 +94,11 @@ public class Nave {
 		}
 	}
 
-	protected double calcularTEP() throws RPCException, StreamException {
-		return naveAtual.getAvailableThrust() / ((massaTotal.get() * acelGravidade));
+	protected double calculateTWR() throws RPCException, StreamException {
+		return currentShip.getAvailableThrust() / ((totalMass.get() * gravityAcceleration));
 	}
 
-	protected double calcularAcelMaxima() throws RPCException, StreamException {
-		return calcularTEP() * acelGravidade - acelGravidade;
+	protected double calculateMaxAcceleration() throws RPCException, StreamException {
+		return calculateTWR() * gravityAcceleration - gravityAcceleration;
 	}
 }

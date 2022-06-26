@@ -1,11 +1,11 @@
 package com.pesterenan;
 
-import static com.pesterenan.utils.Dicionario.ERRO_AO_CONECTAR;
-import static com.pesterenan.utils.Dicionario.MECHPESTE;
-import static com.pesterenan.utils.Dicionario.TELEMETRIA;
-import static com.pesterenan.utils.Status.CONECTADO;
-import static com.pesterenan.utils.Status.CONECTANDO;
-import static com.pesterenan.utils.Status.ERRO_CONEXAO;
+import static com.pesterenan.utils.Dictionary.ERROR_CONNECTING;
+import static com.pesterenan.utils.Dictionary.MECHPESTE;
+import static com.pesterenan.utils.Dictionary.TELEMETRY;
+import static com.pesterenan.utils.Status.CONNECTED;
+import static com.pesterenan.utils.Status.CONNECTING;
+import static com.pesterenan.utils.Status.CONNECTION_ERROR;
 
 import java.io.IOException;
 import java.util.Map;
@@ -14,7 +14,7 @@ import com.pesterenan.controllers.FlightController;
 import com.pesterenan.controllers.LandingController;
 import com.pesterenan.controllers.LiftoffController;
 import com.pesterenan.controllers.ManeuverController;
-import com.pesterenan.utils.Modulos;
+import com.pesterenan.utils.Modules;
 import com.pesterenan.views.MainGui;
 import com.pesterenan.views.StatusJPanel;
 
@@ -27,10 +27,10 @@ public class MechPeste {
 	private static MechPeste mechPeste = null;
 
 	private static Connection connection;
-	private static Thread threadModulos;
-	private static Thread threadTelemetria;
+	private static Thread threadModules;
+	private static Thread threadTelemetry;
 	private static FlightController flightCtrl = null;
-	private static FlightController modulo;
+	private static FlightController module;
 
 	public static void main(String[] args) throws StreamException, RPCException, IOException, InterruptedException {
 		MechPeste.getInstance();
@@ -49,75 +49,75 @@ public class MechPeste {
 	}
 
 	public void startConnection() {
-		StatusJPanel.setStatus(CONECTANDO.get());
+		StatusJPanel.setStatus(CONNECTING.get());
 		try {
 			MechPeste.connection = Connection.newInstance(MECHPESTE.get());
-			StatusJPanel.setStatus(CONECTADO.get());
-			StatusJPanel.botConectarVisivel(false);
+			StatusJPanel.setStatus(CONNECTED.get());
+			StatusJPanel.visibleConnectButton(false);
 			startTelemetry();
 		} catch (IOException e) {
-			System.err.println(ERRO_AO_CONECTAR.get() + e.getMessage());
-			StatusJPanel.setStatus(ERRO_CONEXAO.get());
-			StatusJPanel.botConectarVisivel(true);
+			System.err.println(ERROR_CONNECTING.get() + e.getMessage());
+			StatusJPanel.setStatus(CONNECTION_ERROR.get());
+			StatusJPanel.visibleConnectButton(true);
 		}
 	}
 
 	private void startTelemetry() {
 		flightCtrl = null;
-		flightCtrl = new FlightController(getConexao());
-		setThreadTelemetria(null);
-		setThreadTelemetria(new Thread(flightCtrl));
-		getThreadTelemetria().start();
+		flightCtrl = new FlightController(getConnection());
+		setThreadTelemetry(null);
+		setThreadTelemetry(new Thread(flightCtrl));
+		getThreadTelemetry().start();
 	}
 
-	public static void iniciarModulo(Map<String, String> comandos) {
-		String executarModulo = comandos.get(Modulos.MODULO.get());
+	public static void startModule(Map<String, String> commands) {
+		String executeModule = commands.get(Modules.MODULE.get());
 
-		if (executarModulo.equals(Modulos.MODULO_MANOBRAS.get())) {
-			modulo = new ManeuverController(comandos.get(Modulos.FUNCAO.get()));
+		if (executeModule.equals(Modules.MANEUVER_MODULE.get())) {
+			module = new ManeuverController(commands.get(Modules.FUNCTION.get()));
 		}
-		if (executarModulo.equals(Modulos.MODULO_DECOLAGEM.get())) {
-			modulo = new LiftoffController(comandos);
+		if (executeModule.equals(Modules.LIFTOFF_MODULE.get())) {
+			module = new LiftoffController(commands);
 		}
-		if (executarModulo.equals(Modulos.MODULO_POUSO_SOBREVOAR.get())
-				|| executarModulo.equals(Modulos.MODULO_POUSO.get())) {
-			modulo = new LandingController(comandos);
+		if (executeModule.equals(Modules.LANGING_FLIGHT_MODULE.get())
+				|| executeModule.equals(Modules.LANDING_MODULE.get())) {
+			module = new LandingController(commands);
 		}
-		setThreadModulos(new Thread(modulo));
-		getThreadModulos().start();
+		setThreadModules(new Thread(module));
+		getThreadModules().start();
 		System.out.println(Thread.getAllStackTraces());
-		MainGui.getParametros().firePropertyChange(TELEMETRIA.get(), 0, 1);
+		MainGui.getParameters().firePropertyChange(TELEMETRY.get(), 0, 1);
 	}
 
-	public static void finalizarTarefa() {
+	public static void endTask() {
 		try {
-			if (getThreadModulos() != null && getThreadModulos().isAlive()) {
-				getThreadModulos().interrupt();
-				setThreadModulos(null);
-				modulo = null;
+			if (getThreadModules() != null && getThreadModules().isAlive()) {
+				getThreadModules().interrupt();
+				setThreadModules(null);
+				module = null;
 			}
 		} catch (Exception e) {
 		}
 
 	}
 
-	public static Connection getConexao() {
+	public static Connection getConnection() {
 		return connection;
 	}
 
-	private static Thread getThreadModulos() {
-		return threadModulos;
+	private static Thread getThreadModules() {
+		return threadModules;
 	}
 
-	private static void setThreadModulos(Thread threadModulos) {
-		MechPeste.threadModulos = threadModulos;
+	private static void setThreadModules(Thread threadModules) {
+		MechPeste.threadModules = threadModules;
 	}
 
-	private static Thread getThreadTelemetria() {
-		return threadTelemetria;
+	private static Thread getThreadTelemetry() {
+		return threadTelemetry;
 	}
 
-	private static void setThreadTelemetria(Thread threadTelemetria) {
-		MechPeste.threadTelemetria = threadTelemetria;
+	private static void setThreadTelemetry(Thread threadTelemetry) {
+		MechPeste.threadTelemetry = threadTelemetry;
 	}
 }
