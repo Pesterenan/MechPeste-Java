@@ -29,11 +29,11 @@ public class Utilities {
 	}
 
 	public static double easeInQuad(double value) {
-		return Math.pow(value, 2)
+		return Math.pow(value, 2);
 	}
 
 	public static double easeInCubic(double value) {
-		return Math.pow(value, 3)
+		return Math.pow(value, 3);
 	}
 
 	public static double easeInExpo(double value) {
