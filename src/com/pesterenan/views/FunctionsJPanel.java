@@ -16,8 +16,9 @@ import javax.swing.JPanel;
 import javax.swing.LayoutStyle.ComponentPlacement;
 import javax.swing.border.TitledBorder;
 
-public class FunctionsJPanel extends JPanel implements ActionListener {
+import com.pesterenan.resources.Bundle;
 
+public class FunctionsJPanel extends JPanel implements ActionListener {
 	private static final long serialVersionUID = 1L;
 	public static final int BUTTON_WIDTH = 135;
 
@@ -27,38 +28,37 @@ public class FunctionsJPanel extends JPanel implements ActionListener {
 	private JButton btnRover;
 
 	public FunctionsJPanel() {
+
 		initComponents();
 	}
 
 	private void initComponents() {
 		setPreferredSize(new Dimension(148, 216));
-		setBorder(new TitledBorder(null, "Fun\u00E7\u00F5es", TitledBorder.LEADING, TitledBorder.TOP, null, null));
+		setBorder(new TitledBorder(null, Bundle.getString("pnl_func_title"), TitledBorder.LEADING, TitledBorder.TOP,
+				null, null));
 
-		btnLiftoff = new JButton(DECOLAGEM_ORBITAL.get());
+		btnLiftoff = new JButton(Bundle.getString("btn_func_liftoff")); //$NON-NLS-1$ //$NON-NLS-2$
 		btnLiftoff.addActionListener(this);
 
-		btnLanding = new JButton(POUSO_AUTOMATICO.get());
+		btnLanding = new JButton(Bundle.getString("btn_func_landing")); //$NON-NLS-1$ //$NON-NLS-2$
 		btnLanding.addActionListener(this);
 
-		btnManeuver = new JButton(MANOBRAS.get());
+		btnManeuver = new JButton(Bundle.getString("btn_func_maneuvers")); //$NON-NLS-1$ //$NON-NLS-2$
 		btnManeuver.addActionListener(this);
 
-		btnRover = new JButton(ROVER_AUTONOMO.get());
+		btnRover = new JButton(Bundle.getString("btn_func_rover")); //$NON-NLS-1$ //$NON-NLS-2$
 		btnRover.addActionListener(this);
 		btnRover.setEnabled(false);
 
 		GroupLayout gl_pnlFunctions = new GroupLayout(this);
-		gl_pnlFunctions.setHorizontalGroup(gl_pnlFunctions.createParallelGroup(Alignment.LEADING).addGroup(gl_pnlFunctions
-				.createSequentialGroup()
-				.addGroup(gl_pnlFunctions.createParallelGroup(Alignment.LEADING)
-						.addComponent(btnLiftoff, GroupLayout.PREFERRED_SIZE, BUTTON_WIDTH,
-								GroupLayout.PREFERRED_SIZE)
-						.addComponent(btnLanding, GroupLayout.PREFERRED_SIZE, BUTTON_WIDTH,
-								GroupLayout.PREFERRED_SIZE)
+		gl_pnlFunctions.setHorizontalGroup(gl_pnlFunctions.createParallelGroup(Alignment.LEADING)
+				.addGroup(gl_pnlFunctions.createSequentialGroup().addGroup(gl_pnlFunctions
+						.createParallelGroup(Alignment.LEADING)
+						.addComponent(btnLiftoff, GroupLayout.PREFERRED_SIZE, BUTTON_WIDTH, GroupLayout.PREFERRED_SIZE)
+						.addComponent(btnLanding, GroupLayout.PREFERRED_SIZE, BUTTON_WIDTH, GroupLayout.PREFERRED_SIZE)
 						.addComponent(btnManeuver, GroupLayout.PREFERRED_SIZE, BUTTON_WIDTH, GroupLayout.PREFERRED_SIZE)
-						.addComponent(btnRover, GroupLayout.PREFERRED_SIZE, BUTTON_WIDTH,
-								GroupLayout.PREFERRED_SIZE))
-				.addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)));
+						.addComponent(btnRover, GroupLayout.PREFERRED_SIZE, BUTTON_WIDTH, GroupLayout.PREFERRED_SIZE))
+						.addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)));
 		gl_pnlFunctions.setVerticalGroup(gl_pnlFunctions.createParallelGroup(Alignment.LEADING)
 				.addGroup(gl_pnlFunctions.createSequentialGroup().addComponent(btnLiftoff)
 						.addPreferredGap(ComponentPlacement.RELATED).addComponent(btnLanding)
@@ -76,7 +76,7 @@ public class FunctionsJPanel extends JPanel implements ActionListener {
 			handleBtnManobrasActionPerformed(e);
 		}
 		if (e.getSource() == btnLanding) {
-			handleBtnPousoAutomticoActionPerformed(e);
+			handleBtnPousoAutomaticoActionPerformed(e);
 		}
 		if (e.getSource() == btnLiftoff) {
 			handleBtnDecolagemOrbitalActionPerformed(e);
@@ -87,7 +87,7 @@ public class FunctionsJPanel extends JPanel implements ActionListener {
 		MainGui.getParametros().firePropertyChange(DECOLAGEM_ORBITAL.get(), false, true);
 	}
 
-	protected void handleBtnPousoAutomticoActionPerformed(ActionEvent e) {
+	protected void handleBtnPousoAutomaticoActionPerformed(ActionEvent e) {
 		MainGui.getParametros().firePropertyChange(POUSO_AUTOMATICO.get(), false, true);
 	}
 

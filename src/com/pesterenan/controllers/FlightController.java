@@ -1,6 +1,7 @@
 package com.pesterenan.controllers;
 
 import com.pesterenan.model.Nave;
+import com.pesterenan.utils.Status;
 import com.pesterenan.views.MainGui;
 import com.pesterenan.views.StatusJPanel;
 
@@ -35,6 +36,7 @@ public class FlightController extends Nave implements Runnable {
 			bateriaTotal = naveAtual.getResources().max("ElectricCharge");
 			acelGravidade = naveAtual.getOrbit().getBody().getSurfaceGravity();
 			corpoCeleste = naveAtual.getOrbit().getBody().getName();
+			naveAtual.getAutoPilot().setReferenceFrame(pontoRefSuperficie);
 		} catch (StreamException | RPCException | NullPointerException | IllegalArgumentException e) {
 			checarConexao();
 		}
@@ -42,15 +44,13 @@ public class FlightController extends Nave implements Runnable {
 
 	@Override
 	public void run() {
-		while (!getConexao().equals(null)) {
+		while (!Thread.interrupted()) {
 			try {
 				trocaDeNaves();
 				enviarTelemetria();
 				Thread.sleep(250);
-			} catch (InterruptedException e) {
-			} catch (RPCException | StreamException | NullPointerException e) {
+			} catch (InterruptedException | RPCException | StreamException | NullPointerException e) {
 				checarConexao();
-				trocaDeNaves();
 			}
 		}
 	}
@@ -79,5 +79,16 @@ public class FlightController extends Nave implements Runnable {
 		MainGui.getParametros().getTelemetria().firePropertyChange("tempoMissao", 0.0, tempoMissao.get());
 
 	}
-
+	protected void disengageAfterException(String statusMessage) {
+		try {
+			StatusJPanel.setStatus(statusMessage);
+			System.out.println("disengaged");
+			naveAtual.getAutoPilot().setReferenceFrame(pontoRefSuperficie);
+			naveAtual.getAutoPilot().disengage();
+			throttle(0);
+			Thread.sleep(3000);
+			StatusJPanel.setStatus(Status.PRONTO.get());
+		} catch (Exception e) {
+		}
+	}
 }

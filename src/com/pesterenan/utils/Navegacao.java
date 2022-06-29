@@ -61,7 +61,7 @@ public class Navegacao extends FlightController {
 				centroEspacial.transformPosition(parametrosDeVoo.getVelocity(), pontoRefOrbital, pontoRefSuperficie));
 		Vetor vetorVelocidade = new Vetor(velocidade.y, velocidade.z, velocidade.x);
 		alvo = alvo.subtrai(vetorVelocidade);
-		double inclinacaoGraus = Utilities.remap(1, 100, 90, 30, velHorizontal.get());
+		double inclinacaoGraus = Utilities.remap(1, 50, 90, 30, velHorizontal.get());
 		return new Vetor(Vetor.anguloDirecao(alvo), Utilities.clamp(inclinacaoGraus, 30, 90),
 				Vetor.anguloDirecao(vetorVelocidade));
 	}

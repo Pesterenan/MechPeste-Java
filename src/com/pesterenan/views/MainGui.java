@@ -1,7 +1,5 @@
 package com.pesterenan.views;
 
-import static com.pesterenan.utils.Dicionario.MECHPESTE;
-
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 
@@ -10,7 +8,6 @@ import javax.swing.JPanel;
 import javax.swing.UIManager;
 
 public class MainGui extends JFrame {
-
 	public static final int INPUT_WIDTH = 100;
 	private static MainGui mainGui = null;
 
@@ -24,6 +21,7 @@ public class MainGui extends JFrame {
 
 	public static MainGui getInstance() {
 		if (mainGui == null) {
+
 			mainGui = new MainGui();
 		}
 		return mainGui;
@@ -40,7 +38,7 @@ public class MainGui extends JFrame {
 
 	private void initComponents() {
 		setAlwaysOnTop(true);
-		setTitle(MECHPESTE.get());
+		setTitle("MechPeste - Pesterenan");
 		setVisible(true);
 		setResizable(false);
 		setLocation(100, 100);

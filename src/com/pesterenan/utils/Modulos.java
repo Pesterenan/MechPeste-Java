@@ -12,7 +12,7 @@ public enum Modulos {
 	MODULO_DECOLAGEM("Executar Decolagem"), 
 	MODULO_MANOBRAS("Módulo Manobras"),
 	MODULO_POUSO("Módulo Pouso"), 
-	MODULO_PILOTO("Módulo Piloto"), 
+	MODULO_ROVER("Módulo Rover"), 
 	ALTITUDE_SOBREVOO("Altitude Sobrevoo"),
 	MODULO_POUSO_SOBREVOAR("Sobrevoar"), 
 	INCLINACAO("Inclinação"), 
@@ -21,7 +21,10 @@ public enum Modulos {
 	CUBICA("Cúbica"),
 	SINUSOIDAL("Sinusoidal"), 
 	EXPONENCIAL("Exponencial"), 
-	ROLAGEM("Rolagem");
+	ROLAGEM("Rolagem"), 
+	USAR_ESTAGIOS("Usar Estágios"),
+	ABRIR_PAINEIS("Abrir Painéis"), 
+	AJUSTE_FINO("Ajuste Fino");
 
 	String t;
 

@@ -1,9 +1,11 @@
 package com.pesterenan.controllers;
 
 import java.util.List;
+import java.util.Map;
 
 import org.javatuples.Triplet;
 
+import com.pesterenan.utils.ControlePID;
 import com.pesterenan.utils.Modulos;
 import com.pesterenan.utils.Status;
 import com.pesterenan.utils.Utilities;
@@ -15,17 +17,21 @@ import krpc.client.Stream;
 import krpc.client.StreamException;
 import krpc.client.services.SpaceCenter.Engine;
 import krpc.client.services.SpaceCenter.Node;
+import krpc.client.services.SpaceCenter.RCS;
 import krpc.client.services.SpaceCenter.VesselSituation;
 
 public class ManeuverController extends FlightController implements Runnable {
 
 	private Node maneuverNode;
 	private String function;
+	private boolean fineAdjustment;
+	private ControlePID ctrlRCS = new ControlePID();
 
-	public ManeuverController(String function) {
+	public ManeuverController(Map<String, String> commands) {
 		super(getConexao());
-		this.function = function;
-		
+		ctrlRCS.limitarSaida(0.25, 1.0);
+		this.function = commands.get(Modulos.FUNCAO.get());
+		this.fineAdjustment = canFineAdjust(commands.get(Modulos.AJUSTE_FINO.get()));
 	}
 
 	@Override
@@ -62,8 +68,7 @@ public class ManeuverController extends FlightController implements Runnable {
 			double[] deltaV = { deltaVdaManobra, 0, 0 };
 			criarManobra(tempoAteAltitude, deltaV);
 		} catch (RPCException | InterruptedException e) {
-			StatusJPanel.setStatus("Não foi possível calcular a manobra.");
-			return;
+			disengageAfterException("Não foi possível calcular a manobra.");
 		}
 	}
 
@@ -72,8 +77,7 @@ public class ManeuverController extends FlightController implements Runnable {
 			naveAtual.getControl().addNode(centroEspacial.getUT() + tempoPosterior, (float) deltaV[0],
 					(float) deltaV[1], (float) deltaV[2]);
 		} catch (UnsupportedOperationException | RPCException e) {
-			StatusJPanel.setStatus("Não foi possível criar a manobra.");
-			return;
+			disengageAfterException("Não foi possível criar a manobra.");
 		}
 	}
 
@@ -86,14 +90,11 @@ public class ManeuverController extends FlightController implements Runnable {
 			orientToManeuverNode(maneuverNode);
 			executeBurn(maneuverNode, burnTime);
 		} catch (UnsupportedOperationException e) {
-			StatusJPanel.setStatus("A criação de Manobras não foi desbloqueada ainda.");
-			return;
+			disengageAfterException("A criação de Manobras não foi desbloqueada ainda.");
 		} catch (IndexOutOfBoundsException e) {
-			StatusJPanel.setStatus("Não há Manobras disponíveis.");
-			return;
+			disengageAfterException("Não há Manobras disponíveis.");
 		} catch (RPCException e) {
-			StatusJPanel.setStatus("Não foi possivel buscar dados da nave.");
-			return;
+			disengageAfterException("Não foi possivel buscar dados da nave.");
 		}
 	}
 
@@ -106,15 +107,10 @@ public class ManeuverController extends FlightController implements Runnable {
 			naveAtual.getAutoPilot().engage();
 			while (naveAtual.getAutoPilot().getError() > 5) {
 				StatusJPanel.setStatus("Orientando nave para o nó de Manobra...");
-				Thread.sleep(250);				
+				Thread.sleep(250);
 			}
 		} catch (InterruptedException | RPCException e) {
-			try {
-				naveAtual.getAutoPilot().setReferenceFrame(pontoRefSuperficie);
-				naveAtual.getAutoPilot().disengage();
-			} catch (RPCException e1) {
-			}
-			System.err.println("Não foi possível orientar a nave para a manobra:\n\t" + e.getMessage());
+			disengageAfterException("Não foi possível orientar a nave para a manobra.");
 		}
 	}
 
@@ -139,7 +135,7 @@ public class ManeuverController extends FlightController implements Runnable {
 
 	public void executeBurn(Node noDeManobra, double duracaoDaQueima) throws RPCException {
 		try {
-			double inicioDaQueima = noDeManobra.getTimeTo() - (duracaoDaQueima / 2.0);
+			double inicioDaQueima = noDeManobra.getTimeTo() - (duracaoDaQueima / 2.0) - (fineAdjustment ? 5 : 0);
 			StatusJPanel.setStatus("Warp temporal para próxima manobra...");
 			if (inicioDaQueima > 30) {
 				centroEspacial.warpTo((centroEspacial.getUT() + inicioDaQueima - 10), 100000, 4);
@@ -160,18 +156,20 @@ public class ManeuverController extends FlightController implements Runnable {
 					: noDeManobra.getDeltaV() > 250 ? 0.10 : 0.25;
 
 			while (!noDeManobra.equals(null)) {
-				if (queimaRestante.get().getValue1() > 0.5) {
-					throttle(Utilities.remap(noDeManobra.getDeltaV() * limiteParaDesacelerar, 0, 1, 0.1,
-							queimaRestante.get().getValue1()));
-				} else {
-					queimaRestante.remove();
+				if (queimaRestante.get().getValue1() < (fineAdjustment ? 5 : 0.5)) {
 					break;
 				}
+				throttle(Utilities.remap(noDeManobra.getDeltaV() * limiteParaDesacelerar, 0, 1, 0.1,
+						queimaRestante.get().getValue1()));
 				MainGui.getParametros().getComponent(0).firePropertyChange("distancia", 0,
 						queimaRestante.get().getValue1());
 				Thread.sleep(25);
 			}
 			throttle(0.0f);
+			if (fineAdjustment) {
+				adjustManeuverWithRCS(queimaRestante);
+			}
+
 			naveAtual.getAutoPilot().setReferenceFrame(pontoRefSuperficie);
 			naveAtual.getAutoPilot().disengage();
 			naveAtual.getControl().setSAS(true);
@@ -179,18 +177,38 @@ public class ManeuverController extends FlightController implements Runnable {
 			noDeManobra.remove();
 			StatusJPanel.setStatus(Status.PRONTO.get());
 		} catch (StreamException | RPCException e) {
-			throttle(0.0f);
-			naveAtual.getAutoPilot().disengage();
-			StatusJPanel.setStatus("Não foi possivel buscar os dados da nave.");
+			disengageAfterException("Não foi possivel buscar os dados da nave.");
 		} catch (InterruptedException e) {
-			throttle(0.0f);
-			naveAtual.getAutoPilot().disengage();
-			StatusJPanel.setStatus("Manobra cancelada.");
+			disengageAfterException("Manobra cancelada.");
 		}
 	}
 
-	public void setFuncao(String funcao) {
-		this.function = funcao;
+	private void adjustManeuverWithRCS(Stream<Triplet<Double, Double, Double>> queimaRestante)
+			throws RPCException, StreamException, InterruptedException {
+		naveAtual.getControl().setRCS(true);
+		while (queimaRestante.get().getValue1() >= 0.1) {
+			naveAtual.getControl().setForward((float) ctrlRCS.computarPID(-queimaRestante.get().getValue1() * 10, 0));
+			Thread.sleep(25);
+		}
+		naveAtual.getControl().setForward(0);
+		queimaRestante.remove();
 	}
 
+	private boolean canFineAdjust(String string) {
+		if (string.equals("true")) {
+			try {
+				List<RCS> rcsEngines = naveAtual.getParts().getRCS();
+				if (rcsEngines.size() > 0) {
+					for (RCS rcs : rcsEngines) {
+						if (rcs.getHasFuel()) {
+							return true;
+						}
+					}
+				}
+				return false;
+			} catch (RPCException e) {
+			}
+		}
+		return false;
+	}
 }

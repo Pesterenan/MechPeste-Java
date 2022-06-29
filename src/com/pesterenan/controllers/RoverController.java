@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import org.javatuples.Triplet;
 
@@ -29,7 +30,7 @@ import krpc.client.services.SpaceCenter.WaypointManager;
 // Autor: Renan Torres <pesterenan@gmail.com>
 // Data: 14/02/2019
 
-public class RoverAutonomoController {
+public class RoverController extends FlightController {
 	private static final int DISTANCIA_DE_PROCURA = 4400000;
 	// Declara��o de vari�veis:
 	static private SpaceCenter centroEspacial;
@@ -64,11 +65,17 @@ public class RoverAutonomoController {
 	private Stream<Double> tempoDoJogo;
 	private double tempoAnterior;
 
-	public RoverAutonomoController(Connection conexao)
-			throws IOException, RPCException, InterruptedException, StreamException {
-		iniciarParametros(conexao);
-		definirAlvo();
-		controlarRover();
+	public RoverController(Map<String, String> commands) {
+		super(getConexao());
+		try {
+			iniciarParametros(getConexao());
+			definirAlvo();
+			controlarRover();
+		} catch (RPCException | StreamException | IOException | InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
 	}
 
 	private void iniciarParametros(Connection conexao) throws RPCException, StreamException {

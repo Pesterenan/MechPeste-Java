@@ -1,6 +1,9 @@
 package com.pesterenan.model;
 
+import static com.pesterenan.utils.Status.CONECTADO;
 import static com.pesterenan.utils.Status.ERRO_CONEXAO;
+import static com.pesterenan.views.StatusJPanel.botConectarVisivel;
+import static com.pesterenan.views.StatusJPanel.setStatus;
 
 import com.pesterenan.views.StatusJPanel;
 
@@ -36,26 +39,27 @@ public class Nave {
 		try {
 			centroEspacial = SpaceCenter.newInstance(getConexao());
 			this.naveAtual = centroEspacial.getActiveVessel();
-		} catch (RPCException e) {
-			System.err.println("Erro ao buscar Nave Atual: \n\t" + e.getMessage());
+		} catch (RPCException | NullPointerException e) {
 			checarConexao();
 		}
 	}
 
 	protected void checarConexao() {
-		KRPC krpc = KRPC.newInstance(getConexao());
 		try {
+			KRPC krpc = KRPC.newInstance(getConexao());
 			if (krpc.getCurrentGameScene().equals(GameScene.FLIGHT)) {
 				this.naveAtual = centroEspacial.getActiveVessel();
+				setStatus(CONECTADO.get());
+				botConectarVisivel(false);
 			} else {
 				try {
-					Thread.sleep(5000);
+					Thread.sleep(3000);
 				} catch (InterruptedException e) {
 				}
 			}
-		} catch (RPCException e) {
-			StatusJPanel.setStatus(ERRO_CONEXAO.get());
-			StatusJPanel.botConectarVisivel(true);
+		} catch (RPCException | NullPointerException e) {
+			setStatus(ERRO_CONEXAO.get());
+			botConectarVisivel(true);
 		}
 	}
 
@@ -88,7 +92,7 @@ public class Nave {
 				}
 				naveAtual.getControl().activateNextStage();
 			}
-			StatusJPanel.setStatus("Decolagem!");
+			setStatus("Decolagem!");
 		} catch (RPCException erro) {
 			System.err.println("Não foi possivel decolar a nave. Erro: " + erro.getMessage());
 		}

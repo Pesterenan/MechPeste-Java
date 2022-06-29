@@ -17,10 +17,10 @@ import javax.swing.border.TitledBorder;
 
 import com.pesterenan.MechPeste;
 import com.pesterenan.utils.Modulos;
+import javax.swing.JCheckBox;
 
 public class ManeuverJPanel extends JPanel implements ActionListener {
 	private static final long serialVersionUID = 1L;
-	private final JLabel lblCircularize = new JLabel("Circularizar órbita no:");
 	private final JLabel lblExecute = new JLabel("Executar próxima manobra: ");
 	private final JLabel lblAdjustInc = new JLabel("Ajustar inclinação:");
 	private final JButton btnApoapsis = new JButton("Apoastro");
@@ -28,6 +28,8 @@ public class ManeuverJPanel extends JPanel implements ActionListener {
 	private final JButton btnExecute = new JButton("Executar");
 	private final JButton btnAdjustInc = new JButton("Ajustar");
 	private final JButton btnBack = new JButton("Voltar");
+	private JPanel pnlCircularize = new JPanel();
+	private JCheckBox chkFineAdjusment = new JCheckBox("Ajustar final da manobra com RCS");
 
 	public ManeuverJPanel() {
 		initComponents();
@@ -43,18 +45,6 @@ public class ManeuverJPanel extends JPanel implements ActionListener {
 		btnExecute.setMinimumSize(btnExecute.getSize());
 		btnExecute.setMaximumSize(btnExecute.getSize());
 		btnExecute.setActionCommand(Modulos.EXECUTAR.get());
-		btnApoapsis.addActionListener(this);
-		btnApoapsis.setSize(ParametersJPanel.BTN_DIMENSION);
-		btnApoapsis.setPreferredSize(btnApoapsis.getSize());
-		btnApoapsis.setMinimumSize(btnApoapsis.getSize());
-		btnApoapsis.setMaximumSize(btnApoapsis.getSize());
-		btnApoapsis.setActionCommand(Modulos.APOASTRO.get());
-		btnPeriapsis.addActionListener(this);
-		btnPeriapsis.setSize(ParametersJPanel.BTN_DIMENSION);
-		btnPeriapsis.setPreferredSize(btnPeriapsis.getSize());
-		btnPeriapsis.setMinimumSize(btnPeriapsis.getSize());
-		btnPeriapsis.setMaximumSize(btnPeriapsis.getSize());
-		btnPeriapsis.setActionCommand(Modulos.PERIASTRO.get());
 		btnAdjustInc.addActionListener(this);
 		btnAdjustInc.setSize(ParametersJPanel.BTN_DIMENSION);
 		btnAdjustInc.setPreferredSize(btnAdjustInc.getSize());
@@ -68,39 +58,77 @@ public class ManeuverJPanel extends JPanel implements ActionListener {
 		btnBack.setPreferredSize(btnBack.getSize());
 		btnBack.setMinimumSize(btnBack.getSize());
 		btnBack.setMaximumSize(btnBack.getSize());
+
+		pnlCircularize.setBorder(new TitledBorder(null, "Circularizar \u00F3rbita no:", TitledBorder.LEADING,
+				TitledBorder.TOP, null, null));
+
 		GroupLayout groupLayout = new GroupLayout(this);
-		groupLayout.setHorizontalGroup(groupLayout.createParallelGroup(Alignment.LEADING).addGroup(groupLayout
-				.createSequentialGroup().addContainerGap()
-				.addGroup(groupLayout.createParallelGroup(Alignment.TRAILING).addComponent(btnBack)
-						.addGroup(groupLayout.createSequentialGroup()
-								.addGroup(groupLayout.createParallelGroup(Alignment.LEADING).addComponent(lblExecute)
-										.addComponent(lblCircularize).addComponent(lblAdjustInc))
-								.addGap(18)
-								.addGroup(groupLayout.createParallelGroup(Alignment.LEADING, false)
-										.addComponent(btnExecute, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
-												GroupLayout.PREFERRED_SIZE)
-										.addComponent(btnApoapsis, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
-												GroupLayout.PREFERRED_SIZE)
-										.addComponent(btnPeriapsis, GroupLayout.PREFERRED_SIZE,
-												GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-										.addComponent(btnAdjustInc, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
-												GroupLayout.PREFERRED_SIZE))))
-				.addGap(124)));
+		groupLayout.setHorizontalGroup(groupLayout.createParallelGroup(Alignment.LEADING)
+				.addGroup(groupLayout.createSequentialGroup().addGap(10).addComponent(lblAdjustInc).addGap(84)
+						.addComponent(btnAdjustInc, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
+								GroupLayout.PREFERRED_SIZE)
+						.addContainerGap())
+				.addGroup(Alignment.TRAILING, groupLayout.createSequentialGroup().addGroup(groupLayout
+						.createParallelGroup(Alignment.TRAILING)
+						.addGroup(groupLayout.createSequentialGroup().addContainerGap().addComponent(btnBack,
+								GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+						.addGroup(groupLayout.createParallelGroup(Alignment.TRAILING)
+								.addGroup(Alignment.LEADING, groupLayout.createSequentialGroup().addGap(5)
+										.addComponent(pnlCircularize, GroupLayout.DEFAULT_SIZE, 283, Short.MAX_VALUE))
+								.addGroup(Alignment.LEADING,
+										groupLayout.createSequentialGroup().addGap(10).addGroup(groupLayout
+												.createParallelGroup(Alignment.LEADING).addComponent(chkFineAdjusment)
+												.addGroup(groupLayout.createSequentialGroup().addComponent(lblExecute)
+														.addPreferredGap(ComponentPlacement.RELATED, 36,
+																Short.MAX_VALUE)
+														.addComponent(btnExecute, GroupLayout.PREFERRED_SIZE,
+																GroupLayout.DEFAULT_SIZE,
+																GroupLayout.PREFERRED_SIZE))))))
+						.addGap(5)));
 		groupLayout.setVerticalGroup(groupLayout.createParallelGroup(Alignment.LEADING).addGroup(groupLayout
-				.createSequentialGroup()
+				.createSequentialGroup().addGap(5)
 				.addGroup(groupLayout.createParallelGroup(Alignment.BASELINE).addComponent(lblExecute).addComponent(
 						btnExecute, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
-				.addGap(12)
-				.addGroup(groupLayout
-						.createParallelGroup(Alignment.BASELINE).addComponent(lblCircularize).addComponent(btnApoapsis,
-								GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
-				.addPreferredGap(ComponentPlacement.UNRELATED)
-				.addComponent(
-						btnPeriapsis, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-				.addGap(12)
+				.addPreferredGap(ComponentPlacement.RELATED).addComponent(chkFineAdjusment)
+				.addPreferredGap(ComponentPlacement.RELATED)
+				.addComponent(pnlCircularize, GroupLayout.PREFERRED_SIZE, 50, GroupLayout.PREFERRED_SIZE)
+				.addPreferredGap(ComponentPlacement.RELATED)
 				.addGroup(groupLayout.createParallelGroup(Alignment.BASELINE).addComponent(lblAdjustInc).addComponent(
 						btnAdjustInc, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
-				.addGap(12).addContainerGap().addComponent(btnBack)));
+				.addGap(25)
+				.addComponent(btnBack, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+				.addContainerGap()));
+		btnApoapsis.addActionListener(this);
+		btnApoapsis.setSize(ParametersJPanel.BTN_DIMENSION);
+		btnApoapsis.setPreferredSize(btnApoapsis.getSize());
+		btnApoapsis.setMinimumSize(btnApoapsis.getSize());
+		btnApoapsis.setMaximumSize(btnApoapsis.getSize());
+		btnApoapsis.setActionCommand(Modulos.APOASTRO.get());
+		btnPeriapsis.addActionListener(this);
+		btnPeriapsis.setSize(ParametersJPanel.BTN_DIMENSION);
+		btnPeriapsis.setPreferredSize(btnPeriapsis.getSize());
+		btnPeriapsis.setMinimumSize(btnPeriapsis.getSize());
+		btnPeriapsis.setMaximumSize(btnPeriapsis.getSize());
+		btnPeriapsis.setActionCommand(Modulos.PERIASTRO.get());
+		GroupLayout glPanel = new GroupLayout(pnlCircularize);
+		glPanel.setHorizontalGroup(
+				glPanel.createParallelGroup(Alignment.LEADING)
+						.addGroup(
+								glPanel.createSequentialGroup().addContainerGap()
+										.addComponent(btnApoapsis, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
+												GroupLayout.PREFERRED_SIZE)
+										.addPreferredGap(ComponentPlacement.RELATED, 30, Short.MAX_VALUE)
+										.addComponent(btnPeriapsis, GroupLayout.PREFERRED_SIZE,
+												GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+										.addContainerGap()));
+		glPanel.setVerticalGroup(glPanel.createParallelGroup(Alignment.LEADING)
+				.addGroup(glPanel.createSequentialGroup().addGroup(glPanel.createParallelGroup(Alignment.BASELINE)
+						.addComponent(btnApoapsis, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
+								GroupLayout.PREFERRED_SIZE)
+						.addComponent(btnPeriapsis, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
+								GroupLayout.PREFERRED_SIZE))
+						.addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)));
+		pnlCircularize.setLayout(glPanel);
 		setLayout(groupLayout);
 	}
 
@@ -131,6 +159,7 @@ public class ManeuverJPanel extends JPanel implements ActionListener {
 		Map<String, String> commands = new HashMap<>();
 		commands.put(Modulos.MODULO.get(), Modulos.MODULO_MANOBRAS.get());
 		commands.put(Modulos.FUNCAO.get(), maneuverFunction);
+		commands.put(Modulos.AJUSTE_FINO.get(), String.valueOf(chkFineAdjusment.isSelected()));
 		MechPeste.iniciarModulo(commands);
 	}
 }

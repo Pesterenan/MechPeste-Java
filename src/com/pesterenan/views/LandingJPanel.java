@@ -18,21 +18,21 @@ import javax.swing.border.EtchedBorder;
 import javax.swing.border.TitledBorder;
 
 import com.pesterenan.MechPeste;
+import com.pesterenan.resources.Bundle;
 import com.pesterenan.utils.Dicionario;
 import com.pesterenan.utils.Modulos;
 
-public class PousoAutomaticoJPanel extends JPanel implements ActionListener {
-
+public class LandingJPanel extends JPanel implements ActionListener {
 	private static final long serialVersionUID = 1L;
-	private JTextField txfHover = new JTextField("100");
-	private JButton btnHover = new JButton("Sobrevoar");
-	private JButton btnAutoLanding = new JButton("Pousar");
-	private JButton btnBack = new JButton("Voltar");
+	private JTextField txfHover = new JTextField("100"); //$NON-NLS-1$
+	private JButton btnHover = new JButton(Bundle.getString("pnl_land_btn_hover")); //$NON-NLS-1$
+	private JButton btnAutoLanding = new JButton(Bundle.getString("pnl_land_btn_land")); //$NON-NLS-1$
+	private JButton btnBack = new JButton(Bundle.getString("pnl_land_btn_back")); //$NON-NLS-1$
 	private final JPanel pnlHover = new JPanel();
 	private JLabel lblAlt;
-	private final JLabel lblAutolanding = new JLabel("Executar Pouso Automático: ");
+	private final JLabel lblAutolanding = new JLabel(Bundle.getString("pnl_land_lbl_land")); //$NON-NLS-1$
 
-	public PousoAutomaticoJPanel() {
+	public LandingJPanel() {
 
 		initComponents();
 	}
@@ -40,7 +40,8 @@ public class PousoAutomaticoJPanel extends JPanel implements ActionListener {
 	private void initComponents() {
 		setPreferredSize(ParametersJPanel.dmsParameters);
 		setSize(ParametersJPanel.dmsParameters);
-		setBorder(new TitledBorder(null, "Pouso Autom\u00E1tico", TitledBorder.LEADING, TitledBorder.TOP, null, null));
+		setBorder(new TitledBorder(null, Bundle.getString("pnl_land_border"), TitledBorder.LEADING, //$NON-NLS-1$
+				TitledBorder.TOP, null, null));
 
 		txfHover.setHorizontalAlignment(SwingConstants.CENTER);
 		txfHover.setColumns(10);
@@ -91,9 +92,10 @@ public class PousoAutomaticoJPanel extends JPanel implements ActionListener {
 		setLayout(groupLayout);
 		pnlHover.setBorder(new TitledBorder(
 				new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)),
-				"Sobrevoar a \u00E1rea:", TitledBorder.LEADING, TitledBorder.TOP, null, new Color(0, 0, 0)));
+				Bundle.getString("pnl_land_pnl_hover_border"), TitledBorder.LEADING, TitledBorder.TOP, null, //$NON-NLS-1$
+				new Color(0, 0, 0)));
 
-		lblAlt = new JLabel("Alt:");
+		lblAlt = new JLabel(Bundle.getString("pnl_land_lbl_alt")); //$NON-NLS-1$
 		GroupLayout glPnlHover = new GroupLayout(pnlHover);
 		glPnlHover.setHorizontalGroup(glPnlHover.createParallelGroup(Alignment.TRAILING)
 				.addGroup(glPnlHover.createSequentialGroup().addContainerGap().addComponent(lblAlt)
@@ -134,19 +136,19 @@ public class PousoAutomaticoJPanel extends JPanel implements ActionListener {
 
 	protected void handleBtnHoverActionPerformed(ActionEvent e) {
 		try {
-			if (txfHover.getText().equals("")) {
-				StatusJPanel.setStatus("Digite a altitude para sobrevoo.");
+			if (txfHover.getText().equals("")) { //$NON-NLS-1$
+				StatusJPanel.setStatus(Bundle.getString("pnl_land_hover_alt")); //$NON-NLS-1$
 				return;
 			}
 			Integer.parseInt(txfHover.getText());
 		} catch (Exception e2) {
-			StatusJPanel.setStatus("A altitude para sobrevoo tem que ser um número.");
+			StatusJPanel.setStatus(Bundle.getString("pnl_land_hover_alt_err")); //$NON-NLS-1$
 			return;
 		}
 		Map<String, String> commands = new HashMap<>();
 		commands.put(Modulos.MODULO.get(), Modulos.MODULO_POUSO_SOBREVOAR.get());
 		commands.put(Modulos.ALTITUDE_SOBREVOO.get(), txfHover.getText());
 		MechPeste.iniciarModulo(commands);
-		btnHover.setText("Descer");
+		btnHover.setText(Bundle.getString("pnl_land_land")); //$NON-NLS-1$
 	}
 }

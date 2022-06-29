@@ -4,6 +4,7 @@ import static com.pesterenan.utils.Status.STATUS_DECOLAGEM_ORBITAL;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.pesterenan.MechPeste;
@@ -15,6 +16,8 @@ import com.pesterenan.views.StatusJPanel;
 import krpc.client.RPCException;
 import krpc.client.StreamException;
 import krpc.client.services.SpaceCenter.Engine;
+import krpc.client.services.SpaceCenter.Radiator;
+import krpc.client.services.SpaceCenter.SolarPanel;
 
 public class LiftoffController extends FlightController implements Runnable {
 
@@ -25,6 +28,8 @@ public class LiftoffController extends FlightController implements Runnable {
 	private float finalApoapsisAlt = 80000;
 	private float heading = 90;
 	private float roll = 90;
+	private boolean willDecoupleStages = false;
+	private boolean willDeployPanelsAndRadiators = false;
 	private String gravityCurveModel = Modulos.CIRCULAR.get();
 	private ControlePID thrControl = new ControlePID();
 
@@ -35,6 +40,8 @@ public class LiftoffController extends FlightController implements Runnable {
 		setHeading(Float.parseFloat(commands.get(Modulos.DIRECAO.get())));
 		setRoll(Float.parseFloat(commands.get(Modulos.ROLAGEM.get())));
 		setGravityCurveModel(commands.get(Modulos.INCLINACAO.get()));
+		willDeployPanelsAndRadiators = Boolean.valueOf(commands.get(Modulos.ABRIR_PAINEIS.get()));
+		willDecoupleStages = Boolean.valueOf(commands.get(Modulos.USAR_ESTAGIOS.get()));
 		StatusJPanel.setStatus(STATUS_DECOLAGEM_ORBITAL.get());
 	}
 
@@ -44,15 +51,34 @@ public class LiftoffController extends FlightController implements Runnable {
 			liftoff();
 			gravityCurve();
 			finalizeOrbit();
+			circularizeOrbitOnApoapsis();
 		} catch (RPCException | InterruptedException | StreamException | IOException e) {
-			StatusJPanel.setStatus("Decolagem abortada.");
-			try {
-				throttle(0f);
-				naveAtual.getAutoPilot().disengage();
-			} catch (RPCException e1) {
-				e1.printStackTrace();
+			disengageAfterException("Decolagem abortada.");
+		}
+	}
+
+	private void gravityCurve() throws RPCException, StreamException, InterruptedException {
+		naveAtual.getAutoPilot().targetPitchAndHeading(this.currentPitch, getHeading());
+		naveAtual.getAutoPilot().setTargetRoll(this.getRoll());
+		naveAtual.getAutoPilot().engage();
+
+		throttle(1f);
+		while (this.currentPitch > 1) {
+			if (apoastro.get() > getFinalApoapsis()) {
+				break;
 			}
-			return;
+			double currentAltitude = Utilities.remap(startCurveAlt, getFinalApoapsis(), 1, 0.01, altitude.get());
+			this.currentPitch = (float) (calculateInclinationCurve(currentAltitude) * PITCH_UP);
+
+			naveAtual.getAutoPilot().targetPitchAndHeading(this.currentPitch, getHeading());
+			throttle(thrControl.computarPID(apoastro.get(), getFinalApoapsis()));
+
+			if (willDecoupleStages && isCurrentStageWithoutFuel()) {
+				decoupleStage();
+			}
+
+			StatusJPanel.setStatus(String.format("A inclinação do foguete é: %.1f", currentPitch));
+			Thread.sleep(250);
 		}
 	}
 
@@ -61,44 +87,44 @@ public class LiftoffController extends FlightController implements Runnable {
 		naveAtual.getAutoPilot().disengage();
 		naveAtual.getControl().setSAS(true);
 		naveAtual.getControl().setRCS(true);
-		while (parametrosDeVoo.getStaticPressure() > 100) {
+		while (parametrosDeVoo.getDynamicPressure() > 10) {
 			naveAtual.getAutoPilot().setTargetDirection(parametrosDeVoo.getPrograde());
 			throttle(thrControl.computarPID(apoastro.get(), getFinalApoapsis()));
-			Thread.sleep(500);
+			Thread.sleep(250);
 		}
+		if (willDeployPanelsAndRadiators) {
+			deployPanelsAndRadiators();
+		}
+	}
 
+	private void circularizeOrbitOnApoapsis() {
 		StatusJPanel.setStatus("Planejando Manobra de circularização...");
 		Map<String, String> commands = new HashMap<>();
 		commands.put(Modulos.MODULO.get(), Modulos.MODULO_MANOBRAS.get());
 		commands.put(Modulos.FUNCAO.get(), Modulos.APOASTRO.get());
+		commands.put(Modulos.AJUSTE_FINO.get(), String.valueOf(true));
 		MechPeste.iniciarModulo(commands);
 	}
 
-	private void gravityCurve() throws RPCException, StreamException, InterruptedException {
-		naveAtual.getAutoPilot().targetPitchAndHeading(this.currentPitch, getHeading());
-		naveAtual.getAutoPilot().setTargetRoll(this.getRoll());
+	private void decoupleStage() throws InterruptedException, RPCException {
+		StatusJPanel.setStatus("Separando estágio...");
+		Thread.sleep(1000);
+		naveAtual.getControl().activateNextStage();
+		Thread.sleep(1000);
+	}
 
-		naveAtual.getAutoPilot().engage();
-		throttle(1f);
-
-		while (this.currentPitch > 1) {
-			if (apoastro.get() > getFinalApoapsis()) {
-				break;
+	private void deployPanelsAndRadiators() throws RPCException {
+		List<SolarPanel> solarPanels = naveAtual.getParts().getSolarPanels();
+		List<Radiator> radiators = naveAtual.getParts().getRadiators();
+		for (SolarPanel sp : solarPanels) {
+			if (sp.getDeployable() == true) {
+				sp.setDeployed(true);
 			}
-			double currentAltitude = Utilities.remap(startCurveAlt, getFinalApoapsis(), 1, 0.01, altitude.get());
-			double inclinationCurve = calculateInclinationCurve(currentAltitude);
-			this.currentPitch = (float) (inclinationCurve * PITCH_UP);
-			naveAtual.getAutoPilot().targetPitchAndHeading(this.currentPitch, getHeading());
-			throttle(thrControl.computarPID(apoastro.get(), getFinalApoapsis()));
-
-			if (stageWithoutFuel()) {
-				StatusJPanel.setStatus("Separando estágio...");
-				Thread.sleep(1000);
-				naveAtual.getControl().activateNextStage();
-				Thread.sleep(1000);
+		}
+		for (Radiator r : radiators) {
+			if (r.getDeployable() == true) {
+				r.setDeployed(true);
 			}
-			StatusJPanel.setStatus(String.format("A inclinação do foguete é: %.1f", currentPitch));
-			Thread.sleep(250);
 		}
 	}
 
@@ -118,9 +144,9 @@ public class LiftoffController extends FlightController implements Runnable {
 		return Utilities.easeInCirc(currentAltitude);
 	}
 
-	private boolean stageWithoutFuel() throws RPCException, StreamException {
-		for (Engine motor : naveAtual.getParts().getEngines()) {
-			if (motor.getPart().getStage() == naveAtual.getControl().getCurrentStage() && !motor.getHasFuel()) {
+	private boolean isCurrentStageWithoutFuel() throws RPCException, StreamException {
+		for (Engine engine : naveAtual.getParts().getEngines()) {
+			if (engine.getPart().getStage() == naveAtual.getControl().getCurrentStage() && !engine.getHasFuel()) {
 				return true;
 			}
 		}

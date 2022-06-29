@@ -23,7 +23,7 @@ public class ParametersJPanel extends JPanel implements PropertyChangeListener {
 	public static final Dimension BTN_DIMENSION = new Dimension(110, 25);
 	private TelemetryJPanel pnlTelemetry = new TelemetryJPanel();
 	private JPanel pnlLiftoff = new LiftoffJPanel();
-	private JPanel pnlLanding = new PousoAutomaticoJPanel();
+	private JPanel pnlLanding = new LandingJPanel();
 	private JPanel pnlManeuver = new ManeuverJPanel();
 	private JPanel pnlRover = new JPanel();
 
