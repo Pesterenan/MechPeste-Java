@@ -1,7 +1,5 @@
 package com.pesterenan.views;
 
-import static com.pesterenan.utils.Dicionario.TELEMETRIA;
-
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.HashMap;
@@ -16,20 +14,21 @@ import javax.swing.LayoutStyle.ComponentPlacement;
 import javax.swing.border.TitledBorder;
 
 import com.pesterenan.MechPeste;
+import com.pesterenan.resources.Bundle;
 import com.pesterenan.utils.Modulos;
 import javax.swing.JCheckBox;
 
 public class ManeuverJPanel extends JPanel implements ActionListener {
 	private static final long serialVersionUID = 1L;
-	private final JLabel lblExecute = new JLabel("Executar próxima manobra: ");
-	private final JLabel lblAdjustInc = new JLabel("Ajustar inclinação:");
-	private final JButton btnApoapsis = new JButton("Apoastro");
-	private final JButton btnPeriapsis = new JButton("Periastro");
-	private final JButton btnExecute = new JButton("Executar");
-	private final JButton btnAdjustInc = new JButton("Ajustar");
-	private final JButton btnBack = new JButton("Voltar");
+	private final JLabel lblExecute = new JLabel(Bundle.getString("pnl_mnv_lbl_exec_mnv")); //$NON-NLS-1$
+	private final JLabel lblAdjustInc = new JLabel(Bundle.getString("pnl_mnv_lbl_adj_inc")); //$NON-NLS-1$
+	private final JButton btnApoapsis = new JButton(Bundle.getString("pnl_mnv_btn_apoapsis")); //$NON-NLS-1$
+	private final JButton btnPeriapsis = new JButton(Bundle.getString("pnl_mnv_btn_periapsis")); //$NON-NLS-1$
+	private final JButton btnExecute = new JButton(Bundle.getString("pnl_mnv_btn_exec_mnv")); //$NON-NLS-1$
+	private final JButton btnAdjustInc = new JButton(Bundle.getString("pnl_mnv_btn_adj_inc")); //$NON-NLS-1$
+	private final JButton btnBack = new JButton(Bundle.getString("pnl_mnv_btn_back")); //$NON-NLS-1$
 	private JPanel pnlCircularize = new JPanel();
-	private JCheckBox chkFineAdjusment = new JCheckBox("Ajustar final da manobra com RCS");
+	private JCheckBox chkFineAdjusment = new JCheckBox(Bundle.getString("pnl_mnv_chk_adj_mnv_rcs")); //$NON-NLS-1$
 
 	public ManeuverJPanel() {
 		initComponents();
@@ -38,7 +37,8 @@ public class ManeuverJPanel extends JPanel implements ActionListener {
 	private void initComponents() {
 		setPreferredSize(ParametersJPanel.dmsParameters);
 		setSize(ParametersJPanel.dmsParameters);
-		setBorder(new TitledBorder(null, "Manobras:", TitledBorder.LEADING, TitledBorder.TOP, null, null));
+		setBorder(new TitledBorder(null, Bundle.getString("pnl_mnv_border"), TitledBorder.LEADING, TitledBorder.TOP, //$NON-NLS-1$
+				null, null));
 		btnExecute.addActionListener(this);
 		btnExecute.setSize(ParametersJPanel.BTN_DIMENSION);
 		btnExecute.setPreferredSize(btnExecute.getSize());
@@ -59,7 +59,7 @@ public class ManeuverJPanel extends JPanel implements ActionListener {
 		btnBack.setMinimumSize(btnBack.getSize());
 		btnBack.setMaximumSize(btnBack.getSize());
 
-		pnlCircularize.setBorder(new TitledBorder(null, "Circularizar \u00F3rbita no:", TitledBorder.LEADING,
+		pnlCircularize.setBorder(new TitledBorder(null, Bundle.getString("pnl_mnv_circularize"), TitledBorder.LEADING, //$NON-NLS-1$
 				TitledBorder.TOP, null, null));
 
 		GroupLayout groupLayout = new GroupLayout(this);
@@ -152,7 +152,7 @@ public class ManeuverJPanel extends JPanel implements ActionListener {
 	}
 
 	protected void handleBtnVoltarActionPerformed(ActionEvent e) {
-		MainGui.getParametros().firePropertyChange(TELEMETRIA.get(), false, true);
+		MainGui.getParametros().firePropertyChange("Telemetria", false, true);
 	}
 
 	protected void handleManeuverFunction(String maneuverFunction) {

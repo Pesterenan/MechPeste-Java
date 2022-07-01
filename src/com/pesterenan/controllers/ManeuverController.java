@@ -5,9 +5,9 @@ import java.util.Map;
 
 import org.javatuples.Triplet;
 
+import com.pesterenan.resources.Bundle;
 import com.pesterenan.utils.ControlePID;
 import com.pesterenan.utils.Modulos;
-import com.pesterenan.utils.Status;
 import com.pesterenan.utils.Utilities;
 import com.pesterenan.views.MainGui;
 import com.pesterenan.views.StatusJPanel;
@@ -68,7 +68,7 @@ public class ManeuverController extends FlightController implements Runnable {
 			double[] deltaV = { deltaVdaManobra, 0, 0 };
 			criarManobra(tempoAteAltitude, deltaV);
 		} catch (RPCException | InterruptedException e) {
-			disengageAfterException("Não foi possível calcular a manobra.");
+			disengageAfterException(Bundle.getString("status_maneuver_not_possible"));
 		}
 	}
 
@@ -77,24 +77,22 @@ public class ManeuverController extends FlightController implements Runnable {
 			naveAtual.getControl().addNode(centroEspacial.getUT() + tempoPosterior, (float) deltaV[0],
 					(float) deltaV[1], (float) deltaV[2]);
 		} catch (UnsupportedOperationException | RPCException e) {
-			disengageAfterException("Não foi possível criar a manobra.");
+			disengageAfterException(Bundle.getString("status_maneuver_not_possible"));
 		}
 	}
 
 	public void executeNextManeuver() {
 		try {
-			StatusJPanel.setStatus("Buscando Manobras...");
 			maneuverNode = naveAtual.getControl().getNodes().get(0);
-
 			double burnTime = calculateBurnTime(maneuverNode);
 			orientToManeuverNode(maneuverNode);
 			executeBurn(maneuverNode, burnTime);
 		} catch (UnsupportedOperationException e) {
-			disengageAfterException("A criação de Manobras não foi desbloqueada ainda.");
+			disengageAfterException(Bundle.getString("status_maneuver_not_unlocked"));
 		} catch (IndexOutOfBoundsException e) {
-			disengageAfterException("Não há Manobras disponíveis.");
+			disengageAfterException(Bundle.getString("status_maneuver_unavailable"));
 		} catch (RPCException e) {
-			disengageAfterException("Não foi possivel buscar dados da nave.");
+			disengageAfterException(Bundle.getString("status_data_unavailable"));
 		}
 	}
 
@@ -106,11 +104,11 @@ public class ManeuverController extends FlightController implements Runnable {
 			naveAtual.getAutoPilot().setTargetRoll((roll + 180));
 			naveAtual.getAutoPilot().engage();
 			while (naveAtual.getAutoPilot().getError() > 5) {
-				StatusJPanel.setStatus("Orientando nave para o nó de Manobra...");
+				StatusJPanel.setStatus(Bundle.getString("status_orienting_ship"));
 				Thread.sleep(250);
 			}
 		} catch (InterruptedException | RPCException e) {
-			disengageAfterException("Não foi possível orientar a nave para a manobra.");
+			disengageAfterException(Bundle.getString("status_couldnt_orient"));
 		}
 	}
 
@@ -136,22 +134,22 @@ public class ManeuverController extends FlightController implements Runnable {
 	public void executeBurn(Node noDeManobra, double duracaoDaQueima) throws RPCException {
 		try {
 			double inicioDaQueima = noDeManobra.getTimeTo() - (duracaoDaQueima / 2.0) - (fineAdjustment ? 5 : 0);
-			StatusJPanel.setStatus("Warp temporal para próxima manobra...");
+			StatusJPanel.setStatus(Bundle.getString("status_maneuver_warp"));
 			if (inicioDaQueima > 30) {
 				centroEspacial.warpTo((centroEspacial.getUT() + inicioDaQueima - 10), 100000, 4);
 			}
 			// Mostrar tempo de ignição:
-			StatusJPanel.setStatus("Duração da queima: " + duracaoDaQueima + " segundos.");
+			StatusJPanel.setStatus(String.format(Bundle.getString("status_maneuver_duration"), duracaoDaQueima));
 			while (inicioDaQueima > 0) {
 				inicioDaQueima = noDeManobra.getTimeTo() - (duracaoDaQueima / 2.0);
 				inicioDaQueima = inicioDaQueima > 0.0 ? inicioDaQueima : 0.0;
-				StatusJPanel.setStatus(String.format("Ignição em: %1$.1f segundos...", inicioDaQueima));
+				StatusJPanel.setStatus(String.format(Bundle.getString("status_maneuver_ignition_in"), inicioDaQueima));
 				Thread.sleep(100);
 			}
 			// Executar a manobra:
 			Stream<Triplet<Double, Double, Double>> queimaRestante = getConexao().addStream(noDeManobra,
 					"remainingBurnVector", noDeManobra.getReferenceFrame());
-			StatusJPanel.setStatus("Executando manobra!");
+			StatusJPanel.setStatus(Bundle.getString("status_maneuver_executing"));
 			double limiteParaDesacelerar = noDeManobra.getDeltaV() > 1000 ? 0.025
 					: noDeManobra.getDeltaV() > 250 ? 0.10 : 0.25;
 
@@ -175,11 +173,11 @@ public class ManeuverController extends FlightController implements Runnable {
 			naveAtual.getControl().setSAS(true);
 			naveAtual.getControl().setRCS(false);
 			noDeManobra.remove();
-			StatusJPanel.setStatus(Status.PRONTO.get());
+			StatusJPanel.setStatus(Bundle.getString("status_ready"));
 		} catch (StreamException | RPCException e) {
-			disengageAfterException("Não foi possivel buscar os dados da nave.");
+			disengageAfterException(Bundle.getString("status_data_unavailable"));
 		} catch (InterruptedException e) {
-			disengageAfterException("Manobra cancelada.");
+			disengageAfterException(Bundle.getString("status_maneuver_cancelled"));
 		}
 	}
 

@@ -1,7 +1,7 @@
 package com.pesterenan.controllers;
 
 import com.pesterenan.model.Nave;
-import com.pesterenan.utils.Status;
+import com.pesterenan.resources.Bundle;
 import com.pesterenan.views.MainGui;
 import com.pesterenan.views.StatusJPanel;
 
@@ -63,7 +63,7 @@ public class FlightController extends Nave implements Runnable {
 			}
 		} catch (RPCException e) {
 			StatusJPanel.botConectarVisivel(true);
-			StatusJPanel.setStatus("Não foi possível trocar de nave.");
+			StatusJPanel.setStatus(Bundle.getString("status_couldnt_switch_vessel"));
 		}
 	}
 
@@ -79,15 +79,15 @@ public class FlightController extends Nave implements Runnable {
 		MainGui.getParametros().getTelemetria().firePropertyChange("tempoMissao", 0.0, tempoMissao.get());
 
 	}
+
 	protected void disengageAfterException(String statusMessage) {
 		try {
 			StatusJPanel.setStatus(statusMessage);
-			System.out.println("disengaged");
 			naveAtual.getAutoPilot().setReferenceFrame(pontoRefSuperficie);
 			naveAtual.getAutoPilot().disengage();
 			throttle(0);
 			Thread.sleep(3000);
-			StatusJPanel.setStatus(Status.PRONTO.get());
+			StatusJPanel.setStatus(Bundle.getString("status_ready"));
 		} catch (Exception e) {
 		}
 	}

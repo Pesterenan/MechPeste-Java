@@ -1,13 +1,12 @@
 package com.pesterenan.controllers;
 
-import static com.pesterenan.utils.Status.STATUS_DECOLAGEM_ORBITAL;
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import com.pesterenan.MechPeste;
+import com.pesterenan.resources.Bundle;
 import com.pesterenan.utils.ControlePID;
 import com.pesterenan.utils.Modulos;
 import com.pesterenan.utils.Utilities;
@@ -42,7 +41,6 @@ public class LiftoffController extends FlightController implements Runnable {
 		setGravityCurveModel(commands.get(Modulos.INCLINACAO.get()));
 		willDeployPanelsAndRadiators = Boolean.valueOf(commands.get(Modulos.ABRIR_PAINEIS.get()));
 		willDecoupleStages = Boolean.valueOf(commands.get(Modulos.USAR_ESTAGIOS.get()));
-		StatusJPanel.setStatus(STATUS_DECOLAGEM_ORBITAL.get());
 	}
 
 	@Override
@@ -53,7 +51,7 @@ public class LiftoffController extends FlightController implements Runnable {
 			finalizeOrbit();
 			circularizeOrbitOnApoapsis();
 		} catch (RPCException | InterruptedException | StreamException | IOException e) {
-			disengageAfterException("Decolagem abortada.");
+			disengageAfterException(Bundle.getString("status_liftoff_abort"));
 		}
 	}
 
@@ -77,13 +75,13 @@ public class LiftoffController extends FlightController implements Runnable {
 				decoupleStage();
 			}
 
-			StatusJPanel.setStatus(String.format("A inclinação do foguete é: %.1f", currentPitch));
+			StatusJPanel.setStatus(String.format(Bundle.getString("status_liftoff_inclination") + " %.1f", currentPitch));
 			Thread.sleep(250);
 		}
 	}
 
 	private void finalizeOrbit() throws RPCException, StreamException, IOException, InterruptedException {
-		StatusJPanel.setStatus("Mantendo apoastro alvo até sair da atmosfera...");
+		StatusJPanel.setStatus(Bundle.getString("status_maintaining_until_orbit"));
 		naveAtual.getAutoPilot().disengage();
 		naveAtual.getControl().setSAS(true);
 		naveAtual.getControl().setRCS(true);
@@ -98,7 +96,7 @@ public class LiftoffController extends FlightController implements Runnable {
 	}
 
 	private void circularizeOrbitOnApoapsis() {
-		StatusJPanel.setStatus("Planejando Manobra de circularização...");
+		StatusJPanel.setStatus(Bundle.getString("status_planning_orbit"));
 		Map<String, String> commands = new HashMap<>();
 		commands.put(Modulos.MODULO.get(), Modulos.MODULO_MANOBRAS.get());
 		commands.put(Modulos.FUNCAO.get(), Modulos.APOASTRO.get());
@@ -107,7 +105,7 @@ public class LiftoffController extends FlightController implements Runnable {
 	}
 
 	private void decoupleStage() throws InterruptedException, RPCException {
-		StatusJPanel.setStatus("Separando estágio...");
+		StatusJPanel.setStatus(Bundle.getString("status_separating_stage"));
 		Thread.sleep(1000);
 		naveAtual.getControl().activateNextStage();
 		Thread.sleep(1000);

@@ -1,7 +1,5 @@
 package com.pesterenan.views;
 
-import static com.pesterenan.utils.Status.CONECTANDO;
-
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -63,7 +61,7 @@ public class StatusJPanel extends JPanel {
 
 	private class BotConectarActionListener implements ActionListener {
 		public void actionPerformed(ActionEvent e) {
-			setStatus(CONECTANDO.get());
+			setStatus(Bundle.getString("status_connecting"));
 			MechPeste.finalizarTarefa();
 			MechPeste.getInstance().startConnection();
 		}

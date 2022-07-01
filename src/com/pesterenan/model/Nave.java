@@ -1,10 +1,9 @@
 package com.pesterenan.model;
 
-import static com.pesterenan.utils.Status.CONECTADO;
-import static com.pesterenan.utils.Status.ERRO_CONEXAO;
 import static com.pesterenan.views.StatusJPanel.botConectarVisivel;
 import static com.pesterenan.views.StatusJPanel.setStatus;
 
+import com.pesterenan.resources.Bundle;
 import com.pesterenan.views.StatusJPanel;
 
 import krpc.client.Connection;
@@ -49,7 +48,7 @@ public class Nave {
 			KRPC krpc = KRPC.newInstance(getConexao());
 			if (krpc.getCurrentGameScene().equals(GameScene.FLIGHT)) {
 				this.naveAtual = centroEspacial.getActiveVessel();
-				setStatus(CONECTADO.get());
+				setStatus(Bundle.getString("status_connected"));
 				botConectarVisivel(false);
 			} else {
 				try {
@@ -58,7 +57,7 @@ public class Nave {
 				}
 			}
 		} catch (RPCException | NullPointerException e) {
-			setStatus(ERRO_CONEXAO.get());
+			setStatus(Bundle.getString("status_error_connection"));
 			botConectarVisivel(true);
 		}
 	}
@@ -86,15 +85,14 @@ public class Nave {
 			if (naveAtual.getSituation().equals(VesselSituation.PRE_LAUNCH)) {
 				float launchCount = 5f;
 				while (launchCount > 0) {
-					StatusJPanel.setStatus(String.format("Lançamento em: %.1f segundos...", launchCount));
+					StatusJPanel.setStatus(String.format(Bundle.getString("status_launching_in"), launchCount));
 					launchCount -= 0.1;
 					Thread.sleep(100);
 				}
 				naveAtual.getControl().activateNextStage();
 			}
-			setStatus("Decolagem!");
+			setStatus(Bundle.getString("status_liftoff"));
 		} catch (RPCException erro) {
-			System.err.println("Não foi possivel decolar a nave. Erro: " + erro.getMessage());
 		}
 	}
 

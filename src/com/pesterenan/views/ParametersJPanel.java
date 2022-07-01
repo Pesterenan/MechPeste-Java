@@ -1,11 +1,5 @@
 package com.pesterenan.views;
 
-import static com.pesterenan.utils.Dicionario.DECOLAGEM_ORBITAL;
-import static com.pesterenan.utils.Dicionario.MANOBRAS;
-import static com.pesterenan.utils.Dicionario.POUSO_AUTOMATICO;
-import static com.pesterenan.utils.Dicionario.ROVER_AUTONOMO;
-import static com.pesterenan.utils.Dicionario.TELEMETRIA;
-
 import java.awt.CardLayout;
 import java.awt.Dimension;
 import java.beans.PropertyChangeEvent;
@@ -38,11 +32,11 @@ public class ParametersJPanel extends JPanel implements PropertyChangeListener {
 		setLayout(cardLayout);
 		pnlParameters.addPropertyChangeListener(this);
 
-		add(pnlTelemetry, TELEMETRIA.get());
-		add(pnlLiftoff, DECOLAGEM_ORBITAL.get());
-		add(pnlLanding, POUSO_AUTOMATICO.get());
-		add(pnlManeuver, MANOBRAS.get());
-		add(pnlRover, ROVER_AUTONOMO.get());
+		add(pnlTelemetry, "Telemetria");
+		add(pnlLiftoff, "Decolagem Orbital");
+		add(pnlLanding, "Pouso Automático");
+		add(pnlManeuver, "Manobras");
+		add(pnlRover, "Rover Autônomo");
 
 	}
 
@@ -53,20 +47,20 @@ public class ParametersJPanel extends JPanel implements PropertyChangeListener {
 	}
 
 	protected void handlePnlTelemetriaPropertyChange(PropertyChangeEvent evt) {
-		if (evt.getPropertyName().equals(DECOLAGEM_ORBITAL.get())) {
-			cardLayout.show(pnlParameters, DECOLAGEM_ORBITAL.get());
+		if (evt.getPropertyName().equals("Decolagem Orbital")) {
+			cardLayout.show(pnlParameters, "Decolagem Orbital");
 		}
-		if (evt.getPropertyName().equals(POUSO_AUTOMATICO.get())) {
-			cardLayout.show(pnlParameters, POUSO_AUTOMATICO.get());
+		if (evt.getPropertyName().equals("Pouso Automático")) {
+			cardLayout.show(pnlParameters, "Pouso Automático");
 		}
-		if (evt.getPropertyName().equals(MANOBRAS.get())) {
-			cardLayout.show(pnlParameters, MANOBRAS.get());
+		if (evt.getPropertyName().equals("Manobras")) {
+			cardLayout.show(pnlParameters, "Manobras");
 		}
-		if (evt.getPropertyName().equals(ROVER_AUTONOMO.get())) {
-			cardLayout.show(pnlParameters, ROVER_AUTONOMO.get());
+		if (evt.getPropertyName().equals("Rover Autônomo")) {
+			cardLayout.show(pnlParameters, "Rover Autônomo");
 		}
-		if (evt.getPropertyName().equals(TELEMETRIA.get())) {
-			cardLayout.show(pnlParameters, TELEMETRIA.get());
+		if (evt.getPropertyName().equals("Telemetria")) {
+			cardLayout.show(pnlParameters, "Telemetria");
 		}
 	}
 

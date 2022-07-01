@@ -1,7 +1,5 @@
 package com.pesterenan.views;
 
-import static com.pesterenan.utils.Dicionario.TELEMETRIA;
-
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.HashMap;
@@ -183,6 +181,6 @@ public class LiftoffJPanel extends JPanel implements ActionListener {
 	}
 
 	protected void handleBtnBackActionPerformed(ActionEvent e) {
-		MainGui.getParametros().firePropertyChange(TELEMETRIA.get(), false, true);
+		MainGui.getParametros().firePropertyChange("Telemetria", false, true);
 	}
 }

@@ -19,7 +19,6 @@ import javax.swing.border.TitledBorder;
 
 import com.pesterenan.MechPeste;
 import com.pesterenan.resources.Bundle;
-import com.pesterenan.utils.Dicionario;
 import com.pesterenan.utils.Modulos;
 
 public class LandingJPanel extends JPanel implements ActionListener {
@@ -131,7 +130,7 @@ public class LandingJPanel extends JPanel implements ActionListener {
 	}
 
 	protected void handleBtnBackActionPerformed(ActionEvent e) {
-		MainGui.getParametros().firePropertyChange(Dicionario.TELEMETRIA.get(), false, true);
+		MainGui.getParametros().firePropertyChange("Telemetria", false, true);
 	}
 
 	protected void handleBtnHoverActionPerformed(ActionEvent e) {

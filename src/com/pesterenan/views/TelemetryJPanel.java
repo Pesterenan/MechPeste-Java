@@ -15,11 +15,12 @@ import javax.swing.JPanel;
 import javax.swing.border.TitledBorder;
 
 import com.pesterenan.MechPeste;
+import com.pesterenan.resources.Bundle;
 
 public class TelemetryJPanel extends JPanel implements PropertyChangeListener {
 
 	private static final long serialVersionUID = 1L;
-	private JLabel tempoValorLabel = new JLabel("");
+	private JLabel tempoValorLabel = new JLabel(""); //$NON-NLS-1$
 	private JLabel altitudeValorLabel;
 	private JLabel altitudeSupValorLabel;
 	private JLabel apoastroValorLabel;
@@ -38,57 +39,57 @@ public class TelemetryJPanel extends JPanel implements PropertyChangeListener {
 	private void initComponents() {
 		setPreferredSize(dmsParameters);
 		setSize(dmsParameters);
-		setBorder(new TitledBorder(null, "Telemetria:", TitledBorder.LEADING, TitledBorder.TOP, null, null));
+		setBorder(new TitledBorder(null, Bundle.getString("pnl_tel_border"), TitledBorder.LEADING, TitledBorder.TOP, null, null)); //$NON-NLS-1$
 
 		addPropertyChangeListener(this);
 		setLayout(new GridLayout(0, 2, 0, 0));
-		JLabel altitudeLabel = new JLabel("Altitude: ");
+		JLabel altitudeLabel = new JLabel(Bundle.getString("pnl_tel_lbl_alt")); //$NON-NLS-1$
 		add(altitudeLabel);
 
-		altitudeValorLabel = new JLabel("");
+		altitudeValorLabel = new JLabel(""); //$NON-NLS-1$
 		add(altitudeValorLabel);
-		JLabel altitudeSupLabel = new JLabel("Alt. Superfície: ");
+		JLabel altitudeSupLabel = new JLabel(Bundle.getString("pnl_tel_lbl_alt_sur")); //$NON-NLS-1$
 		add(altitudeSupLabel);
 
-		altitudeSupValorLabel = new JLabel("");
+		altitudeSupValorLabel = new JLabel(""); //$NON-NLS-1$
 		add(altitudeSupValorLabel);
-		JLabel apoastroLabel = new JLabel("Apoastro: ");
+		JLabel apoastroLabel = new JLabel(Bundle.getString("pnl_tel_lbl_apoapsis")); //$NON-NLS-1$
 		add(apoastroLabel);
 
 		apoastroValorLabel = new JLabel("");
 		add(apoastroValorLabel);
-		JLabel periastroLabel = new JLabel("Periastro: ");
+		JLabel periastroLabel = new JLabel(Bundle.getString("pnl_tel_lbl_periapsis")); //$NON-NLS-1$
 		add(periastroLabel);
 
-		periastroValorLabel = new JLabel("");
+		periastroValorLabel = new JLabel(""); //$NON-NLS-1$
 		add(periastroValorLabel);
-		JLabel velVLabel = new JLabel("Vel. Vertical: ");
+		JLabel velVLabel = new JLabel(Bundle.getString("pnl_tel_lbl_vert_spd")); //$NON-NLS-1$
 		add(velVLabel);
 
-		velVValorLabel = new JLabel("");
+		velVValorLabel = new JLabel(""); //$NON-NLS-1$
 		add(velVValorLabel);
-		JLabel velHLabel = new JLabel("Vel. Horizontal:");
+		JLabel velHLabel = new JLabel(Bundle.getString("pnl_tel_lbl_horz_spd")); //$NON-NLS-1$
 		add(velHLabel);
 
-		velHValorLabel = new JLabel("");
+		velHValorLabel = new JLabel(""); //$NON-NLS-1$
 		add(velHValorLabel);
-		JLabel bateriaLabel = new JLabel("Bateria: ");
+		JLabel bateriaLabel = new JLabel(Bundle.getString("pnl_tel_lbl_battery")); //$NON-NLS-1$
 		add(bateriaLabel);
 
 		bateriaValorLabel = new JLabel("");
 		add(bateriaValorLabel);
-		JLabel tempoLabel = new JLabel("Tempo de Missão: ");
+		JLabel tempoLabel = new JLabel(Bundle.getString("pnl_tel_lbl_mission_time")); //$NON-NLS-1$
 		add(tempoLabel);
 		add(tempoValorLabel);
-		JLabel distanciaLabel = new JLabel("Distancia ate o pouso:");
+		JLabel distanciaLabel = new JLabel(Bundle.getString("pnl_tel_lbl_dist_to_land")); //$NON-NLS-1$
 		add(distanciaLabel);
 
-		distanciaValorLabel = new JLabel("");
+		distanciaValorLabel = new JLabel(""); //$NON-NLS-1$
 		add(distanciaValorLabel);
 
-		label_10 = new JLabel("");
+		label_10 = new JLabel(""); //$NON-NLS-1$
 		add(label_10);
-		JButton btnCancelar = new JButton("Cancelar");
+		JButton btnCancelar = new JButton(Bundle.getString("pnl_tel_btn_cancel")); //$NON-NLS-1$
 		btnCancelar.setSize(BTN_DIMENSION);
 		btnCancelar.setPreferredSize(btnCancelar.getSize());
 		btnCancelar.setMinimumSize(btnCancelar.getSize());
@@ -103,15 +104,15 @@ public class TelemetryJPanel extends JPanel implements PropertyChangeListener {
 
 	private String converterMetros(Object obj) {
 		Double metros = Math.abs((double) obj);
-		String casasDecimais = "%.2f";
+		String casasDecimais = "%.2f"; //$NON-NLS-1$
 		if (metros >= 1000000000) {
-			return String.format(casasDecimais + "Gm", metros / 1000000000);
+			return String.format(casasDecimais + "Gm", metros / 1000000000); //$NON-NLS-1$
 		} else if (metros >= 1000000) {
-			return String.format(casasDecimais + "Mm", metros / 1000000);
+			return String.format(casasDecimais + "Mm", metros / 1000000); //$NON-NLS-1$
 		} else if (metros >= 1000) {
-			return String.format(casasDecimais + "km", metros / 1000);
+			return String.format(casasDecimais + "km", metros / 1000); //$NON-NLS-1$
 		} else {
-			return new String(String.format(casasDecimais + "m", metros));
+			return new String(String.format(casasDecimais + "m", metros)); //$NON-NLS-1$
 		}
 	}
 
@@ -121,38 +122,38 @@ public class TelemetryJPanel extends JPanel implements PropertyChangeListener {
 		int horas = (segundosTotais.intValue() / 3600) % 6;
 		int minutos = (segundosTotais.intValue() % 3600) / 60;
 		int segundos = segundosTotais.intValue() % 60;
-		return String.format("%dA-%dd-%02d:%02d:%02d", anos, dias, horas, minutos, segundos);
+		return String.format(Bundle.getString("pnl_tel_lbl_date_template"), anos, dias, horas, minutos, segundos); //$NON-NLS-1$
 	}
 
 	@Override
 	public void propertyChange(PropertyChangeEvent evt) {
 		switch (evt.getPropertyName()) {
-		case "altitude":
+		case "altitude": //$NON-NLS-1$
 			altitudeValorLabel.setText(converterMetros(evt.getNewValue()));
 			break;
-		case "altitudeSup":
+		case "altitudeSup": //$NON-NLS-1$
 			altitudeSupValorLabel.setText(converterMetros(evt.getNewValue()));
 			break;
-		case "bateria":
-			bateriaValorLabel.setText(String.format("%.0f", evt.getNewValue()) + "%");
+		case "bateria": //$NON-NLS-1$
+			bateriaValorLabel.setText(String.format("%.0f", evt.getNewValue()) + "%"); //$NON-NLS-1$ //$NON-NLS-2$
 			break;
-		case "apoastro":
+		case "apoastro": //$NON-NLS-1$
 			apoastroValorLabel.setText(converterMetros(evt.getNewValue()));
 			break;
-		case "periastro":
+		case "periastro": //$NON-NLS-1$
 			periastroValorLabel.setText(converterMetros(evt.getNewValue()));
 			break;
-		case "tempoRestante":
-		case "tempoMissao":
+		case "tempoRestante": //$NON-NLS-1$
+		case "tempoMissao": //$NON-NLS-1$
 			tempoValorLabel.setText(formatarTempoDecorrido((Double) evt.getNewValue()));
 			break;
-		case "velVertical":
-			velVValorLabel.setText(converterMetros(evt.getNewValue()) + "/s");
+		case "velVertical": //$NON-NLS-1$
+			velVValorLabel.setText(converterMetros(evt.getNewValue()) + "/s"); //$NON-NLS-1$
 			break;
-		case "velHorizontal":
-			velHValorLabel.setText(converterMetros(evt.getNewValue()) + "/s");
+		case "velHorizontal": //$NON-NLS-1$
+			velHValorLabel.setText(converterMetros(evt.getNewValue()) + "/s"); //$NON-NLS-1$
 			break;
-		case "distancia":
+		case "distancia": //$NON-NLS-1$
 			distanciaValorLabel.setText(converterMetros(evt.getNewValue()));
 		}
 	}

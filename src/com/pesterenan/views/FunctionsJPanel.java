@@ -1,10 +1,5 @@
 package com.pesterenan.views;
 
-import static com.pesterenan.utils.Dicionario.DECOLAGEM_ORBITAL;
-import static com.pesterenan.utils.Dicionario.MANOBRAS;
-import static com.pesterenan.utils.Dicionario.POUSO_AUTOMATICO;
-import static com.pesterenan.utils.Dicionario.ROVER_AUTONOMO;
-
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -84,18 +79,18 @@ public class FunctionsJPanel extends JPanel implements ActionListener {
 	}
 
 	protected void handleBtnDecolagemOrbitalActionPerformed(ActionEvent e) {
-		MainGui.getParametros().firePropertyChange(DECOLAGEM_ORBITAL.get(), false, true);
+		MainGui.getParametros().firePropertyChange("Decolagem Orbital", false, true);
 	}
 
 	protected void handleBtnPousoAutomaticoActionPerformed(ActionEvent e) {
-		MainGui.getParametros().firePropertyChange(POUSO_AUTOMATICO.get(), false, true);
+		MainGui.getParametros().firePropertyChange("Pouso Automático", false, true);
 	}
 
 	protected void handleBtnManobrasActionPerformed(ActionEvent e) {
-		MainGui.getParametros().firePropertyChange(MANOBRAS.get(), false, true);
+		MainGui.getParametros().firePropertyChange("Manobras", false, true);
 	}
 
 	protected void handleBtnPilotarRoverActionPerformed(ActionEvent e) {
-		MainGui.getParametros().firePropertyChange(ROVER_AUTONOMO.get(), false, true);
+		MainGui.getParametros().firePropertyChange("Rover Autônomo", false, true);
 	}
 }

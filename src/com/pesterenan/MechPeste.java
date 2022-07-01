@@ -1,18 +1,15 @@
 package com.pesterenan;
 
-import static com.pesterenan.utils.Dicionario.TELEMETRIA;
 import static com.pesterenan.utils.Modulos.MODULO;
 import static com.pesterenan.utils.Modulos.MODULO_DECOLAGEM;
 import static com.pesterenan.utils.Modulos.MODULO_MANOBRAS;
 import static com.pesterenan.utils.Modulos.MODULO_POUSO;
 import static com.pesterenan.utils.Modulos.MODULO_POUSO_SOBREVOAR;
 import static com.pesterenan.utils.Modulos.MODULO_ROVER;
-import static com.pesterenan.utils.Status.CONECTADO;
-import static com.pesterenan.utils.Status.CONECTANDO;
-import static com.pesterenan.utils.Status.ERRO_CONEXAO;
 import static com.pesterenan.views.StatusJPanel.setStatus;
 
 import java.io.IOException;
+import java.util.Locale;
 import java.util.Map;
 
 import com.pesterenan.controllers.FlightController;
@@ -26,6 +23,7 @@ import com.pesterenan.views.StatusJPanel;
 import krpc.client.Connection;
 import krpc.client.RPCException;
 import krpc.client.StreamException;
+import com.pesterenan.resources.Bundle;
 
 public class MechPeste {
 	private static MechPeste mechPeste = null;
@@ -35,7 +33,6 @@ public class MechPeste {
 	private static FlightController flightCtrl = null;
 
 	public static void main(String[] args) throws StreamException, RPCException, IOException, InterruptedException {
-//		Locale.setDefault(Locale.US);
 		MechPeste.getInstance();
 	}
 
@@ -53,20 +50,19 @@ public class MechPeste {
 	}
 
 	public void startConnection() {
-		setStatus(CONECTANDO.get());
+		setStatus(Bundle.getString("status_connecting"));
 		try {
 			MechPeste.connection = null;
 			MechPeste.connection = Connection.newInstance("MechPeste - Pesterenan");
-			setStatus(CONECTADO.get());
+			setStatus(Bundle.getString("status_connected"));
 			StatusJPanel.botConectarVisivel(false);
 		} catch (IOException e) {
-			setStatus(ERRO_CONEXAO.get());
+			setStatus(Bundle.getString("status_error_connection"));
 			StatusJPanel.botConectarVisivel(true);
 		}
 	}
 
 	private void startTelemetry() {
-		flightCtrl = null;
 		flightCtrl = new FlightController(getConexao());
 		setThreadTelemetria(new Thread(flightCtrl));
 		getThreadTelemetria().start();
@@ -86,7 +82,7 @@ public class MechPeste {
 		if (executarModulo.equals(MODULO_ROVER.get())) {
 			executeRoverModule(commands);
 		}
-		MainGui.getParametros().firePropertyChange(TELEMETRIA.get(), false, true);
+		MainGui.getParametros().firePropertyChange("Telemetria", false, true);
 	}
 
 	private static void executeLiftoffModule(Map<String, String> commands) {

@@ -1,11 +1,10 @@
 package com.pesterenan.controllers;
 
-import static com.pesterenan.utils.Status.STATUS_POUSO_AUTOMATICO;
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.pesterenan.resources.Bundle;
 import com.pesterenan.utils.ControlePID;
 import com.pesterenan.utils.Modulos;
 import com.pesterenan.utils.Navegacao;
@@ -39,7 +38,6 @@ public class LandingController extends FlightController implements Runnable {
 		this.comandos = comandos;
 		this.altitudeAcelPID.limitarSaida(0, 1);
 		this.velocidadeAcelPID.limitarSaida(0, 1);
-		StatusJPanel.setStatus(STATUS_POUSO_AUTOMATICO.get());
 	}
 
 	@Override
@@ -77,18 +75,12 @@ public class LandingController extends FlightController implements Runnable {
 					}
 					Thread.sleep(25);
 				} catch (RPCException | StreamException | IOException e) {
-					StatusJPanel.setStatus("Função abortada.");
-					naveAtual.getAutoPilot().disengage();
+					disengageAfterException(Bundle.getString("status_function_abort"));
 					break;
 				}
 			}
 		} catch (InterruptedException | RPCException e) {
-			StatusJPanel.setStatus("Decolagem abortada.");
-			try {
-				naveAtual.getAutoPilot().disengage();
-			} catch (RPCException e1) {
-			}
-			return;
+			disengageAfterException(Bundle.getString("status_liftoff_abort"));
 		}
 	}
 
@@ -97,15 +89,11 @@ public class LandingController extends FlightController implements Runnable {
 			liftoff();
 			throttle(0.0f);
 			naveAtual.getAutoPilot().engage();
-			StatusJPanel.setStatus("Iniciando pouso automático em: " + corpoCeleste);
+			StatusJPanel.setStatus(Bundle.getString("status_starting_landing_at") + corpoCeleste);
 			checarAltitudeParaPouso();
 			comecarPousoAutomatico();
 		} catch (RPCException | StreamException | InterruptedException | IOException e) {
-			StatusJPanel.setStatus("Não foi possível pousar a nave, operação abortada.");
-			try {
-				naveAtual.getAutoPilot().disengage();
-			} catch (RPCException e1) {
-			}
+			disengageAfterException(Bundle.getString("status_couldnt_land"));
 		}
 	}
 
@@ -124,7 +112,7 @@ public class LandingController extends FlightController implements Runnable {
 	}
 
 	private void comecarPousoAutomatico() throws InterruptedException, RPCException, StreamException, IOException {
-		StatusJPanel.setStatus("Iniciando Pouso Automático!");
+		StatusJPanel.setStatus(Bundle.getString("status_starting_landing"));
 		while (executandoPousoAutomatico) {
 			distanciaDaQueima = calcularDistanciaDaQueima();
 			checarAltitude();
@@ -162,7 +150,7 @@ public class LandingController extends FlightController implements Runnable {
 		switch (naveAtual.getSituation()) {
 		case LANDED:
 		case SPLASHED:
-			StatusJPanel.setStatus("Pouso Finalizado!");
+			StatusJPanel.setStatus(Bundle.getString("status_landed"));
 			executandoPousoAutomatico = false;
 			executandoSobrevoo = false;
 			descerDoSobrevoo = false;
