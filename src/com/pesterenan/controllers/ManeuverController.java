@@ -29,7 +29,7 @@ public class ManeuverController extends FlightController implements Runnable {
 
 	public ManeuverController(Map<String, String> commands) {
 		super(getConexao());
-		ctrlRCS.limitarSaida(0.25, 1.0);
+		ctrlRCS.limitarSaida(0.5, 1.0);
 		this.function = commands.get(Modulos.FUNCAO.get());
 		this.fineAdjustment = canFineAdjust(commands.get(Modulos.AJUSTE_FINO.get()));
 	}
@@ -66,13 +66,13 @@ public class ManeuverController extends FlightController implements Runnable {
 					.sqrt(parametroGravitacional * ((2.0 / altitudeInicial) - (1.0 / altitudeInicial)));
 			double deltaVdaManobra = velOrbitalAlvo - velOrbitalAtual;
 			double[] deltaV = { deltaVdaManobra, 0, 0 };
-			criarManobra(tempoAteAltitude, deltaV);
+			createManeuver(tempoAteAltitude, deltaV);
 		} catch (RPCException | InterruptedException e) {
 			disengageAfterException(Bundle.getString("status_maneuver_not_possible"));
 		}
 	}
 
-	private void criarManobra(double tempoPosterior, double[] deltaV) {
+	private void createManeuver(double tempoPosterior, double[] deltaV) {
 		try {
 			naveAtual.getControl().addNode(centroEspacial.getUT() + tempoPosterior, (float) deltaV[0],
 					(float) deltaV[1], (float) deltaV[2]);
@@ -154,7 +154,7 @@ public class ManeuverController extends FlightController implements Runnable {
 					: noDeManobra.getDeltaV() > 250 ? 0.10 : 0.25;
 
 			while (!noDeManobra.equals(null)) {
-				if (queimaRestante.get().getValue1() < (fineAdjustment ? 5 : 0.5)) {
+				if (queimaRestante.get().getValue1() < (fineAdjustment ? 3 : 0.5)) {
 					break;
 				}
 				throttle(Utilities.remap(noDeManobra.getDeltaV() * limiteParaDesacelerar, 0, 1, 0.1,

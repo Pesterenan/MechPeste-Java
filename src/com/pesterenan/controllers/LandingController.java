@@ -15,18 +15,19 @@ import com.pesterenan.views.StatusJPanel;
 
 import krpc.client.RPCException;
 import krpc.client.StreamException;
+import krpc.client.services.SpaceCenter.VesselSituation;
 
 public class LandingController extends FlightController implements Runnable {
 
 	private static final int ALTITUDE_POUSO_AUTOMATICO = 8000;
 
-	private ControlePID altitudeAcelPID = new ControlePID();
-	private ControlePID velocidadeAcelPID = new ControlePID();
-	private Navegacao navegacao = new Navegacao();
+	private ControlePID altitudeCtrl = new ControlePID();
+	private ControlePID velocityCtrl = new ControlePID();
+	private Navegacao navigation = new Navegacao();
 
 	private static double velP = 0.025, velI = 0.001, velD = 0.01;
 
-	private double altitudeDeSobrevoo = 100;
+	private double hoverAltitude = 100;
 	private double distanciaDaQueima = 0, velocidadeTotal = 0;
 	private Map<String, String> comandos = new HashMap<>();
 	private boolean executandoPousoAutomatico = false;
@@ -36,16 +37,16 @@ public class LandingController extends FlightController implements Runnable {
 	public LandingController(Map<String, String> comandos) {
 		super(getConexao());
 		this.comandos = comandos;
-		this.altitudeAcelPID.limitarSaida(0, 1);
-		this.velocidadeAcelPID.limitarSaida(0, 1);
+		this.altitudeCtrl.limitarSaida(0, 1);
+		this.velocityCtrl.limitarSaida(0, 1);
 	}
 
 	@Override
 	public void run() {
 		if (comandos.get(Modulos.MODULO.get()).equals(Modulos.MODULO_POUSO_SOBREVOAR.get())) {
-			this.altitudeDeSobrevoo = Double.parseDouble(comandos.get(Modulos.ALTITUDE_SOBREVOO.get()));
+			this.hoverAltitude = Double.parseDouble(comandos.get(Modulos.ALTITUDE_SOBREVOO.get()));
 			executandoSobrevoo = true;
-			altitudeAcelPID.limitarSaida(-0.5, 1);
+			altitudeCtrl.limitarSaida(-0.5, 1);
 			sobrevoarArea();
 		}
 		if (comandos.get(Modulos.MODULO.get()).equals(Modulos.MODULO_POUSO.get())) {
@@ -60,17 +61,17 @@ public class LandingController extends FlightController implements Runnable {
 			while (executandoSobrevoo) {
 				try {
 					if (velHorizontal.get() > 15) {
-						navegacao.mirarRetrogrado();
+						navigation.mirarRetrogrado();
 					} else {
-						navegacao.mirarRadialDeFora();
+						navigation.mirarRadialDeFora();
 					}
 					ajustarCtrlPIDs();
-					double altPID = altitudeAcelPID.computarPID(altitudeSup.get(), altitudeDeSobrevoo);
-					double velPID = velocidadeAcelPID.computarPID(velVertical.get(), altPID * acelGravidade);
+					double altPID = altitudeCtrl.computarPID(altitudeSup.get(), hoverAltitude);
+					double velPID = velocityCtrl.computarPID(velVertical.get(), altPID * acelGravidade);
 					throttle(velPID);
 					if (descerDoSobrevoo == true) {
 						naveAtual.getControl().setGear(true);
-						altitudeDeSobrevoo = 0;
+						hoverAltitude = 0;
 						checarPouso();
 					}
 					Thread.sleep(25);
@@ -86,10 +87,10 @@ public class LandingController extends FlightController implements Runnable {
 
 	private void pousarAutomaticamente() {
 		try {
-			liftoff();
 			throttle(0.0f);
 			naveAtual.getAutoPilot().engage();
 			StatusJPanel.setStatus(Bundle.getString("status_starting_landing_at") + corpoCeleste);
+			deOrbitShip();
 			checarAltitudeParaPouso();
 			comecarPousoAutomatico();
 		} catch (RPCException | StreamException | InterruptedException | IOException e) {
@@ -97,11 +98,30 @@ public class LandingController extends FlightController implements Runnable {
 		}
 	}
 
+	private void deOrbitShip() throws RPCException, InterruptedException, StreamException {
+		if (naveAtual.getSituation().equals(VesselSituation.ORBITING)
+				|| naveAtual.getSituation().equals(VesselSituation.SUB_ORBITAL)) {
+			StatusJPanel.setStatus(Bundle.getString("status_going_suborbital"));
+			Thread.sleep(1000);
+			navigation.mirarRetrogrado();
+			while (naveAtual.getAutoPilot().getHeadingError() > 5) {
+				StatusJPanel.setStatus(Bundle.getString("status_orienting_ship"));
+				Thread.sleep(250);
+			}
+			while (periastro.get() > 0) {
+				StatusJPanel.setStatus(Bundle.getString("status_lowering_periapsis"));
+				throttle(altitudeCtrl.computarPID(-periastro.get(), 0));
+				Thread.sleep(100);
+			}
+			throttle(0);
+		}
+	}
+
 	private void checarAltitudeParaPouso() throws RPCException, StreamException, InterruptedException {
 		while (!executandoPousoAutomatico) {
 			distanciaDaQueima = calcularDistanciaDaQueima();
 			naveAtual.getControl().setBrakes(true);
-			navegacao.mirarRetrogrado();
+			navigation.mirarRetrogrado();
 			if (altitudeSup.get() < ALTITUDE_POUSO_AUTOMATICO) {
 				if (altitudeSup.get() < distanciaDaQueima && velVertical.get() < -1) {
 					executandoPousoAutomatico = true;
@@ -123,16 +143,18 @@ public class LandingController extends FlightController implements Runnable {
 
 	private void ajustarCtrlPIDs() throws RPCException, StreamException {
 		double valorTEP = calcularTEP();
-		velocidadeAcelPID.ajustarPID(valorTEP * velP, valorTEP * velI, valorTEP * velD);
+		double acelMaxima = calcularAcelMaxima();
+		altitudeCtrl.ajustarPID(velP, acelMaxima, velD);
+		velocityCtrl.ajustarPID( valorTEP * velP, valorTEP * velI, valorTEP * velD);
 	}
 
 	private void checarAltitude() throws RPCException, StreamException, IOException, InterruptedException {
 		distanciaDaQueima = calcularDistanciaDaQueima();
 		ajustarCtrlPIDs();
 		if (velHorizontal.get() > 3) {
-			navegacao.mirarRetrogrado();
+			navigation.mirarRetrogrado();
 		} else {
-			navegacao.mirarRadialDeFora();
+			navigation.mirarRadialDeFora();
 		}
 
 		double limiarDoPouso = calcularAcelMaxima() * 3;
@@ -140,9 +162,11 @@ public class LandingController extends FlightController implements Runnable {
 			naveAtual.getControl().setGear(true);
 		}
 
-		double acel = altitudeAcelPID.computarPID(altitudeSup.get(), distanciaDaQueima);
-		double vel = velocidadeAcelPID.computarPID(velVertical.get(), -5);
-		double limite = (altitudeSup.get() - limiarDoPouso) / limiarDoPouso;
+		double acel = altitudeCtrl.computarPID(altitudeSup.get(), distanciaDaQueima);
+		double vel = velocityCtrl.computarPID(velVertical.get(), -5);
+		double limite = Utilities.clamp((altitudeSup.get() - limiarDoPouso) / limiarDoPouso, 0, 1);
+//		System.out.println(String.format("%.2f vel, %.2f acel, %.2f limite %.2f throttle", vel, acel, limite,
+//				Utilities.linearInterpolation(vel, acel, limite)));
 		throttle(Utilities.linearInterpolation(vel, acel, limite));
 	}
 

@@ -51,10 +51,7 @@ public class Nave {
 				setStatus(Bundle.getString("status_connected"));
 				botConectarVisivel(false);
 			} else {
-				try {
-					Thread.sleep(3000);
-				} catch (InterruptedException e) {
-				}
+				throw new RPCException("");
 			}
 		} catch (RPCException | NullPointerException e) {
 			setStatus(Bundle.getString("status_error_connection"));

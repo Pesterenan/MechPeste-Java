@@ -9,7 +9,6 @@ import static com.pesterenan.utils.Modulos.MODULO_ROVER;
 import static com.pesterenan.views.StatusJPanel.setStatus;
 
 import java.io.IOException;
-import java.util.Locale;
 import java.util.Map;
 
 import com.pesterenan.controllers.FlightController;
@@ -17,19 +16,19 @@ import com.pesterenan.controllers.LandingController;
 import com.pesterenan.controllers.LiftoffController;
 import com.pesterenan.controllers.ManeuverController;
 import com.pesterenan.controllers.RoverController;
+import com.pesterenan.resources.Bundle;
 import com.pesterenan.views.MainGui;
 import com.pesterenan.views.StatusJPanel;
 
 import krpc.client.Connection;
 import krpc.client.RPCException;
 import krpc.client.StreamException;
-import com.pesterenan.resources.Bundle;
 
 public class MechPeste {
 	private static MechPeste mechPeste = null;
 	private static Connection connection;
 	private static Thread threadModulos;
-	private static Thread threadTelemetria;
+	private static Thread threadTelemetria = null;
 	private static FlightController flightCtrl = null;
 
 	public static void main(String[] args) throws StreamException, RPCException, IOException, InterruptedException {
@@ -39,7 +38,6 @@ public class MechPeste {
 	private MechPeste() {
 		MainGui.getInstance();
 		startConnection();
-		startTelemetry();
 	}
 
 	public static MechPeste getInstance() {
@@ -54,6 +52,7 @@ public class MechPeste {
 		try {
 			MechPeste.connection = null;
 			MechPeste.connection = Connection.newInstance("MechPeste - Pesterenan");
+			if (getThreadTelemetria() == null) startTelemetry();
 			setStatus(Bundle.getString("status_connected"));
 			StatusJPanel.botConectarVisivel(false);
 		} catch (IOException e) {

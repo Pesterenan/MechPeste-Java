@@ -15,6 +15,7 @@ import com.pesterenan.views.StatusJPanel;
 import krpc.client.RPCException;
 import krpc.client.StreamException;
 import krpc.client.services.SpaceCenter.Engine;
+import krpc.client.services.SpaceCenter.Fairing;
 import krpc.client.services.SpaceCenter.Radiator;
 import krpc.client.services.SpaceCenter.SolarPanel;
 
@@ -114,6 +115,7 @@ public class LiftoffController extends FlightController implements Runnable {
 	private void deployPanelsAndRadiators() throws RPCException {
 		List<SolarPanel> solarPanels = naveAtual.getParts().getSolarPanels();
 		List<Radiator> radiators = naveAtual.getParts().getRadiators();
+		List<Fairing> fairings = naveAtual.getParts().getFairings();
 		for (SolarPanel sp : solarPanels) {
 			if (sp.getDeployable() == true) {
 				sp.setDeployed(true);
@@ -122,6 +124,11 @@ public class LiftoffController extends FlightController implements Runnable {
 		for (Radiator r : radiators) {
 			if (r.getDeployable() == true) {
 				r.setDeployed(true);
+			}
+		}
+		for (Fairing f : fairings) {
+			if (f.getJettisoned() == false) {
+				f.jettison(); 
 			}
 		}
 	}
