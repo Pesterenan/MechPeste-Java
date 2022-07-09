@@ -64,6 +64,7 @@ public class LiftoffController extends FlightController implements Runnable {
 		throttle(1f);
 		while (this.currentPitch > 1) {
 			if (apoastro.get() > getFinalApoapsis()) {
+				throttle(0);
 				break;
 			}
 			double currentAltitude = Utilities.remap(startCurveAlt, getFinalApoapsis(), 1, 0.01, altitude.get());
@@ -127,9 +128,7 @@ public class LiftoffController extends FlightController implements Runnable {
 			}
 		}
 		for (Fairing f : fairings) {
-			if (f.getJettisoned() == false) {
 				f.jettison(); 
-			}
 		}
 	}
 

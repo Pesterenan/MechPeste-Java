@@ -52,7 +52,8 @@ public class MechPeste {
 		try {
 			MechPeste.connection = null;
 			MechPeste.connection = Connection.newInstance("MechPeste - Pesterenan");
-			if (getThreadTelemetria() == null) startTelemetry();
+			if (getThreadTelemetria() == null)
+				startTelemetry();
 			setStatus(Bundle.getString("status_connected"));
 			StatusJPanel.botConectarVisivel(false);
 		} catch (IOException e) {
