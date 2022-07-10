@@ -113,23 +113,20 @@ public class LiftoffController extends FlightController implements Runnable {
 		Thread.sleep(1000);
 	}
 
-	private void deployPanelsAndRadiators() throws RPCException {
-		List<SolarPanel> solarPanels = naveAtual.getParts().getSolarPanels();
-		List<Radiator> radiators = naveAtual.getParts().getRadiators();
+	private void deployPanelsAndRadiators() throws RPCException, InterruptedException {
 		List<Fairing> fairings = naveAtual.getParts().getFairings();
-		for (SolarPanel sp : solarPanels) {
-			if (sp.getDeployable() == true) {
-				sp.setDeployed(true);
+		if (fairings.size() > 0) {
+			StatusJPanel.setStatus(Bundle.getString("status_jettisoning_shields"));
+			for (Fairing f : fairings) {
+				// Overly complicated way of getting the event from the button in the fairing
+				// to jettison the fairing, since the jettison method doesn't work.
+				String eventName = f.getPart().getModules().get(0).getEvents().get(0);
+				f.getPart().getModules().get(0).triggerEvent(eventName);
+				Thread.sleep(1000);
 			}
 		}
-		for (Radiator r : radiators) {
-			if (r.getDeployable() == true) {
-				r.setDeployed(true);
-			}
-		}
-		for (Fairing f : fairings) {
-				f.jettison(); 
-		}
+		naveAtual.getControl().setSolarPanels(true);
+		naveAtual.getControl().setRadiators(true);
 	}
 
 	private double calculateInclinationCurve(double currentAltitude) {

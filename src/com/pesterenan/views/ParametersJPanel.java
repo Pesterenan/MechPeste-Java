@@ -19,7 +19,7 @@ public class ParametersJPanel extends JPanel implements PropertyChangeListener {
 	private JPanel pnlLiftoff = new LiftoffJPanel();
 	private JPanel pnlLanding = new LandingJPanel();
 	private JPanel pnlManeuver = new ManeuverJPanel();
-	private JPanel pnlRover = new JPanel();
+	private JPanel pnlRover = new RoverJPanel();
 
 	public ParametersJPanel() {
 		initComponents();
