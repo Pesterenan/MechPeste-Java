@@ -70,15 +70,11 @@ public class RoverController extends FlightController {
 	public RoverController(Map<String, String> commands) {
 		super(getConexao());
 		System.out.println("Clique");
-		List<Fairing> fairings;
 		try {
-			fairings = naveAtual.getParts().getFairings();
-
-			for (Fairing f : fairings) {
-				String eventName = f.getPart().getModules().get(0).getEvents().get(0);
-				f.getPart().getModules().get(0).triggerEvent(eventName);
-			}
-		} catch (RPCException e) {
+			ManeuverController mc = new ManeuverController();
+			mc.alignPlanes();
+			
+		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}

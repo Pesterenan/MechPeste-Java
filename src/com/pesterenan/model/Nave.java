@@ -24,6 +24,7 @@ public class Nave {
 	protected static SpaceCenter centroEspacial;
 	protected Vessel naveAtual;
 	protected Flight parametrosDeVoo;
+	protected Flight parametrosDeVooSuperficie;
 	protected ReferenceFrame pontoRefOrbital;
 	protected ReferenceFrame pontoRefSuperficie;
 	protected Stream<Double> altitude, altitudeSup, apoastro, periastro;

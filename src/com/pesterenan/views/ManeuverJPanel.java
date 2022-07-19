@@ -51,7 +51,6 @@ public class ManeuverJPanel extends JPanel implements ActionListener {
 		btnAdjustInc.setMinimumSize(btnAdjustInc.getSize());
 		btnAdjustInc.setMaximumSize(btnAdjustInc.getSize());
 		btnAdjustInc.setActionCommand(Modulos.AJUSTAR.get());
-		btnAdjustInc.setEnabled(false);
 		btnBack.addActionListener(this);
 
 		btnBack.setSize(ParametersJPanel.BTN_DIMENSION);

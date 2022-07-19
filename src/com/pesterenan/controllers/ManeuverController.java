@@ -1,5 +1,6 @@
 package com.pesterenan.controllers;
 
+import java.text.DecimalFormat;
 import java.util.List;
 import java.util.Map;
 
@@ -17,6 +18,7 @@ import krpc.client.Stream;
 import krpc.client.StreamException;
 import krpc.client.services.SpaceCenter.Engine;
 import krpc.client.services.SpaceCenter.Node;
+import krpc.client.services.SpaceCenter.Orbit;
 import krpc.client.services.SpaceCenter.RCS;
 import krpc.client.services.SpaceCenter.VesselSituation;
 
@@ -26,10 +28,17 @@ public class ManeuverController extends FlightController implements Runnable {
 	private String function;
 	private boolean fineAdjustment;
 	private ControlePID ctrlRCS = new ControlePID();
+	private ControlePID ctrlManeuver = new ControlePID();
+
+	public ManeuverController() {
+		super(getConexao());
+	}
 
 	public ManeuverController(Map<String, String> commands) {
 		super(getConexao());
-		ctrlRCS.limitarSaida(0.5, 1.0);
+		this.ctrlRCS.limitarSaida(0.5, 1.0);
+		this.ctrlManeuver.limitarSaida(-10, 10);
+		this.ctrlManeuver.ajustarPID(0.1, 0, 0.001);
 		this.function = commands.get(Modulos.FUNCAO.get());
 		this.fineAdjustment = canFineAdjust(commands.get(Modulos.AJUSTE_FINO.get()));
 	}
@@ -45,6 +54,10 @@ public class ManeuverController extends FlightController implements Runnable {
 			if (naveAtual.getSituation() == VesselSituation.LANDED
 					|| naveAtual.getSituation() == VesselSituation.SPLASHED) {
 				throw new InterruptedException();
+			}
+			if ( this.function.equals(Modulos.AJUSTAR.get())) {
+				this.alignPlanes();
+				return;
 			}
 			if (this.function.equals(Modulos.EXECUTAR.get()))
 				return;
@@ -70,6 +83,92 @@ public class ManeuverController extends FlightController implements Runnable {
 		} catch (RPCException | InterruptedException e) {
 			disengageAfterException(Bundle.getString("status_maneuver_not_possible"));
 		}
+	}
+
+	public void alignPlanes() {
+		try {
+			
+			// Create maneuver at Ascending Node
+			Orbit vesselOrbit = centroEspacial.getActiveVessel().getOrbit();
+			Orbit targetOrbit = getTargetOrbit();
+			
+			double ascendingNode = vesselOrbit.trueAnomalyAtAN(targetOrbit);
+			double descendingNode = vesselOrbit.trueAnomalyAtDN(targetOrbit);
+			double uTatAscendingNode = vesselOrbit.uTAtTrueAnomaly(ascendingNode);
+			double uTatDescendingNode = vesselOrbit.uTAtTrueAnomaly(descendingNode);
+			double closestTrueAnomaly = Math.min(uTatAscendingNode, uTatDescendingNode);
+			boolean closestIsAN = closestTrueAnomaly == uTatAscendingNode;
+			double[] dv = {0,0,0};
+			
+			createManeuver(closestTrueAnomaly - centroEspacial.getUT(), dv);
+			//////////////////////
+						
+			// Get maneuver and modify its inclination
+			List<Node> nodes = centroEspacial.getActiveVessel().getControl().getNodes();
+			Node maneuver = nodes.get(nodes.size() - 1);
+			int timeToTry = 0;
+			double currentDeltaInc = compareInclination(maneuver.getOrbit(),targetOrbit);
+			String deltaIncFormatted = String.format("%.1f", currentDeltaInc);
+			System.out.println(deltaIncFormatted);
+			while (!deltaIncFormatted.equals("0,00") && timeToTry <= 400){
+				currentDeltaInc = compareInclination(maneuver.getOrbit(),targetOrbit);
+				limitPIDOutput(Math.abs(currentDeltaInc));
+				deltaIncFormatted = String.format("%.2f", currentDeltaInc);
+				System.out.println(currentDeltaInc);
+				double dvNormal = maneuver.getNormal();
+				
+				if ((closestIsAN ? currentDeltaInc : -currentDeltaInc) > 0.0) {
+					double goingUp = ctrlManeuver.computarPID(currentDeltaInc, 0.0);
+					System.out.println(goingUp + "up");
+					maneuver.setNormal(dvNormal + (goingUp));
+				} else {
+					double goingDown = ctrlManeuver.computarPID(currentDeltaInc, 0.0);
+					System.out.println(goingDown + "down");
+					maneuver.setNormal(dvNormal - (goingDown));					
+				}
+				timeToTry ++;
+				Thread.sleep(25);
+			}
+//			naveAtual.getControl().removeNodes();
+		} catch (Exception e) {
+			disengageAfterException("Não foi possivel ajustar a inclinação");
+		}
+	}
+	
+	private void limitPIDOutput(double abs) {
+		if (abs > 1) this.ctrlManeuver.limitarSaida(-1, 1);
+		if (abs > 5) this.ctrlManeuver.limitarSaida(-5, 5);
+		if (abs > 10) this.ctrlManeuver.limitarSaida(-10, 10);
+		if (abs > 50) this.ctrlManeuver.limitarSaida(-50, 50);
+		if (abs > 100) this.ctrlManeuver.limitarSaida(-100, 100);
+	}
+
+	private double compareInclination(Orbit maneuverOrbit, Orbit targetOrbit) {
+		double deltaInclination = 0;
+		try {
+			double maneuverInc =
+					Math.round(Math.toDegrees(maneuverOrbit.getInclination())
+							+  Math.toDegrees(maneuverOrbit.getLongitudeOfAscendingNode())*1000)/100.0;
+			double targetAscendingNode = Math.toDegrees(targetOrbit.getLongitudeOfAscendingNode());
+			targetAscendingNode = targetAscendingNode < 0.1 ? 340: targetAscendingNode;
+			double targetInc =
+					Math.round(Math.toDegrees(targetOrbit.getInclination())
+							+  targetAscendingNode*1000)/100.0;
+			deltaInclination = (targetInc - maneuverInc);				
+		} catch (RPCException e) {
+			e.printStackTrace();
+		}
+		return deltaInclination;
+	}
+
+	private Orbit getTargetOrbit() throws RPCException {
+		if (centroEspacial.getTargetBody() != null) {
+			return centroEspacial.getTargetBody().getOrbit();
+		}
+		if (centroEspacial.getTargetVessel() != null) {
+			return centroEspacial.getTargetVessel().getOrbit();
+		}
+		return null;
 	}
 
 	private void createManeuver(double tempoPosterior, double[] deltaV) {

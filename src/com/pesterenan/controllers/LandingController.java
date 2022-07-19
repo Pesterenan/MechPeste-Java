@@ -144,8 +144,8 @@ public class LandingController extends FlightController implements Runnable {
 	private void ajustarCtrlPIDs() throws RPCException, StreamException {
 		double valorTEP = calcularTEP();
 		double acelMaxima = calcularAcelMaxima();
-		altitudeCtrl.ajustarPID(velP, acelMaxima, velD);
-		velocityCtrl.ajustarPID( valorTEP * velP, valorTEP * velI, valorTEP * velD);
+		altitudeCtrl.ajustarPID(velP, velI, acelMaxima * velD);
+		velocityCtrl.ajustarPID(valorTEP * velP, velI, velD);
 	}
 
 	private void checarAltitude() throws RPCException, StreamException, IOException, InterruptedException {
@@ -165,8 +165,8 @@ public class LandingController extends FlightController implements Runnable {
 		double acel = altitudeCtrl.computarPID(altitudeSup.get(), distanciaDaQueima);
 		double vel = velocityCtrl.computarPID(velVertical.get(), -5);
 		double limite = Utilities.clamp((altitudeSup.get() - limiarDoPouso) / limiarDoPouso, 0, 1);
-//		System.out.println(String.format("%.2f vel, %.2f acel, %.2f limite %.2f throttle", vel, acel, limite,
-//				Utilities.linearInterpolation(vel, acel, limite)));
+		System.out.println(String.format("%.2f vel, %.2f acel, %.2f limite %.2f throttle", vel, acel, limite,
+				Utilities.linearInterpolation(vel, acel, limite)));
 		throttle(Utilities.linearInterpolation(vel, acel, limite));
 	}
 

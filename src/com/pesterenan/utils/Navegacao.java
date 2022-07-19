@@ -12,33 +12,31 @@ import krpc.client.services.SpaceCenter.Vessel;
 
 public class Navegacao extends FlightController {
 
+	private final Triplet<Double, Double, Double> RADIAL = new Triplet<Double, Double, Double>(1.0, 0.0, 0.0); 
+	private final Triplet<Double, Double, Double> ANTI_RADIAL = new Triplet<Double, Double, Double>(-1.0, 0.0, 0.0); 
+	private final Triplet<Double, Double, Double> PROGRADE = new Triplet<Double, Double, Double>(0.0, 1.0, 0.0); 
+	private final Triplet<Double, Double, Double> RETROGRADE = new Triplet<Double, Double, Double>(0.0, -1.0, 0.0); 
+	private final Triplet<Double, Double, Double> NORMAL = new Triplet<Double, Double, Double>(0.0, 0.0, 1.0); 
+	private final Triplet<Double, Double, Double> ANTI_NORMAL = new Triplet<Double, Double, Double>(0.0, 0.0, -1.0); 
 	private Vetor vetorDirecaoHorizontal = new Vetor(0, 0, 0);
-	private Triplet<Double, Double, Double> posicaoAlvo = new Triplet<Double, Double, Double>(0.0, 0.0, 0.0);
 
 	public Navegacao() {
 		super(getConexao());
 	}
 
 	public void mirarRetrogrado() throws RPCException {
-		mirarNaDirecao(parametrosDeVoo.getRetrograde());
+		mirarNaDirecao(centroEspacial.transformDirection(RETROGRADE, naveAtual.getSurfaceVelocityReferenceFrame(), pontoRefOrbital));
 	}
 
 	public void mirarRadialDeFora() throws RPCException {
-		mirarNaDirecao(parametrosDeVoo.getRadial());
+		mirarNaDirecao(centroEspacial.transformDirection(RADIAL, naveAtual.getSurfaceReferenceFrame(), pontoRefOrbital));
 	}
 
-	public void mirarNaDirecao(Triplet<Double, Double, Double> direcao) {
+	public void mirarNaDirecao(Triplet<Double, Double, Double> currentDirection) {
 		try {
-			posicaoAlvo = centroEspacial.transformPosition(direcao, naveAtual.getSurfaceVelocityReferenceFrame(),
-					pontoRefOrbital);
-
-			vetorDirecaoHorizontal = Vetor.direcaoAlvoContraria(naveAtual.position(pontoRefSuperficie),
-					centroEspacial.transformPosition(posicaoAlvo, pontoRefOrbital, pontoRefSuperficie));
-
-			Vetor alinharDirecao = getElevacaoDirecaoDoVetor(vetorDirecaoHorizontal);
-			naveAtual.getAutoPilot().targetPitchAndHeading((float) alinharDirecao.y, (float) alinharDirecao.x);
-			naveAtual.getAutoPilot().setTargetRoll(90);
-		} catch (RPCException | StreamException | IOException e) {
+			naveAtual.getAutoPilot().setReferenceFrame(pontoRefOrbital);
+			naveAtual.getAutoPilot().setTargetDirection(currentDirection);
+		} catch (RPCException e) {
 			System.err.println("Não foi possível manobrar a nave.");
 		}
 	}
@@ -60,8 +58,10 @@ public class Navegacao extends FlightController {
 		Vetor velocidade = new Vetor(
 				centroEspacial.transformPosition(parametrosDeVoo.getVelocity(), pontoRefOrbital, pontoRefSuperficie));
 		Vetor vetorVelocidade = new Vetor(velocidade.y, velocidade.z, velocidade.x);
+		System.out.println(alvo.Magnitude() + "alvo");
 		alvo = alvo.subtrai(vetorVelocidade);
-		double inclinacaoGraus = Utilities.remap(1, 150, 90, 0, alvo.Magnitude());
+		double inclinacaoGraus = Utilities.remap(0, Math.abs(velHorizontal.get()), 90, 0, alvo.Magnitude());
+		System.out.println(inclinacaoGraus);
 		return new Vetor(Vetor.anguloDirecao(alvo), Utilities.clamp(inclinacaoGraus, 0, 90),
 				Vetor.anguloDirecao(vetorVelocidade));
 	}

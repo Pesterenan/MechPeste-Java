@@ -2,7 +2,7 @@ package com.pesterenan.utils;
 /*Controlador Proporcional Integral Derivativo
 Autor: Renan Torres <pesterenan@gmail.com>
  Data: 22/08/2018 
-Atualizado: 06/06/2022*/
+Atualizado: 18/07/2022*/
 
 public class ControlePID {
 	private double limiteMin = -1;
@@ -11,35 +11,31 @@ public class ControlePID {
 	private double kp = 0.025;
 	private double ki = 0.05;
 	private double kd = 0.01;
-	private double amostragem = 25;
+	private double timeSample = 25;
 
 	private double valorSaida = 1;
-	private double termoIntegral = 0;
-	private double ultimaEntrada, ultimoCalculo = 0;
+	private double proportionalTerm, integralTerm, derivativeTerm = 0;
+	private double lastValue, lastTime = 0;
 
 	private double limitarValor(double valor) {
 		return Utilities.clamp(valor, this.limiteMin, this.limiteMax);
 	}
 
-	/**
-	 * Computar o valor de saida do controlador, usando os valores de entrada e
-	 * limite
-	 * 
-	 * @returns Valor computado do controlador
-	 */
-	public double computarPID(double valorEntrada, double valorLimite) {
-		double agora = System.currentTimeMillis();
-		double mudancaTempo = agora - this.ultimoCalculo;
+	public double computarPID(double currentValue, double limitValue) {
+		double now = System.currentTimeMillis();
+		double changeInTime = now - this.lastTime;
 
-		if (mudancaTempo >= this.amostragem) {
-			double erro = valorLimite - valorEntrada;
-			double diferencaEntrada = (valorEntrada - this.ultimaEntrada);
+		if (changeInTime >= this.timeSample) {
+			double error = limitValue - currentValue;
+			double changeInValues = (currentValue - this.lastValue);
 
-			this.termoIntegral = limitarValor(this.termoIntegral + ki * erro);
-			this.valorSaida = limitarValor(kp * erro + ki * this.termoIntegral - kd * diferencaEntrada);
+			this.proportionalTerm = this.kp * error;
+			this.integralTerm = limitarValor(this.integralTerm + ki * error);
+			this.derivativeTerm = kd * -changeInValues;
+			this.valorSaida = limitarValor(proportionalTerm + ki * this.integralTerm + derivativeTerm);
 
-			this.ultimaEntrada = valorEntrada;
-			this.ultimoCalculo = agora;
+			this.lastValue = currentValue;
+			this.lastTime = now;
 		}
 		return valorSaida;
 	}
@@ -49,7 +45,7 @@ public class ControlePID {
 			return;
 		this.limiteMin = min;
 		this.limiteMax = max;
-		this.termoIntegral = limitarValor(this.termoIntegral);
+		this.integralTerm = limitarValor(this.integralTerm);
 
 	}
 
@@ -67,7 +63,7 @@ public class ControlePID {
 
 	public void setAmostragem(double milissegundos) {
 		if (milissegundos > 0) {
-			this.amostragem = milissegundos;
+			this.timeSample = milissegundos;
 		}
 	}
 }

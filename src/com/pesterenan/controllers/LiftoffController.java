@@ -16,8 +16,6 @@ import krpc.client.RPCException;
 import krpc.client.StreamException;
 import krpc.client.services.SpaceCenter.Engine;
 import krpc.client.services.SpaceCenter.Fairing;
-import krpc.client.services.SpaceCenter.Radiator;
-import krpc.client.services.SpaceCenter.SolarPanel;
 
 public class LiftoffController extends FlightController implements Runnable {
 
