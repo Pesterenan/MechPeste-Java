@@ -157,7 +157,7 @@ public class LandingController extends FlightController implements Runnable {
 			navigation.mirarRadialDeFora();
 		}
 
-		double limiarDoPouso = calcularAcelMaxima() * 3;
+		double limiarDoPouso = calcularAcelMaxima() * 5;
 		if (altitudeSup.get() - limiarDoPouso < limiarDoPouso) {
 			naveAtual.getControl().setGear(true);
 		}

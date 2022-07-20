@@ -37,8 +37,6 @@ public class ManeuverController extends FlightController implements Runnable {
 	public ManeuverController(Map<String, String> commands) {
 		super(getConexao());
 		this.ctrlRCS.limitarSaida(0.5, 1.0);
-		this.ctrlManeuver.limitarSaida(-10, 10);
-		this.ctrlManeuver.ajustarPID(0.1, 0, 0.001);
 		this.function = commands.get(Modulos.FUNCAO.get());
 		this.fineAdjustment = canFineAdjust(commands.get(Modulos.AJUSTE_FINO.get()));
 	}
@@ -55,7 +53,7 @@ public class ManeuverController extends FlightController implements Runnable {
 					|| naveAtual.getSituation() == VesselSituation.SPLASHED) {
 				throw new InterruptedException();
 			}
-			if ( this.function.equals(Modulos.AJUSTAR.get())) {
+			if (this.function.equals(Modulos.AJUSTAR.get())) {
 				this.alignPlanes();
 				return;
 			}
@@ -87,74 +85,64 @@ public class ManeuverController extends FlightController implements Runnable {
 
 	public void alignPlanes() {
 		try {
-			
 			// Create maneuver at Ascending Node
 			Orbit vesselOrbit = centroEspacial.getActiveVessel().getOrbit();
 			Orbit targetOrbit = getTargetOrbit();
-			
+
 			double ascendingNode = vesselOrbit.trueAnomalyAtAN(targetOrbit);
 			double descendingNode = vesselOrbit.trueAnomalyAtDN(targetOrbit);
 			double uTatAscendingNode = vesselOrbit.uTAtTrueAnomaly(ascendingNode);
 			double uTatDescendingNode = vesselOrbit.uTAtTrueAnomaly(descendingNode);
 			double closestTrueAnomaly = Math.min(uTatAscendingNode, uTatDescendingNode);
 			boolean closestIsAN = closestTrueAnomaly == uTatAscendingNode;
-			double[] dv = {0,0,0};
-			
+			double[] dv = { 0, 0, 0 };
+
 			createManeuver(closestTrueAnomaly - centroEspacial.getUT(), dv);
 			//////////////////////
-						
-			// Get maneuver and modify its inclination
+
+			// Get last maneuver and modify its inclination
 			List<Node> nodes = centroEspacial.getActiveVessel().getControl().getNodes();
 			Node maneuver = nodes.get(nodes.size() - 1);
-			int timeToTry = 0;
-			double currentDeltaInc = compareInclination(maneuver.getOrbit(),targetOrbit);
-			String deltaIncFormatted = String.format("%.1f", currentDeltaInc);
-			System.out.println(deltaIncFormatted);
-			while (!deltaIncFormatted.equals("0,00") && timeToTry <= 400){
-				currentDeltaInc = compareInclination(maneuver.getOrbit(),targetOrbit);
-				limitPIDOutput(Math.abs(currentDeltaInc));
-				deltaIncFormatted = String.format("%.2f", currentDeltaInc);
+//			System.out.println(String.format("%.3f", maneuver.getOrbit().getInclination()) + " MAN inc TGT " + String.format("%.3f", targetOrbit.getInclination()));
+			double currentDeltaInc = compareInclination(maneuver.getOrbit(), targetOrbit);
+			String deltaIncFormatted = String.format("%.3f", currentDeltaInc);
+			while (!deltaIncFormatted.equals("0,000")) {
+				currentDeltaInc = compareInclination(maneuver.getOrbit(), targetOrbit);
 				System.out.println(currentDeltaInc);
+				deltaIncFormatted = String.format("%.3f", currentDeltaInc);
 				double dvNormal = maneuver.getNormal();
-				
+				double ctrlOutput = ctrlManeuver.computarPID(currentDeltaInc, 0.0)
+						* limitPIDOutput(Math.abs(currentDeltaInc));
 				if ((closestIsAN ? currentDeltaInc : -currentDeltaInc) > 0.0) {
-					double goingUp = ctrlManeuver.computarPID(currentDeltaInc, 0.0);
-					System.out.println(goingUp + "up");
-					maneuver.setNormal(dvNormal + (goingUp));
+					maneuver.setNormal(dvNormal + (ctrlOutput));
 				} else {
-					double goingDown = ctrlManeuver.computarPID(currentDeltaInc, 0.0);
-					System.out.println(goingDown + "down");
-					maneuver.setNormal(dvNormal - (goingDown));					
+					maneuver.setNormal(dvNormal - (ctrlOutput));
 				}
-				timeToTry ++;
 				Thread.sleep(25);
 			}
-//			naveAtual.getControl().removeNodes();
+
 		} catch (Exception e) {
 			disengageAfterException("Não foi possivel ajustar a inclinação");
 		}
 	}
-	
-	private void limitPIDOutput(double abs) {
-		if (abs > 1) this.ctrlManeuver.limitarSaida(-1, 1);
-		if (abs > 5) this.ctrlManeuver.limitarSaida(-5, 5);
-		if (abs > 10) this.ctrlManeuver.limitarSaida(-10, 10);
-		if (abs > 50) this.ctrlManeuver.limitarSaida(-50, 50);
-		if (abs > 100) this.ctrlManeuver.limitarSaida(-100, 100);
+
+	private double limitPIDOutput(double absDeltaInc) {
+		if (absDeltaInc < 0.05)
+			return 1;
+		if (absDeltaInc < 0.5)
+			return 10;
+		if (absDeltaInc < 10.0)
+			return 25;
+		return 50;
 	}
 
 	private double compareInclination(Orbit maneuverOrbit, Orbit targetOrbit) {
 		double deltaInclination = 0;
 		try {
-			double maneuverInc =
-					Math.round(Math.toDegrees(maneuverOrbit.getInclination())
-							+  Math.toDegrees(maneuverOrbit.getLongitudeOfAscendingNode())*1000)/100.0;
-			double targetAscendingNode = Math.toDegrees(targetOrbit.getLongitudeOfAscendingNode());
-			targetAscendingNode = targetAscendingNode < 0.1 ? 340: targetAscendingNode;
-			double targetInc =
-					Math.round(Math.toDegrees(targetOrbit.getInclination())
-							+  targetAscendingNode*1000)/100.0;
-			deltaInclination = (targetInc - maneuverInc);				
+			double maneuverInc = Math.round(Math.toDegrees(maneuverOrbit.getInclination()) * 1000) / 100.0;
+			double targetInc = Math.round(Math.toDegrees(targetOrbit.getInclination()) * 1000) / 100.0;
+			deltaInclination = (targetInc - maneuverInc);
+			System.out.println("manInc " + maneuverInc + "|" + targetInc + " tgtInc " + deltaInclination);
 		} catch (RPCException e) {
 			e.printStackTrace();
 		}
