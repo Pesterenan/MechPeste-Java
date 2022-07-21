@@ -10,26 +10,28 @@ import krpc.client.RPCException;
 import krpc.client.StreamException;
 import krpc.client.services.SpaceCenter.Vessel;
 
-public class Navegacao extends FlightController {
+public class Navigation extends FlightController {
 
-	private final Triplet<Double, Double, Double> RADIAL = new Triplet<Double, Double, Double>(1.0, 0.0, 0.0); 
-	private final Triplet<Double, Double, Double> ANTI_RADIAL = new Triplet<Double, Double, Double>(-1.0, 0.0, 0.0); 
-	private final Triplet<Double, Double, Double> PROGRADE = new Triplet<Double, Double, Double>(0.0, 1.0, 0.0); 
-	private final Triplet<Double, Double, Double> RETROGRADE = new Triplet<Double, Double, Double>(0.0, -1.0, 0.0); 
-	private final Triplet<Double, Double, Double> NORMAL = new Triplet<Double, Double, Double>(0.0, 0.0, 1.0); 
-	private final Triplet<Double, Double, Double> ANTI_NORMAL = new Triplet<Double, Double, Double>(0.0, 0.0, -1.0); 
+	private final Triplet<Double, Double, Double> RADIAL = new Triplet<Double, Double, Double>(1.0, 0.0, 0.0);
+	private final Triplet<Double, Double, Double> ANTI_RADIAL = new Triplet<Double, Double, Double>(-1.0, 0.0, 0.0);
+	private final Triplet<Double, Double, Double> PROGRADE = new Triplet<Double, Double, Double>(0.0, 1.0, 0.0);
+	private final Triplet<Double, Double, Double> RETROGRADE = new Triplet<Double, Double, Double>(0.0, -1.0, 0.0);
+	private final Triplet<Double, Double, Double> NORMAL = new Triplet<Double, Double, Double>(0.0, 0.0, 1.0);
+	private final Triplet<Double, Double, Double> ANTI_NORMAL = new Triplet<Double, Double, Double>(0.0, 0.0, -1.0);
 	private Vetor vetorDirecaoHorizontal = new Vetor(0, 0, 0);
 
-	public Navegacao() {
+	public Navigation() {
 		super(getConexao());
 	}
 
 	public void mirarRetrogrado() throws RPCException {
-		mirarNaDirecao(centroEspacial.transformDirection(RETROGRADE, naveAtual.getSurfaceVelocityReferenceFrame(), pontoRefOrbital));
+		mirarNaDirecao(centroEspacial.transformDirection(RETROGRADE, naveAtual.getSurfaceVelocityReferenceFrame(),
+				pontoRefOrbital));
 	}
 
 	public void mirarRadialDeFora() throws RPCException {
-		mirarNaDirecao(centroEspacial.transformDirection(RADIAL, naveAtual.getSurfaceReferenceFrame(), pontoRefOrbital));
+		mirarNaDirecao(
+				centroEspacial.transformDirection(RADIAL, naveAtual.getSurfaceReferenceFrame(), pontoRefOrbital));
 	}
 
 	public void mirarNaDirecao(Triplet<Double, Double, Double> currentDirection) {

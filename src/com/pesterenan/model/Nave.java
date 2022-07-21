@@ -13,6 +13,7 @@ import krpc.client.StreamException;
 import krpc.client.services.KRPC;
 import krpc.client.services.KRPC.GameScene;
 import krpc.client.services.SpaceCenter;
+import krpc.client.services.SpaceCenter.AutoPilot;
 import krpc.client.services.SpaceCenter.Flight;
 import krpc.client.services.SpaceCenter.ReferenceFrame;
 import krpc.client.services.SpaceCenter.Vessel;
@@ -23,6 +24,7 @@ public class Nave {
 
 	protected static SpaceCenter centroEspacial;
 	protected Vessel naveAtual;
+	protected AutoPilot ap;
 	protected Flight parametrosDeVoo;
 	protected Flight parametrosDeVooSuperficie;
 	protected ReferenceFrame pontoRefOrbital;
@@ -39,6 +41,7 @@ public class Nave {
 		try {
 			centroEspacial = SpaceCenter.newInstance(getConexao());
 			this.naveAtual = centroEspacial.getActiveVessel();
+			this.ap = naveAtual.getAutoPilot();
 		} catch (RPCException | NullPointerException e) {
 			checarConexao();
 		}

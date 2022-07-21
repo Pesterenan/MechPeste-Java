@@ -7,7 +7,7 @@ import java.util.Map;
 import com.pesterenan.resources.Bundle;
 import com.pesterenan.utils.ControlePID;
 import com.pesterenan.utils.Modulos;
-import com.pesterenan.utils.Navegacao;
+import com.pesterenan.utils.Navigation;
 import com.pesterenan.utils.Utilities;
 import com.pesterenan.utils.Vetor;
 import com.pesterenan.views.MainGui;
@@ -23,7 +23,7 @@ public class LandingController extends FlightController implements Runnable {
 
 	private ControlePID altitudeCtrl = new ControlePID();
 	private ControlePID velocityCtrl = new ControlePID();
-	private Navegacao navigation = new Navegacao();
+	private Navigation navigation = new Navigation();
 
 	private static double velP = 0.025, velI = 0.001, velD = 0.01;
 
