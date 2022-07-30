@@ -26,7 +26,7 @@ public enum Modulos {
 	ABRIR_PAINEIS("Abrir Painéis"), 
 	AJUSTE_FINO("Ajuste Fino");
 
-	String t;
+	final String t;
 
 	Modulos(String t) {
 		this.t = t;

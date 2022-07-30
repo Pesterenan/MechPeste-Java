@@ -72,7 +72,7 @@ public class RoverController extends FlightController {
 		System.out.println("Clique");
 		try {
 			ManeuverController mc = new ManeuverController();
-			mc.pointToManeuver();
+			mc.matchOrbitApoapsis();
 			
 		} catch (Exception e) {
 			// TODO Auto-generated catch block

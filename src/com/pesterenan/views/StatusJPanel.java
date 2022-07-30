@@ -59,7 +59,7 @@ public class StatusJPanel extends JPanel {
 		btnConectar.setVisible(visible);
 	}
 
-	private class BotConectarActionListener implements ActionListener {
+	private static class BotConectarActionListener implements ActionListener {
 		public void actionPerformed(ActionEvent e) {
 			setStatus(Bundle.getString("status_connecting"));
 			MechPeste.finalizarTarefa();

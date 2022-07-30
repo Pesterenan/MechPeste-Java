@@ -33,7 +33,7 @@ public class LiftoffJPanel extends JPanel implements ActionListener {
 	private final JTextField txfHeading = new JTextField("90"); //$NON-NLS-1$
 	private final JButton btnTakeOff = new JButton(Bundle.getString("pnl_lift_btn_liftoff")); //$NON-NLS-1$
 	private final JButton btnBack = new JButton(Bundle.getString("pnl_lift_btn_back")); //$NON-NLS-1$
-	private final JComboBox<String> cbGravityCurveModel = new JComboBox<String>();
+	private final JComboBox<String> cbGravityCurveModel = new JComboBox<>();
 	private JSlider sldRoll;
 	private JCheckBox chkOpenPanels;
 	private JCheckBox chkDecoupleStages;
@@ -63,8 +63,8 @@ public class LiftoffJPanel extends JPanel implements ActionListener {
 		btnBack.setMaximumSize(btnBack.getSize());
 
 		cbGravityCurveModel.setToolTipText(Bundle.getString("pnl_lift_cb_gravity_curve_tooltip")); //$NON-NLS-1$
-		cbGravityCurveModel.setModel(new DefaultComboBoxModel<String>(new String[] { Modulos.SINUSOIDAL.get(),
-				Modulos.QUADRATICA.get(), Modulos.CUBICA.get(), Modulos.CIRCULAR.get(), Modulos.EXPONENCIAL.get() }));
+		cbGravityCurveModel.setModel(new DefaultComboBoxModel<>(new String[]{Modulos.SINUSOIDAL.get(),
+				Modulos.QUADRATICA.get(), Modulos.CUBICA.get(), Modulos.CIRCULAR.get(), Modulos.EXPONENCIAL.get()}));
 		cbGravityCurveModel.setSelectedIndex(3);
 
 		lblRoll.setToolTipText(Bundle.getString("pnl_lift_lbl_roll_tooltip")); //$NON-NLS-1$

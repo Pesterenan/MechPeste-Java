@@ -43,7 +43,7 @@ public class FunctionsJPanel extends JPanel implements ActionListener {
 
 		btnRover = new JButton(Bundle.getString("btn_func_rover")); //$NON-NLS-1$ //$NON-NLS-2$
 		btnRover.addActionListener(this);
-		btnRover.setEnabled(false);
+//		btnRover.setEnabled(false);
 
 		GroupLayout gl_pnlFunctions = new GroupLayout(this);
 		gl_pnlFunctions.setHorizontalGroup(gl_pnlFunctions.createParallelGroup(Alignment.LEADING)

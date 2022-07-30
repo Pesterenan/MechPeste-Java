@@ -16,7 +16,7 @@ public class Utilities {
 	}
 
 	public static double clamp(double value, double min, double max) {
-		return (value > max ? max : value < min ? min : value);
+		return (value > max ? max : Math.max(value, min));
 	}
 
 	// Easing functions
