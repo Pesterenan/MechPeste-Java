@@ -47,16 +47,14 @@ public void run() {
 
 public void calculateManeuver() {
 	try {
-		if (naveAtual.getSituation() == VesselSituation.LANDED
-				|| naveAtual.getSituation() == VesselSituation.SPLASHED) {
+		if (naveAtual.getSituation() == VesselSituation.LANDED || naveAtual.getSituation() == VesselSituation.SPLASHED) {
 			throw new InterruptedException();
 		}
 		if (this.function.equals(Modulos.AJUSTAR.get())) {
 			this.alignPlanes();
 			return;
 		}
-		if (this.function.equals(Modulos.EXECUTAR.get()))
-			return;
+		if (this.function.equals(Modulos.EXECUTAR.get())) return;
 		double parametroGravitacional = naveAtual.getOrbit().getBody().getGravitationalParameter();
 		double altitudeInicial = 0, tempoAteAltitude = 0;
 		if (this.function.equals(Modulos.APOASTRO.get())) {
@@ -69,12 +67,10 @@ public void calculateManeuver() {
 		}
 
 		double semiEixoMaior = naveAtual.getOrbit().getSemiMajorAxis();
-		double velOrbitalAtual = Math
-				.sqrt(parametroGravitacional * ((2.0 / altitudeInicial) - (1.0 / semiEixoMaior)));
-		double velOrbitalAlvo = Math
-				.sqrt(parametroGravitacional * ((2.0 / altitudeInicial) - (1.0 / altitudeInicial)));
+		double velOrbitalAtual = Math.sqrt(parametroGravitacional * ((2.0 / altitudeInicial) - (1.0 / semiEixoMaior)));
+		double velOrbitalAlvo = Math.sqrt(parametroGravitacional * ((2.0 / altitudeInicial) - (1.0 / altitudeInicial)));
 		double deltaVdaManobra = velOrbitalAlvo - velOrbitalAtual;
-		double[] deltaV = {deltaVdaManobra, 0, 0};
+		double[] deltaV = { deltaVdaManobra, 0, 0 };
 		createManeuver(tempoAteAltitude, deltaV);
 	} catch (RPCException | InterruptedException e) {
 		disengageAfterException(Bundle.getString("status_maneuver_not_possible"));
@@ -85,8 +81,7 @@ public void matchOrbitApoapsis() {
 	try {
 		Orbit targetOrbit = getTargetOrbit();
 		System.out.println(targetOrbit.getApoapsis() + "-- APO");
-		Node maneuver = hohmannTransferToOrbit(targetOrbit,
-				naveAtual.getOrbit().getTimeToPeriapsis());
+		Node maneuver = hohmannTransferToOrbit(targetOrbit, naveAtual.getOrbit().getTimeToPeriapsis());
 		while (true) {
 			double currentDeltaApo = compareOrbitParameter(maneuver.getOrbit(), targetOrbit, Compare.AP);
 			String deltaApoFormatted = String.format("%.2f", currentDeltaApo);
@@ -106,15 +101,14 @@ public void matchOrbitApoapsis() {
 }
 
 private Node hohmannTransferToOrbit(Orbit targetOrbit, double timeToStart) {
-	double[] totalDv = {0, 0, 0};
+	double[] totalDv = { 0, 0, 0 };
 	try {
 		double startingRadius = naveAtual.getOrbit().getPeriapsis();
 		double finalRadius = targetOrbit.getApoapsis();
 		System.out.println(startingRadius + " --- " + finalRadius);
 		double gravitationalParameter = naveAtual.getOrbit().getBody().getGravitationalParameter();
 		// DeltaV used to get to the second Node
-		double firstNodeDv = Math.sqrt(gravitationalParameter
-				* ((2.0 / startingRadius) - (1.0 / naveAtual.getOrbit().getSemiMajorAxis())));
+		double firstNodeDv = Math.sqrt(gravitationalParameter * ((2.0 / startingRadius) - (1.0 / naveAtual.getOrbit().getSemiMajorAxis())));
 		// DeltaV used to orbit in the second Node
 		double secondNodeDv = Math.sqrt(gravitationalParameter * ((2.0 / startingRadius) - (1.0 / finalRadius)));
 		// Time taken between the two points
@@ -127,7 +121,7 @@ private Node hohmannTransferToOrbit(Orbit targetOrbit, double timeToStart) {
 
 private Node createManeuverAtClosestIncNode(Orbit targetOrbit) {
 	double uTatClosestNode = 1;
-	double[] dv = {0, 0, 0};
+	double[] dv = { 0, 0, 0 };
 	try {
 		double[] incNodesUt = getTimeToIncNodes(targetOrbit);
 		uTatClosestNode = Math.min(incNodesUt[0], incNodesUt[1]) - centroEspacial.getUT();
@@ -137,7 +131,7 @@ private Node createManeuverAtClosestIncNode(Orbit targetOrbit) {
 }
 
 private double[] getTimeToIncNodes(Orbit targetOrbit) {
-	double[] incNodesUt = {0, 0};
+	double[] incNodesUt = { 0, 0 };
 	try {
 		Orbit vesselOrbit = naveAtual.getOrbit();
 		double ascendingNode = vesselOrbit.trueAnomalyAtAN(targetOrbit);
@@ -163,11 +157,11 @@ public void alignPlanes() {
 				break;
 			}
 			double dvNormal = maneuver.getNormal();
-			double ctrlOutput = ctrlManeuver.computarPID(currentDeltaInc, 0.0)
-					* limitPIDOutput(Math.abs(currentDeltaInc));
-			if ((closestIsAN ? currentDeltaInc : - currentDeltaInc) > 0.0) {
+			double ctrlOutput = ctrlManeuver.computarPID(currentDeltaInc, 0.0) * limitPIDOutput(Math.abs(currentDeltaInc));
+			if ((closestIsAN ? currentDeltaInc : -currentDeltaInc) > 0.0) {
 				maneuver.setNormal(dvNormal + (ctrlOutput));
-			} else {
+			}
+			else {
 				maneuver.setNormal(dvNormal - (ctrlOutput));
 			}
 			Thread.sleep(25);
@@ -178,10 +172,8 @@ public void alignPlanes() {
 }
 
 private double limitPIDOutput(double absDeltaInc) {
-	if (absDeltaInc < 0.05)
-		return 0.1;
-	if (absDeltaInc < 0.5)
-		return 5;
+	if (absDeltaInc < 0.05) return 0.1;
+	if (absDeltaInc < 0.5) return 5;
 	return 10;
 }
 
@@ -229,8 +221,7 @@ private Orbit getTargetOrbit() throws RPCException {
 private Node createManeuver(double laterTime, double[] deltaV) {
 	Node maneuverNode = null;
 	try {
-		naveAtual.getControl().addNode(centroEspacial.getUT() + laterTime, (float) deltaV[0], (float) deltaV[1],
-				(float) deltaV[2]);
+		naveAtual.getControl().addNode(centroEspacial.getUT() + laterTime, (float) deltaV[0], (float) deltaV[1], (float) deltaV[2]);
 		List<Node> currentNodes = naveAtual.getControl().getNodes();
 		maneuverNode = currentNodes.get(currentNodes.size() - 1);
 	} catch (UnsupportedOperationException | RPCException e) {
@@ -260,7 +251,7 @@ public void orientToManeuverNode(Node maneuverNode) {
 		float roll = ap.getTargetRoll();
 		roll = Float.isNaN(roll) ? 0 : roll;
 		ap.setTargetRoll(roll);
-		nav.mirarNaManobra(maneuverNode);
+		nav.targetManeuver(maneuverNode);
 		ap.engage();
 		while (ap.getError() > 1) {
 			StatusJPanel.setStatus(Bundle.getString("status_orienting_ship"));
@@ -275,7 +266,7 @@ public double calculateBurnTime(Node noDeManobra) throws RPCException {
 
 	List<Engine> motores = naveAtual.getParts().getEngines();
 	for (Engine motor : motores) {
-		if (motor.getPart().getStage() == naveAtual.getControl().getCurrentStage() && ! motor.getActive()) {
+		if (motor.getPart().getStage() == naveAtual.getControl().getCurrentStage() && !motor.getActive()) {
 			motor.setActive(true);
 		}
 	}
@@ -302,26 +293,22 @@ public void executeBurn(Node noDeManobra, double duracaoDaQueima) {
 		while (inicioDaQueima > 0) {
 			inicioDaQueima = noDeManobra.getTimeTo() - (duracaoDaQueima / 2.0);
 			inicioDaQueima = Math.max(inicioDaQueima, 0.0);
-			nav.mirarNaManobra(noDeManobra);
+			nav.targetManeuver(noDeManobra);
 			StatusJPanel.setStatus(String.format(Bundle.getString("status_maneuver_ignition_in"), inicioDaQueima));
 			Thread.sleep(100);
 		}
 		// Executar a manobra:
-		Stream<Triplet<Double, Double, Double>> queimaRestante = getConexao().addStream(noDeManobra,
-				"remainingBurnVector", noDeManobra.getReferenceFrame());
+		Stream<Triplet<Double, Double, Double>> queimaRestante = getConexao().addStream(noDeManobra, "remainingBurnVector", noDeManobra.getReferenceFrame());
 		StatusJPanel.setStatus(Bundle.getString("status_maneuver_executing"));
-		double limiteParaDesacelerar = noDeManobra.getDeltaV() > 1000 ? 0.025
-				: noDeManobra.getDeltaV() > 250 ? 0.10 : 0.25;
+		double limiteParaDesacelerar = noDeManobra.getDeltaV() > 1000 ? 0.025 : noDeManobra.getDeltaV() > 250 ? 0.10 : 0.25;
 
 		while (noDeManobra != null) {
 			if (queimaRestante.get().getValue1() < (fineAdjustment ? 3 : 0.5)) {
 				break;
 			}
-			nav.mirarNaManobra(noDeManobra);
-			throttle(Utilities.remap(noDeManobra.getDeltaV() * limiteParaDesacelerar, 0, 1, 0.1,
-					queimaRestante.get().getValue1()));
-			MainGui.getParametros().getComponent(0).firePropertyChange("distancia", 0,
-					queimaRestante.get().getValue1());
+			nav.targetManeuver(noDeManobra);
+			throttle(Utilities.remap(noDeManobra.getDeltaV() * limiteParaDesacelerar, 0, 1, 0.1, queimaRestante.get().getValue1()));
+			MainGui.getParametros().getComponent(0).firePropertyChange("distancia", 0, queimaRestante.get().getValue1());
 			Thread.sleep(25);
 		}
 		throttle(0.0f);
@@ -342,11 +329,10 @@ public void executeBurn(Node noDeManobra, double duracaoDaQueima) {
 	}
 }
 
-private void adjustManeuverWithRCS(Stream<Triplet<Double, Double, Double>> queimaRestante)
-		throws RPCException, StreamException, InterruptedException {
+private void adjustManeuverWithRCS(Stream<Triplet<Double, Double, Double>> queimaRestante) throws RPCException, StreamException, InterruptedException {
 	naveAtual.getControl().setRCS(true);
 	while (queimaRestante.get().getValue1() >= 0.1) {
-		naveAtual.getControl().setForward((float) ctrlRCS.computarPID(- queimaRestante.get().getValue1() * 10, 0));
+		naveAtual.getControl().setForward((float) ctrlRCS.computarPID(-queimaRestante.get().getValue1() * 10, 0));
 		Thread.sleep(25);
 	}
 	naveAtual.getControl().setForward(0);
