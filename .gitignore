@@ -1,3 +1,6 @@
+.shelf/
+.idea/
+workspace.xml
 .settings/
 bin/
 tmp/

@@ -21,7 +21,7 @@ private Navigation navigation = new Navigation();
 private double hoverAltitude = 100;
 private double distanciaDaQueima = 0, velocidadeTotal = 0;
 private Map<String, String> commands;
-private boolean executandoPousoAutomatico = false;
+private boolean autoLandingEngaged = false;
 private boolean hoveringMode = false;
 
 public LandingController(Map<String, String> commands) {
@@ -111,14 +111,11 @@ private void deOrbitShip() throws RPCException, InterruptedException, StreamExce
 }
 
 private void checkAltitudeForLanding() throws RPCException, StreamException, InterruptedException {
-	while (! executandoPousoAutomatico) {
-		distanciaDaQueima = calcularDistanciaParaZerarVelocidade();
+	while (! autoLandingEngaged) {
 		naveAtual.getControl().setBrakes(true);
 		navigation.mirarRetrogrado();
-		if (altitudeSup.get() < ALTITUDE_POUSO_AUTOMATICO) {
-			if (altitudeSup.get() < distanciaDaQueima && velVertical.get() < - 1) {
-				executandoPousoAutomatico = true;
-			}
+		if (calculateCurrentVelocityMagnitude() < calculateZeroVelocityMagnitude() && velVertical.get() < - 1) {
+			autoLandingEngaged = true;
 		}
 		Thread.sleep(50);
 	}
@@ -126,43 +123,41 @@ private void checkAltitudeForLanding() throws RPCException, StreamException, Int
 
 private void beginAutoLanding() throws InterruptedException, RPCException, StreamException {
 	StatusJPanel.setStatus(Bundle.getString("status_starting_landing"));
-	while (executandoPousoAutomatico) {
-		checarAltitude();
+	while (autoLandingEngaged) {
+		checkAltitude();
 		checkForLanding();
 		Thread.sleep(25);
 	}
 }
 
 private void adjustPIDCtrls() throws RPCException, StreamException {
-	altitudeCtrl.ajustarPID(velP, velI, calcularAcelMaxima() * velD);
+	altitudeCtrl.ajustarPID(velP, velI, calcularTEP() * velD);
 	velocityCtrl.ajustarPID(calcularTEP() * velP, velI, velD);
 }
 
-private void checarAltitude() throws RPCException, StreamException {
+private void checkAltitude() throws RPCException, StreamException {
 	adjustPIDCtrls();
-	// Checar distancia da queima usando a magnitude da velocidade para zerar
-	distanciaDaQueima = calcularDistanciaParaZerarVelocidade();
-	// Checar a distancia da queda de altitude usando a velocidade e altitude do foguete
-	double distVelAtual = calcularDistanciaDaVelocidadeAtual();
-	MainGui.getParametros().getComponent(0).firePropertyChange("distancia", 0, distanciaDaQueima);
+	double currentVelocityMagnitude = calculateCurrentVelocityMagnitude();
+	double zeroVelocityMagnitude = calculateZeroVelocityMagnitude();
+	double distanceToAutoLand = currentVelocityMagnitude - zeroVelocityMagnitude;
 
 	// Mirar no retrogrado ou radial dependendo da velocidade
-	if (velHorizontal.get() > 1) {
+	if (velHorizontal.get() > 0.5) {
 		navigation.mirarRetrogrado();
 	} else {
 		navigation.mirarRadialDeFora();
 	}
 
-	double limiarDoPouso = 0;
-	limiarDoPouso = Utilities.clamp(limiarDoPouso, 100, calcularAcelMaxima() * 5);
-	if (altitudeSup.get() - limiarDoPouso < limiarDoPouso) {
+	double landingDistanceThreshold = 0;
+	landingDistanceThreshold = Utilities.clamp(landingDistanceThreshold, 100, calcularAcelMaxima() * 3);
+	if (distanceToAutoLand < landingDistanceThreshold) {
 		naveAtual.getControl().setGear(true);
 	}
 
-	double acel = altitudeCtrl.computarPID(distVelAtual, distanciaDaQueima);
-	double vel = velocityCtrl.computarPID(velVertical.get(), - 5);
-	double limite = Utilities.clamp((distVelAtual - limiarDoPouso) / limiarDoPouso, 0, 1);
-	throttle(Utilities.linearInterpolation(vel, acel, limite));
+	double acelPIDValue = altitudeCtrl.computarPID(currentVelocityMagnitude, zeroVelocityMagnitude);
+	double velPIDValue = velocityCtrl.computarPID(velVertical.get(), - Utilities.clamp(altitudeSup.get() * 0.1, 2, 20));
+	double threshold = Utilities.clamp(((currentVelocityMagnitude + zeroVelocityMagnitude) - landingDistanceThreshold) / landingDistanceThreshold, 0, 1);
+	throttle(Utilities.linearInterpolation(velPIDValue, acelPIDValue, threshold));
 }
 
 private void checkForLanding() throws RPCException {
@@ -170,7 +165,7 @@ private void checkForLanding() throws RPCException {
 		case LANDED:
 		case SPLASHED:
 			StatusJPanel.setStatus(Bundle.getString("status_landed"));
-			executandoPousoAutomatico = false;
+			autoLandingEngaged = false;
 			hoveringMode = false;
 			landFromHovering = false;
 			throttle(0.0f);
@@ -183,20 +178,16 @@ private void checkForLanding() throws RPCException {
 	}
 }
 
-private double calcularDistanciaParaZerarVelocidade() throws RPCException, StreamException {
-	velocidadeTotal = Math.abs(new Vetor(velHorizontal.get(), velVertical.get(), 0).Magnitude());
-	double duracaoDaQueima = velocidadeTotal / calcularAcelMaxima();
-	double distanciaDaQueima = velocidadeTotal * duracaoDaQueima;
-	return distanciaDaQueima;
+private double calculateCurrentVelocityMagnitude() throws RPCException, StreamException {
+	double timeToGround = altitudeSup.get() / velVertical.get();
+	double horizontalDistance = velHorizontal.get() * timeToGround;
+	return Math.abs(new Vetor(horizontalDistance, altitudeSup.get(), 0).Magnitude());
 }
 
-private double calcularDistanciaDaVelocidadeAtual() throws RPCException, StreamException {
-	// descobrir tempo de queda usando a velocidade vertical e a altitude
-	double tempoDeQueda = altitudeSup.get() / velVertical.get();
-	// multiplicar a velocidade horizontal pelo tempo
-	double distanciaHorizontal = velHorizontal.get() * tempoDeQueda;
-	// montar um vetor com esses valores e pegar a magnitude
-	// retornar esse valor para ser comparado com a distancia de queda
-	return Math.abs(new Vetor(distanciaHorizontal, altitudeSup.get(), 0).Magnitude());
+private double calculateZeroVelocityMagnitude() throws RPCException, StreamException {
+	double zeroVelocityDistance = Math.abs(new Vetor(velHorizontal.get(), velVertical.get(), 0).Magnitude());
+	double zeroVelocityBurnTime = zeroVelocityDistance / calcularAcelMaxima();
+	MainGui.getParametros().getComponent(0).firePropertyChange("distancia", 0, zeroVelocityDistance * zeroVelocityBurnTime);
+	return zeroVelocityDistance * zeroVelocityBurnTime;
 }
 }
