@@ -5,11 +5,11 @@ Autor: Renan Torres <pesterenan@gmail.com>
 Atualizado: 18/07/2022*/
 
 public class ControlePID {
-private double limiteMin = - 1;
+private double limiteMin = -1;
 private double limiteMax = 1;
 
 private double kp = 0.025;
-private double ki = 0.05;
+private double ki = 0.001;
 private double kd = 0.01;
 private double timeSample = 25;
 
@@ -31,7 +31,7 @@ public double computarPID(double currentValue, double limitValue) {
 
 		this.proportionalTerm = this.kp * error;
 		this.integralTerm = limitarValor(this.integralTerm + ki * error);
-		this.derivativeTerm = kd * - changeInValues;
+		this.derivativeTerm = kd * -changeInValues;
 		this.valorSaida = limitarValor(proportionalTerm + ki * this.integralTerm + derivativeTerm);
 
 		this.lastValue = currentValue;
@@ -41,8 +41,7 @@ public double computarPID(double currentValue, double limitValue) {
 }
 
 public void limitarSaida(double min, double max) {
-	if (min > max)
-		return;
+	if (min > max) return;
 	this.limiteMin = min;
 	this.limiteMax = max;
 	this.integralTerm = limitarValor(this.integralTerm);

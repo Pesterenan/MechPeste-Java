@@ -1,7 +1,10 @@
 package com.pesterenan.controllers;
 
 import com.pesterenan.resources.Bundle;
-import com.pesterenan.utils.*;
+import com.pesterenan.utils.ControlePID;
+import com.pesterenan.utils.Modulos;
+import com.pesterenan.utils.Navigation;
+import com.pesterenan.utils.Utilities;
 import com.pesterenan.views.MainGui;
 import com.pesterenan.views.StatusJPanel;
 import krpc.client.RPCException;
@@ -12,7 +15,7 @@ import java.util.Map;
 
 public class LandingController extends FlightController implements Runnable {
 
-private static double velP = 0.05, velI = 0.001, velD = 0.01;
+private static double velP = 0.025, velI = 0.001, velD = 0.01;
 private static boolean landFromHovering = false;
 private ControlePID altitudeCtrl = new ControlePID();
 private ControlePID velocityCtrl = new ControlePID();
@@ -126,7 +129,6 @@ private void beginAutoLanding() throws InterruptedException, RPCException, Strea
 }
 
 private void adjustPIDCtrls() throws RPCException, StreamException {
-	altitudeCtrl.ajustarPID(velP, velI, calcularTEP() * velD);
 	velocityCtrl.ajustarPID(calcularTEP() * velP, velI, velD);
 }
 
@@ -146,11 +148,11 @@ private void checkAltitude() throws RPCException, StreamException {
 
 	double landingDistanceThreshold = 0;
 	landingDistanceThreshold = Utilities.clamp(landingDistanceThreshold, 100, calcularAcelMaxima() * 3);
-	if (distanceToAutoLand < landingDistanceThreshold) {
+	if (zeroVelocityMagnitude < landingDistanceThreshold) {
 		naveAtual.getControl().setGear(true);
 	}
 
-	double acelPIDValue = altitudeCtrl.computarPID(currentVelocityMagnitude, zeroVelocityMagnitude);
+	double acelPIDValue = altitudeCtrl.computarPID(currentVelocityMagnitude / zeroVelocityMagnitude * 100, 100);
 	double velPIDValue = velocityCtrl.computarPID(velVertical.get(), -Utilities.clamp(altitudeSup.get() * 0.1, 2, 20));
 	double threshold = Utilities.clamp(((currentVelocityMagnitude + zeroVelocityMagnitude) - landingDistanceThreshold) / landingDistanceThreshold, 0, 1);
 	throttle(Utilities.linearInterpolation(velPIDValue, acelPIDValue, threshold));
@@ -173,13 +175,23 @@ private void checkForLanding() throws RPCException {
 private double calculateCurrentVelocityMagnitude() throws RPCException, StreamException {
 	double timeToGround = altitudeSup.get() / velVertical.get();
 	double horizontalDistance = velHorizontal.get() * timeToGround;
-	return Math.abs(new Vetor(horizontalDistance, altitudeSup.get(), 0).Magnitude());
+
+	return calculateElipseTrajectory(horizontalDistance, altitudeSup.get());
+//	return Math.abs(new Vetor(horizontalDistance, altitudeSup.get(), 0).Magnitude());
 }
 
 private double calculateZeroVelocityMagnitude() throws RPCException, StreamException {
-	double zeroVelocityDistance = Math.abs(new Vetor(velHorizontal.get(), velVertical.get(), 0).Magnitude());
+	double zeroVelocityDistance = calculateElipseTrajectory(velHorizontal.get(), velVertical.get());
+//	double zeroVelocityDistance = Math.abs(new Vetor(velHorizontal.get(), velVertical.get(), 0).Magnitude());
 	double zeroVelocityBurnTime = zeroVelocityDistance / calcularAcelMaxima();
 	MainGui.getParametros().getComponent(0).firePropertyChange("distancia", 0, zeroVelocityDistance * zeroVelocityBurnTime);
 	return zeroVelocityDistance * zeroVelocityBurnTime;
+}
+
+private double calculateElipseTrajectory(double a, double b) {
+	double semiMajor = Math.max(a * 2, b * 2);
+	double semiMinor = Math.min(a * 2, b * 2);
+	double totalCircumference = 2 * Math.PI * Math.sqrt((semiMajor * semiMajor + semiMinor * semiMinor) / 2);
+	return totalCircumference / 4;
 }
 }
