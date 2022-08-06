@@ -5,6 +5,8 @@ import com.pesterenan.resources.Bundle;
 import com.pesterenan.views.MainGui;
 import com.pesterenan.views.StatusJPanel;
 import krpc.client.Connection;
+import krpc.client.RPCException;
+import krpc.client.services.KRPC;
 
 import java.io.IOException;
 import java.util.Map;
@@ -18,14 +20,15 @@ private static Connection connection;
 private static Thread threadModulos;
 private static Thread threadTelemetria = null;
 private static FlightController flightCtrl = null;
-
-public static void main(String[] args) {
-	MechPeste.getInstance();
-}
+private static KRPC krpc;
 
 private MechPeste() {
 	MainGui.getInstance();
-	startConnection();
+	connectToKSP();
+}
+
+public static void main(String[] args) {
+	MechPeste.getInstance();
 }
 
 public static MechPeste getInstance() {
@@ -35,39 +38,18 @@ public static MechPeste getInstance() {
 	return mechPeste;
 }
 
-public void startConnection() {
-	setStatus(Bundle.getString("status_connecting"));
-	try {
-		MechPeste.connection = null;
-		MechPeste.connection = Connection.newInstance("MechPeste - Pesterenan");
-		if (getThreadTelemetria() == null)
-			startTelemetry();
-		setStatus(Bundle.getString("status_connected"));
-		StatusJPanel.botConectarVisivel(false);
-	} catch (IOException e) {
-		setStatus(Bundle.getString("status_error_connection"));
-		StatusJPanel.botConectarVisivel(true);
-	}
-}
-
-private void startTelemetry() {
-	flightCtrl = new FlightController(getConexao());
-	setThreadTelemetria(new Thread(flightCtrl));
-	getThreadTelemetria().start();
-}
-
-public static void iniciarModulo(Map<String, String> commands) {
-	String executarModulo = commands.get(MODULO.get());
-	if (executarModulo.equals(MODULO_DECOLAGEM.get())) {
+public static void startModule(Map<String, String> commands) {
+	String moduleToRun = commands.get(MODULO.get());
+	if (moduleToRun.equals(MODULO_DECOLAGEM.get())) {
 		executeLiftoffModule(commands);
 	}
-	if (executarModulo.equals(MODULO_POUSO_SOBREVOAR.get()) || executarModulo.equals(MODULO_POUSO.get())) {
+	if (moduleToRun.equals(MODULO_POUSO_SOBREVOAR.get()) || moduleToRun.equals(MODULO_POUSO.get())) {
 		executeLandingModule(commands);
 	}
-	if (executarModulo.equals(MODULO_MANOBRAS.get())) {
+	if (moduleToRun.equals(MODULO_MANOBRAS.get())) {
 		executeManeuverModule(commands);
 	}
-	if (executarModulo.equals(MODULO_ROVER.get())) {
+	if (moduleToRun.equals(MODULO_ROVER.get())) {
 		executeRoverModule(commands);
 	}
 	MainGui.getParametros().firePropertyChange("Telemetria", false, true);
@@ -75,57 +57,82 @@ public static void iniciarModulo(Map<String, String> commands) {
 
 private static void executeLiftoffModule(Map<String, String> commands) {
 	LiftoffController liftOffController = new LiftoffController(commands);
-	setThreadModulos(new Thread(liftOffController));
-	getThreadModulos().start();
+	setModuleThread(new Thread(liftOffController));
+	getModuleThread().start();
 }
 
 private static void executeLandingModule(Map<String, String> commands) {
 	LandingController landingController = new LandingController(commands);
-	setThreadModulos(new Thread(landingController));
-	getThreadModulos().start();
+	setModuleThread(new Thread(landingController));
+	getModuleThread().start();
 }
 
 private static void executeManeuverModule(Map<String, String> commands) {
 	ManeuverController maneuverController = new ManeuverController(commands);
-	setThreadModulos(new Thread(maneuverController));
-	getThreadModulos().start();
+	setModuleThread(new Thread(maneuverController));
+	getModuleThread().start();
 }
 
 private static void executeRoverModule(Map<String, String> commands) {
 	RoverController roverController = new RoverController(commands);
-	setThreadModulos(new Thread(roverController));
-	getThreadModulos().start();
+	setModuleThread(new Thread(roverController));
+	getModuleThread().start();
 }
 
 public static void finalizarTarefa() {
-	System.out.println(Thread.activeCount() + "Before");
+	System.out.println("Active Threads: " + Thread.activeCount());
 	try {
-		if (getThreadModulos() != null && getThreadModulos().isAlive()) {
-			getThreadModulos().interrupt();
-			setThreadModulos(null);
+		if (getModuleThread() != null && getModuleThread().isAlive()) {
+			getModuleThread().interrupt();
+			setModuleThread(null);
 		}
 	} catch (Exception e) {
 	}
-	System.out.println(Thread.activeCount() + "After");
+	System.out.println("Active Threads: " + Thread.activeCount());
 }
 
-public static Connection getConexao() {
+public static Connection getConnection() {
 	return connection;
 }
 
-private static Thread getThreadModulos() {
+private static Thread getModuleThread() {
 	return threadModulos;
 }
 
-private static void setThreadModulos(Thread thread) {
+private static void setModuleThread(Thread thread) {
 	threadModulos = thread;
 }
 
-private static Thread getThreadTelemetria() {
+private static Thread getTelemetry() {
 	return threadTelemetria;
 }
 
 private static void setThreadTelemetria(Thread thread) {
 	threadTelemetria = thread;
+}
+
+public void connectToKSP() {
+	setStatus(Bundle.getString("status_connecting"));
+	try {
+		connection = null;
+		connection = Connection.newInstance("MechPeste - Pesterenan");
+		krpc = KRPC.newInstance(connection);
+		startTelemetry();
+		setStatus(Bundle.getString("status_connected"));
+		StatusJPanel.isBtnConnectVisible(false);
+	} catch (IOException e) {
+		setStatus(Bundle.getString("status_error_connection"));
+		StatusJPanel.isBtnConnectVisible(true);
+	}
+}
+
+private void startTelemetry() {
+	flightCtrl = new FlightController(getConnection());
+	setThreadTelemetria(new Thread(flightCtrl));
+	getTelemetry().start();
+}
+
+public static KRPC.GameScene getCurrentGameScene() throws RPCException {
+	return krpc.getCurrentGameScene();
 }
 }

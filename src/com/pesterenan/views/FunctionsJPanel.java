@@ -11,9 +11,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 public class FunctionsJPanel extends JPanel implements ActionListener {
-private static final long serialVersionUID = 1L;
 public static final int BUTTON_WIDTH = 135;
-
+private static final long serialVersionUID = 1L;
 private JButton btnLiftoff;
 private JButton btnLanding;
 private JButton btnManeuver;

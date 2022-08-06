@@ -145,10 +145,8 @@ private void checkAltitude() throws RPCException, StreamException {
 	else {
 		navigation.targetRadialOut();
 	}
-
-	double landingDistanceThreshold = 0;
-	landingDistanceThreshold = Utilities.clamp(landingDistanceThreshold, 100, calcularAcelMaxima() * 3);
-	if (zeroVelocityMagnitude < landingDistanceThreshold) {
+	double landingDistanceThreshold = Math.max(300, calcularAcelMaxima() * 3);
+	if (altitudeSup.get() < landingDistanceThreshold) {
 		naveAtual.getControl().setGear(true);
 	}
 

@@ -87,7 +87,7 @@ public void actionPerformed(ActionEvent e) {
 protected void handleBtnAutoLandingActionPerformed(ActionEvent e) {
 	Map<String, String> commands = new HashMap<>();
 	commands.put(Modulos.MODULO.get(), Modulos.MODULO_POUSO.get());
-	MechPeste.iniciarModulo(commands);
+	MechPeste.startModule(commands);
 }
 
 protected void handleBtnBackActionPerformed(ActionEvent e) {
@@ -113,7 +113,7 @@ protected void handleBtnHoverActionPerformed(ActionEvent e) {
 		Map<String, String> commands = new HashMap<>();
 		commands.put(Modulos.MODULO.get(), Modulos.MODULO_POUSO_SOBREVOAR.get());
 		commands.put(Modulos.ALTITUDE_SOBREVOO.get(), txfHover.getText());
-		MechPeste.iniciarModulo(commands);
+		MechPeste.startModule(commands);
 		btnHover.setText(Bundle.getString("pnl_land_land")); //$NON-NLS-1$
 	}
 }

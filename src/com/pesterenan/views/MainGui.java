@@ -1,6 +1,7 @@
 package com.pesterenan.views;
 
 import com.pesterenan.resources.Bundle;
+import com.pesterenan.updater.KrpcInstaller;
 
 import javax.swing.*;
 import java.awt.*;
@@ -8,20 +9,28 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 public class MainGui extends JFrame implements ActionListener {
-private static MainGui mainGui = null;
-
 private static final long serialVersionUID = 1L;
-
-private final Dimension dmsMainGui = new Dimension(480, 300);
-private JPanel ctpMainGui = new JPanel();
+private static MainGui mainGui = null;
 private static StatusJPanel pnlStatus;
 private static FunctionsJPanel pnlFuncoes;
 private static ParametersJPanel pnlParametros;
+private final Dimension dmsMainGui = new Dimension(480, 300);
+private JPanel ctpMainGui = new JPanel();
 private JMenuBar menuBar;
 private JMenu mnFile;
 private JMenuItem mntmExit;
 private JMenu mnHelp;
 private JMenuItem mntmAbout;
+private JMenuItem mntmInstallKrpc;
+
+private MainGui() {
+	try {
+		UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+		initComponents();
+	} catch (Throwable e) {
+		e.printStackTrace();
+	}
+}
 
 public static MainGui getInstance() {
 	if (mainGui == null) {
@@ -31,13 +40,8 @@ public static MainGui getInstance() {
 	return mainGui;
 }
 
-private MainGui() {
-	try {
-		UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-		initComponents();
-	} catch (Throwable e) {
-		e.printStackTrace();
-	}
+public static ParametersJPanel getParametros() {
+	return pnlParametros;
 }
 
 private void initComponents() {
@@ -54,6 +58,11 @@ private void initComponents() {
 	mnFile = new JMenu(Bundle.getString("main_mn_file")); //$NON-NLS-1$
 	menuBar.add(mnFile);
 
+	mntmInstallKrpc = new JMenuItem("Install KRPC");
+	mntmInstallKrpc.addActionListener(this);
+	mnFile.add(mntmInstallKrpc);
+
+	mnFile.add(new JSeparator());
 	mntmExit = new JMenuItem(Bundle.getString("main_mntm_exit")); //$NON-NLS-1$
 	mntmExit.addActionListener(this);
 	mnFile.add(mntmExit);
@@ -75,22 +84,17 @@ private void initComponents() {
 	ctpMainGui.add(pnlStatus, BorderLayout.SOUTH);
 }
 
-public static ParametersJPanel getParametros() {
-	return pnlParametros;
-}
-
-public static StatusJPanel getStatus() {
-	return pnlStatus;
-}
-
-public static FunctionsJPanel getFuncoes() {
-	return pnlFuncoes;
-}
-
 public void actionPerformed(ActionEvent e) {
+	if (e.getSource() == mntmInstallKrpc) {
+		handleMntmInstallKrpcActionPerformed(e);
+	}
 	if (e.getSource() == mntmExit) {
 		handleMntmExitActionPerformed(e);
 	}
+}
+
+protected void handleMntmInstallKrpcActionPerformed(ActionEvent e) {
+	InstallKrpcDialog ikd = new InstallKrpcDialog();
 }
 
 protected void handleMntmExitActionPerformed(ActionEvent e) {

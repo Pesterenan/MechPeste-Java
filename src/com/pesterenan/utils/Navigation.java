@@ -42,7 +42,7 @@ public void targetRadialOut() throws RPCException {
 }
 
 public void targetRetrograde() throws RPCException {
-	targetDirection(centroEspacial.transformDirection(RETROGRADE, naveAtual.getSurfaceReferenceFrame(), pontoRefOrbital));
+	targetDirection(centroEspacial.transformDirection(RETROGRADE, naveAtual.getSurfaceVelocityReferenceFrame(), pontoRefOrbital));
 }
 
 public void targetDirection(Triplet<Double, Double, Double> currentDirection) {

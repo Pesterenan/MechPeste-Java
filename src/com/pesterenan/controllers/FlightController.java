@@ -1,5 +1,6 @@
 package com.pesterenan.controllers;
 
+import com.pesterenan.MechPeste;
 import com.pesterenan.model.Nave;
 import com.pesterenan.resources.Bundle;
 import com.pesterenan.views.MainGui;
@@ -7,6 +8,7 @@ import com.pesterenan.views.StatusJPanel;
 import krpc.client.Connection;
 import krpc.client.RPCException;
 import krpc.client.StreamException;
+import krpc.client.services.KRPC;
 import krpc.client.services.SpaceCenter.Vessel;
 
 public class FlightController extends Nave implements Runnable {
@@ -43,10 +45,12 @@ private void iniciarStreams(Vessel naveAtual) {
 
 @Override
 public void run() {
-	while (! Thread.interrupted()) {
+	while (!Thread.interrupted()) {
 		try {
-			trocaDeNaves();
-			enviarTelemetria();
+			if (MechPeste.getCurrentGameScene().equals(KRPC.GameScene.FLIGHT)) {
+				trocaDeNaves();
+				enviarTelemetria();
+			}
 			Thread.sleep(250);
 		} catch (InterruptedException | RPCException | StreamException | NullPointerException e) {
 			checarConexao();
@@ -56,12 +60,12 @@ public void run() {
 
 private void trocaDeNaves() {
 	try {
-		if (! centroEspacial.getActiveVessel().equals(this.naveAtual)) {
+		if (!centroEspacial.getActiveVessel().equals(this.naveAtual)) {
 			this.naveAtual = centroEspacial.getActiveVessel();
 			iniciarStreams(this.naveAtual);
 		}
 	} catch (RPCException e) {
-		StatusJPanel.botConectarVisivel(true);
+		StatusJPanel.isBtnConnectVisible(true);
 		StatusJPanel.setStatus(Bundle.getString("status_couldnt_switch_vessel"));
 	}
 }
@@ -76,7 +80,6 @@ private void enviarTelemetria() throws RPCException, StreamException {
 	MainGui.getParametros().getTelemetria().firePropertyChange("velHorizontal", 0.0, velHorizontal.get());
 	MainGui.getParametros().getTelemetria().firePropertyChange("bateria", 0.0, porcentagemCarga);
 	MainGui.getParametros().getTelemetria().firePropertyChange("tempoMissao", 0.0, tempoMissao.get());
-
 }
 
 protected void disengageAfterException(String statusMessage) {

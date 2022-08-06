@@ -9,8 +9,6 @@ public class Bundle {
 	public static final ResourceBundle RESOURCE_BUNDLE = ResourceBundle.getBundle(BUNDLE_NAME);
 
 	private Bundle() {
-		System.out.println(BUNDLE_NAME);
-		System.out.println(RESOURCE_BUNDLE);
 	}
 
 	public static String getString(String key) {

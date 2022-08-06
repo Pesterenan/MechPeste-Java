@@ -99,7 +99,7 @@ private void circularizeOrbitOnApoapsis() {
 	commands.put(Modulos.MODULO.get(), Modulos.MODULO_MANOBRAS.get());
 	commands.put(Modulos.FUNCAO.get(), Modulos.APOASTRO.get());
 	commands.put(Modulos.AJUSTE_FINO.get(), String.valueOf(true));
-	MechPeste.iniciarModulo(commands);
+	MechPeste.startModule(commands);
 }
 
 private void decoupleStage() throws InterruptedException, RPCException {
@@ -143,7 +143,7 @@ private double calculateInclinationCurve(double currentAltitude) {
 
 private boolean isCurrentStageWithoutFuel() throws RPCException {
 	for (Engine engine : naveAtual.getParts().getEngines()) {
-		if (engine.getPart().getStage() == naveAtual.getControl().getCurrentStage() && ! engine.getHasFuel()) {
+		if (engine.getPart().getStage() == naveAtual.getControl().getCurrentStage() && !engine.getHasFuel()) {
 			return true;
 		}
 	}

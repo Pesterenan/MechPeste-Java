@@ -315,11 +315,11 @@ public void executeBurn(Node noDeManobra, double duracaoDaQueima) {
 		if (fineAdjustment) {
 			adjustManeuverWithRCS(queimaRestante);
 		}
-
 		ap.setReferenceFrame(pontoRefSuperficie);
 		ap.disengage();
 		naveAtual.getControl().setSAS(true);
 		naveAtual.getControl().setRCS(false);
+		queimaRestante.remove();
 		noDeManobra.remove();
 		StatusJPanel.setStatus(Bundle.getString("status_ready"));
 	} catch (StreamException | RPCException e) {
@@ -329,14 +329,13 @@ public void executeBurn(Node noDeManobra, double duracaoDaQueima) {
 	}
 }
 
-private void adjustManeuverWithRCS(Stream<Triplet<Double, Double, Double>> queimaRestante) throws RPCException, StreamException, InterruptedException {
+private void adjustManeuverWithRCS(Stream<Triplet<Double, Double, Double>> remainingDeltaV) throws RPCException, StreamException, InterruptedException {
 	naveAtual.getControl().setRCS(true);
-	while (queimaRestante.get().getValue1() >= 0.1) {
-		naveAtual.getControl().setForward((float) ctrlRCS.computarPID(-queimaRestante.get().getValue1() * 10, 0));
+	while (Math.floor(remainingDeltaV.get().getValue1()) > 0.2) {
+		naveAtual.getControl().setForward((float) ctrlRCS.computarPID(-remainingDeltaV.get().getValue1() * 10, 0));
 		Thread.sleep(25);
 	}
 	naveAtual.getControl().setForward(0);
-	queimaRestante.remove();
 }
 
 private boolean canFineAdjust(String string) {

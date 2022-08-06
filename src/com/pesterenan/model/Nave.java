@@ -1,30 +1,27 @@
 package com.pesterenan.model;
 
+import com.pesterenan.MechPeste;
 import com.pesterenan.resources.Bundle;
 import com.pesterenan.views.StatusJPanel;
 import krpc.client.Connection;
 import krpc.client.RPCException;
 import krpc.client.Stream;
 import krpc.client.StreamException;
-import krpc.client.services.KRPC;
 import krpc.client.services.KRPC.GameScene;
 import krpc.client.services.SpaceCenter;
 import krpc.client.services.SpaceCenter.*;
 
-import static com.pesterenan.views.StatusJPanel.botConectarVisivel;
+import static com.pesterenan.views.StatusJPanel.isBtnConnectVisible;
 import static com.pesterenan.views.StatusJPanel.setStatus;
 
 public class Nave {
-private static Connection conexao;
-
 protected static SpaceCenter centroEspacial;
+private static Connection conexao;
 protected Vessel naveAtual;
 protected AutoPilot ap;
 protected Flight parametrosDeVoo;
-protected ReferenceFrame pontoRefOrbital;
-protected ReferenceFrame pontoRefSuperficie;
-protected Stream<Double> altitude, altitudeSup, apoastro, periastro;
-protected Stream<Double> velVertical, tempoMissao, velHorizontal;
+protected ReferenceFrame pontoRefOrbital, pontoRefSuperficie;
+protected Stream<Double> altitude, altitudeSup, apoastro, periastro, velVertical, tempoMissao, velHorizontal;
 protected Stream<Float> massaTotal, bateriaAtual;
 protected float bateriaTotal, gravityAcel;
 protected String celestialBody;
@@ -46,33 +43,32 @@ public Nave(Connection con) {
 	}
 }
 
-protected void checarConexao() {
-	try {
-		KRPC krpc = KRPC.newInstance(getConexao());
-		if (krpc.getCurrentGameScene().equals(GameScene.FLIGHT)) {
-			this.naveAtual = centroEspacial.getActiveVessel();
-			setStatus(Bundle.getString("status_connected"));
-			botConectarVisivel(false);
-		} else {
-			throw new RPCException("");
-		}
-	} catch (RPCException | NullPointerException e) {
-		setStatus(Bundle.getString("status_error_connection"));
-		StatusJPanel.setStatus("Erro vindo da método checarConexao!");
-		try {
-			Thread.sleep(1000);
-		} catch (InterruptedException e1) {
-		}
-		botConectarVisivel(true);
-	}
-}
-
 public static Connection getConexao() {
 	return conexao;
 }
 
 private void setConexao(Connection con) {
 	conexao = con;
+}
+
+protected void checarConexao() {
+	try {
+		if (MechPeste.getCurrentGameScene().equals(GameScene.FLIGHT)) {
+			this.naveAtual = centroEspacial.getActiveVessel();
+			setStatus(Bundle.getString("status_connected"));
+			isBtnConnectVisible(false);
+		}
+		else {
+			setStatus(Bundle.getString("status_ready"));
+		}
+	} catch (RPCException | NullPointerException e) {
+		setStatus(Bundle.getString("status_error_connection"));
+		try {
+			Thread.sleep(1000);
+		} catch (InterruptedException e1) {
+		}
+		isBtnConnectVisible(true);
+	}
 }
 
 protected void throttle(float acel) throws RPCException {
