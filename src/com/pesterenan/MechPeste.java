@@ -1,6 +1,10 @@
 package com.pesterenan;
 
-import com.pesterenan.controllers.*;
+import com.pesterenan.controllers.FlightController;
+import com.pesterenan.controllers.LandingController;
+import com.pesterenan.controllers.LiftoffController;
+import com.pesterenan.controllers.ManeuverController;
+import com.pesterenan.controllers.RoverController;
 import com.pesterenan.resources.Bundle;
 import com.pesterenan.views.MainGui;
 import com.pesterenan.views.StatusJPanel;
@@ -9,6 +13,8 @@ import krpc.client.RPCException;
 import krpc.client.services.KRPC;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import static com.pesterenan.utils.Modulos.*;
@@ -21,6 +27,7 @@ private static Thread threadModulos;
 private static Thread threadTelemetria = null;
 private static FlightController flightCtrl = null;
 private static KRPC krpc;
+private static List<Thread> runningThreads = new ArrayList<Thread>();
 
 private MechPeste() {
 	MainGui.getInstance();
@@ -56,51 +63,46 @@ public static void startModule(Map<String, String> commands) {
 }
 
 private static void executeLiftoffModule(Map<String, String> commands) {
-	LiftoffController liftOffController = new LiftoffController(commands);
-	setModuleThread(new Thread(liftOffController));
-	getModuleThread().start();
+	Thread liftoffThread = new Thread(new LiftoffController(commands));
+	runningThreads.add(liftoffThread);
+	liftoffThread.start();
 }
 
 private static void executeLandingModule(Map<String, String> commands) {
-	LandingController landingController = new LandingController(commands);
-	setModuleThread(new Thread(landingController));
-	getModuleThread().start();
+	Thread landingThread = new Thread(new LandingController(commands));
+	runningThreads.add(landingThread);
+	landingThread.start();
 }
 
 private static void executeManeuverModule(Map<String, String> commands) {
-	ManeuverController maneuverController = new ManeuverController(commands);
-	setModuleThread(new Thread(maneuverController));
-	getModuleThread().start();
+	Thread maneuverThread = new Thread(new ManeuverController(commands));
+	runningThreads.add(maneuverThread);
+	maneuverThread.start();
 }
 
 private static void executeRoverModule(Map<String, String> commands) {
-	RoverController roverController = new RoverController(commands);
-	setModuleThread(new Thread(roverController));
-	getModuleThread().start();
+	Thread roverThread = new Thread(new RoverController(commands));
+	runningThreads.add(roverThread);
+	roverThread.start();
 }
 
 public static void finalizarTarefa() {
 	System.out.println("Active Threads: " + Thread.activeCount());
-	try {
-		if (getModuleThread() != null && getModuleThread().isAlive()) {
-			getModuleThread().interrupt();
-			setModuleThread(null);
+	System.out.println(runningThreads);
+	for (int i = runningThreads.size() - 1; i >= 0; i--) {
+		System.out.println(runningThreads.get(i).getName());
+		System.out.println(runningThreads.get(i).getState());
+		runningThreads.get(i).interrupt();
+		if (runningThreads.get(i).getState().equals(Thread.State.TERMINATED)) {
+			runningThreads.remove(i);
 		}
-	} catch (Exception e) {
 	}
 	System.out.println("Active Threads: " + Thread.activeCount());
+	System.out.println(runningThreads);
 }
 
 public static Connection getConnection() {
 	return connection;
-}
-
-private static Thread getModuleThread() {
-	return threadModulos;
-}
-
-private static void setModuleThread(Thread thread) {
-	threadModulos = thread;
 }
 
 private static Thread getTelemetry() {
@@ -109,6 +111,10 @@ private static Thread getTelemetry() {
 
 private static void setThreadTelemetria(Thread thread) {
 	threadTelemetria = thread;
+}
+
+public static KRPC.GameScene getCurrentGameScene() throws RPCException {
+	return krpc.getCurrentGameScene();
 }
 
 public void connectToKSP() {
@@ -130,9 +136,5 @@ private void startTelemetry() {
 	flightCtrl = new FlightController(getConnection());
 	setThreadTelemetria(new Thread(flightCtrl));
 	getTelemetry().start();
-}
-
-public static KRPC.GameScene getCurrentGameScene() throws RPCException {
-	return krpc.getCurrentGameScene();
 }
 }
