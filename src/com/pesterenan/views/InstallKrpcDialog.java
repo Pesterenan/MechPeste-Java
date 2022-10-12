@@ -1,32 +1,21 @@
 package com.pesterenan.views;
 
-import java.awt.Dimension;
-import java.awt.Rectangle;
-import java.awt.Toolkit;
-
-import javax.swing.GroupLayout;
-import javax.swing.GroupLayout.Alignment;
-import javax.swing.JButton;
-import javax.swing.JDialog;
-import javax.swing.JFileChooser;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JSeparator;
-import javax.swing.JTextField;
-import javax.swing.LayoutStyle.ComponentPlacement;
-import javax.swing.UIManager;
-import javax.swing.border.BevelBorder;
-import javax.swing.border.TitledBorder;
-
 import com.pesterenan.resources.Bundle;
 import com.pesterenan.updater.KrpcInstaller;
+
+import javax.swing.*;
+import javax.swing.GroupLayout.Alignment;
+import javax.swing.LayoutStyle.ComponentPlacement;
+import javax.swing.border.BevelBorder;
+import javax.swing.border.TitledBorder;
+import java.awt.*;
 
 public class InstallKrpcDialog extends JDialog {
 	private static final long serialVersionUID = 1L;
 	private JLabel lblInstallerInfo;
-	private JSeparator separator = new JSeparator();
-	private JPanel pnlKspFolderPath = new JPanel();
-	private JTextField txfPath = new JTextField();
+	private final JSeparator separator = new JSeparator();
+	private final JPanel pnlKspFolderPath = new JPanel();
+	private final JTextField txfPath = new JTextField();
 	private JButton btnBrowsePath;
 	private JButton btnDownloadInstall;
 	private JButton btnCancel;
@@ -52,58 +41,109 @@ public class InstallKrpcDialog extends JDialog {
 
 		lblInstallerInfo = new JLabel(Bundle.getString("installer_dialog_txt_info")); //$NON-NLS-1$
 
-		pnlKspFolderPath
-				.setBorder(new TitledBorder(null, Bundle.getString("installer_dialog_pnl_path"), TitledBorder.LEADING, //$NON-NLS-1$
-						TitledBorder.TOP, null, null));
+		pnlKspFolderPath.setBorder(
+				new TitledBorder(null, Bundle.getString("installer_dialog_pnl_path"), TitledBorder.LEADING,//$NON
+				                 // -NLS-1$
+				                 TitledBorder.TOP, null, null
+				));
 
-		btnDownloadInstall = new JButton(Bundle.getString("installer_dialog_btn_download")); //$NON-NLS-1$
-		btnDownloadInstall.addActionListener((e) -> {
-			KrpcInstaller.downloadAndInstallKrpc();
-		});
+		btnDownloadInstall = new JButton(Bundle.getString("installer_dialog_btn_download")); //$NON
+		// -NLS-1$
+		btnDownloadInstall.addActionListener((e) -> KrpcInstaller.downloadAndInstallKrpc());
 		btnDownloadInstall.setEnabled(false);
 
 		btnCancel = new JButton(Bundle.getString("installer_dialog_btn_cancel")); //$NON-NLS-1$
-		btnCancel.addActionListener((e) -> {
-			this.dispose();
-		});
+		btnCancel.addActionListener((e) -> this.dispose());
 
 		pnlStatus = new JPanel();
 		pnlStatus.setBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null));
 
 		GroupLayout groupLayout = new GroupLayout(getContentPane());
-		groupLayout.setHorizontalGroup(groupLayout.createParallelGroup(Alignment.TRAILING).addGroup(groupLayout
-				.createSequentialGroup().addContainerGap()
-				.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
-						.addComponent(pnlKspFolderPath, GroupLayout.DEFAULT_SIZE, 414, Short.MAX_VALUE)
-						.addComponent(lblInstallerInfo, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 414,
-								Short.MAX_VALUE)
-						.addComponent(separator, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 414, Short.MAX_VALUE)
-						.addGroup(groupLayout.createSequentialGroup().addComponent(btnDownloadInstall)
-								.addPreferredGap(ComponentPlacement.RELATED, 184, Short.MAX_VALUE)
-								.addComponent(btnCancel)))
-				.addGap(10))
-				.addComponent(pnlStatus, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 434, Short.MAX_VALUE));
+		groupLayout.setHorizontalGroup(groupLayout.createParallelGroup(Alignment.TRAILING)
+		                                          .addGroup(groupLayout.createSequentialGroup()
+		                                                               .addContainerGap()
+		                                                               .addGroup(groupLayout.createParallelGroup(
+				                                                                                    Alignment.LEADING)
+		                                                                                    .addComponent(
+				                                                                                    pnlKspFolderPath,
+				                                                                                    GroupLayout.DEFAULT_SIZE,
+				                                                                                    414,
+				                                                                                    Short.MAX_VALUE
+		                                                                                                 )
+		                                                                                    .addComponent(
+				                                                                                    lblInstallerInfo,
+				                                                                                    Alignment.TRAILING,
+				                                                                                    GroupLayout.DEFAULT_SIZE,
+				                                                                                    414,
+				                                                                                    Short.MAX_VALUE
+		                                                                                                 )
+		                                                                                    .addComponent(separator,
+		                                                                                                  Alignment.TRAILING,
+		                                                                                                  GroupLayout.DEFAULT_SIZE,
+		                                                                                                  414,
+		                                                                                                  Short.MAX_VALUE
+		                                                                                                 )
+		                                                                                    .addGroup(
+				                                                                                    groupLayout.createSequentialGroup()
+				                                                                                               .addComponent(
+						                                                                                               btnDownloadInstall)
+				                                                                                               .addPreferredGap(
+						                                                                                               ComponentPlacement.RELATED,
+						                                                                                               184,
+						                                                                                               Short.MAX_VALUE
+				                                                                                                               )
+				                                                                                               .addComponent(
+						                                                                                               btnCancel)))
+		                                                               .addGap(10))
+		                                          .addComponent(pnlStatus, Alignment.LEADING, GroupLayout.DEFAULT_SIZE,
+		                                                        434, Short.MAX_VALUE
+		                                                       ));
 		groupLayout.setVerticalGroup(groupLayout.createParallelGroup(Alignment.LEADING)
-				.addGroup(groupLayout.createSequentialGroup().addContainerGap()
-						.addComponent(lblInstallerInfo, GroupLayout.PREFERRED_SIZE, 60, GroupLayout.PREFERRED_SIZE)
-						.addGap(2).addComponent(separator, GroupLayout.PREFERRED_SIZE, 2, GroupLayout.PREFERRED_SIZE)
-						.addPreferredGap(ComponentPlacement.UNRELATED)
-						.addComponent(pnlKspFolderPath, GroupLayout.PREFERRED_SIZE, 51, GroupLayout.PREFERRED_SIZE)
-						.addPreferredGap(ComponentPlacement.UNRELATED)
-						.addGroup(groupLayout.createParallelGroup(Alignment.BASELINE).addComponent(btnDownloadInstall)
-								.addComponent(btnCancel))
-						.addPreferredGap(ComponentPlacement.RELATED, 60, Short.MAX_VALUE)
-						.addComponent(pnlStatus, GroupLayout.PREFERRED_SIZE, 25, GroupLayout.PREFERRED_SIZE)));
+		                                        .addGroup(groupLayout.createSequentialGroup()
+		                                                             .addContainerGap()
+		                                                             .addComponent(lblInstallerInfo,
+		                                                                           GroupLayout.PREFERRED_SIZE, 60,
+		                                                                           GroupLayout.PREFERRED_SIZE
+		                                                                          )
+		                                                             .addGap(2)
+		                                                             .addComponent(separator,
+		                                                                           GroupLayout.PREFERRED_SIZE, 2,
+		                                                                           GroupLayout.PREFERRED_SIZE
+		                                                                          )
+		                                                             .addPreferredGap(ComponentPlacement.UNRELATED)
+		                                                             .addComponent(pnlKspFolderPath,
+		                                                                           GroupLayout.PREFERRED_SIZE, 51,
+		                                                                           GroupLayout.PREFERRED_SIZE
+		                                                                          )
+		                                                             .addPreferredGap(ComponentPlacement.UNRELATED)
+		                                                             .addGroup(groupLayout.createParallelGroup(
+				                                                                                  Alignment.BASELINE)
+		                                                                                  .addComponent(
+				                                                                                  btnDownloadInstall)
+		                                                                                  .addComponent(btnCancel))
+		                                                             .addPreferredGap(ComponentPlacement.RELATED, 60,
+		                                                                              Short.MAX_VALUE
+		                                                                             )
+		                                                             .addComponent(pnlStatus,
+		                                                                           GroupLayout.PREFERRED_SIZE, 25,
+		                                                                           GroupLayout.PREFERRED_SIZE
+		                                                                          )));
 
 		lblStatus = new JLabel();
 		GroupLayout glPnlStatus = new GroupLayout(pnlStatus);
-		glPnlStatus.setHorizontalGroup(
-				glPnlStatus.createParallelGroup(Alignment.LEADING).addGroup(glPnlStatus.createSequentialGroup()
-						.addContainerGap().addComponent(lblStatus).addContainerGap(389, Short.MAX_VALUE)));
+		glPnlStatus.setHorizontalGroup(glPnlStatus.createParallelGroup(Alignment.LEADING)
+		                                          .addGroup(glPnlStatus.createSequentialGroup()
+		                                                               .addContainerGap()
+		                                                               .addComponent(lblStatus)
+		                                                               .addContainerGap(389, Short.MAX_VALUE)));
 		glPnlStatus.setVerticalGroup(glPnlStatus.createParallelGroup(Alignment.TRAILING)
-				.addGroup(glPnlStatus.createSequentialGroup().addGap(2)
-						.addComponent(lblStatus, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-						.addGap(0)));
+		                                        .addGroup(glPnlStatus.createSequentialGroup()
+		                                                             .addGap(2)
+		                                                             .addComponent(lblStatus, GroupLayout.DEFAULT_SIZE,
+		                                                                           GroupLayout.DEFAULT_SIZE,
+		                                                                           Short.MAX_VALUE
+		                                                                          )
+		                                                             .addGap(0)));
 		pnlStatus.setLayout(glPnlStatus);
 
 		txfPath.setEditable(false);
@@ -115,21 +155,40 @@ public class InstallKrpcDialog extends JDialog {
 			txfPath.setText(KrpcInstaller.getKspFolder());
 		});
 		GroupLayout glPnlKspFolderPath = new GroupLayout(pnlKspFolderPath);
-		glPnlKspFolderPath.setHorizontalGroup(
-				glPnlKspFolderPath.createParallelGroup(Alignment.LEADING).addGroup(Alignment.TRAILING,
-						glPnlKspFolderPath.createSequentialGroup().addContainerGap()
-								.addComponent(txfPath, GroupLayout.DEFAULT_SIZE, 273, Short.MAX_VALUE)
-								.addPreferredGap(ComponentPlacement.RELATED).addComponent(btnBrowsePath,
-										GroupLayout.PREFERRED_SIZE, 103, GroupLayout.PREFERRED_SIZE)
-								.addContainerGap()));
-		glPnlKspFolderPath
-				.setVerticalGroup(glPnlKspFolderPath.createParallelGroup(Alignment.LEADING)
-						.addGroup(glPnlKspFolderPath.createSequentialGroup()
-								.addGroup(glPnlKspFolderPath.createParallelGroup(Alignment.BASELINE)
-										.addComponent(txfPath, GroupLayout.PREFERRED_SIZE, 23,
-												GroupLayout.PREFERRED_SIZE)
-										.addComponent(btnBrowsePath))
-								.addContainerGap(24, Short.MAX_VALUE)));
+		glPnlKspFolderPath.setHorizontalGroup(glPnlKspFolderPath.createParallelGroup(Alignment.LEADING)
+		                                                        .addGroup(Alignment.TRAILING,
+		                                                                  glPnlKspFolderPath.createSequentialGroup()
+		                                                                                    .addContainerGap()
+		                                                                                    .addComponent(txfPath,
+		                                                                                                  GroupLayout.DEFAULT_SIZE,
+		                                                                                                  273,
+		                                                                                                  Short.MAX_VALUE
+		                                                                                                 )
+		                                                                                    .addPreferredGap(
+				                                                                                    ComponentPlacement.RELATED)
+		                                                                                    .addComponent(btnBrowsePath,
+		                                                                                                  GroupLayout.PREFERRED_SIZE,
+		                                                                                                  103,
+		                                                                                                  GroupLayout.PREFERRED_SIZE
+		                                                                                                 )
+		                                                                                    .addContainerGap()
+		                                                                 ));
+		glPnlKspFolderPath.setVerticalGroup(glPnlKspFolderPath.createParallelGroup(Alignment.LEADING)
+		                                                      .addGroup(glPnlKspFolderPath.createSequentialGroup()
+		                                                                                  .addGroup(
+				                                                                                  glPnlKspFolderPath.createParallelGroup(
+						                                                                                                    Alignment.BASELINE)
+				                                                                                                    .addComponent(
+						                                                                                                    txfPath,
+						                                                                                                    GroupLayout.PREFERRED_SIZE,
+						                                                                                                    23,
+						                                                                                                    GroupLayout.PREFERRED_SIZE
+				                                                                                                                 )
+				                                                                                                    .addComponent(
+						                                                                                                    btnBrowsePath))
+		                                                                                  .addContainerGap(24,
+		                                                                                                   Short.MAX_VALUE
+		                                                                                                  )));
 		pnlKspFolderPath.setLayout(glPnlKspFolderPath);
 		getContentPane().setLayout(groupLayout);
 

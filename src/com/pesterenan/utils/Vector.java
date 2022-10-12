@@ -28,7 +28,7 @@ public class Vector {
 	/**
 	 * Cria um vetor a partir de outro Vetor
 	 *
-	 * @param v - Outro Vetor
+	 * @param newVector - Outro Vetor
 	 */
 	public Vector(Vector newVector) {
 		this.x = newVector.x;
@@ -50,7 +50,6 @@ public class Vector {
 	/**
 	 * Calcula o ângulo do vetor de direção informado
 	 *
-	 * @param vector - Vetor para calcular o ângulo
 	 * @return - O ângulo da direção desse vetor, entre -180 a 180 graus.
 	 */
 	public double heading() {
@@ -58,9 +57,6 @@ public class Vector {
 	}
 
 	public static double distance(Vector start, Vector end) {
-		if (start.equals(null) || end.equals(null)) {
-			return 0;
-		}
 		return end.subtract(start).magnitude();
 	}
 

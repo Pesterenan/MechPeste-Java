@@ -11,7 +11,7 @@ public class Utilities {
 	}
 
 	public static double remap(double inputMin, double inputMax, double outputMin, double outputMax, double value,
-							   boolean clampOutput) {
+	                           boolean clampOutput) {
 		double between = inverseLinearInterpolation(inputMin, inputMax, value);
 		double remappedOutput = linearInterpolation(outputMin, outputMax, between);
 		return clampOutput ? clamp(remappedOutput, outputMin, outputMax) : remappedOutput;

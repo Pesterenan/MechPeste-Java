@@ -1,5 +1,7 @@
 package com.pesterenan.updater;
 
+import com.pesterenan.views.InstallKrpcDialog;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -12,12 +14,10 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import com.pesterenan.views.InstallKrpcDialog;
-import com.pesterenan.views.StatusJPanel;
-
 public class KrpcInstaller {
 	static final int BUFFER = 2048;
-	private static final String KRPC_GITHUB_LINK = "https://github.com/nullprofile/krpc/releases/download/0.4.9-1.12.1/krpc-0.4.9-1.12.1.zip";
+	private static final String KRPC_GITHUB_LINK =
+			"https://github.com/nullprofile/krpc/releases/download/0.4.9-1.12.1/krpc-0.4.9-1.12.1.zip";
 	private static String KSP_FOLDER = null;
 
 	public static String getKspFolder() {
@@ -38,7 +38,7 @@ public class KrpcInstaller {
 	}
 
 	public static void downloadKrpc() {
-		URL krpcLink = null;
+		URL krpcLink;
 		try {
 
 			krpcLink = new URL(KRPC_GITHUB_LINK);
@@ -58,14 +58,14 @@ public class KrpcInstaller {
 			if (!folder.exists()) {
 				folder.mkdir();
 			}
-			BufferedOutputStream dest = null;
+			BufferedOutputStream dest;
 			// zipped input
 			FileInputStream fis = new FileInputStream(KSP_FOLDER + "\\krpc-0.4.9-1.12.1.zip");
 			ZipInputStream zis = new ZipInputStream(new BufferedInputStream(fis));
 			ZipEntry entry;
 			while ((entry = zis.getNextEntry()) != null) {
 				int count;
-				byte data[] = new byte[BUFFER];
+				byte[] data = new byte[BUFFER];
 				String fileName = entry.getName();
 				File newFile = new File(folder + File.separator + fileName);
 				// If directory then just create the directory (and parents if required)
