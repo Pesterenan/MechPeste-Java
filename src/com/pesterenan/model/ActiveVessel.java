@@ -95,10 +95,8 @@ public class ActiveVessel {
 			naveAtual.getControl().setSAS(true);
 			throttle(1f);
 			if (naveAtual.getSituation().equals(VesselSituation.PRE_LAUNCH)) {
-				float launchCount = 5f;
-				while (launchCount > 0) {
-					StatusJPanel.setStatus(String.format(Bundle.getString("status_launching_in"), launchCount));
-					launchCount -= 0.1;
+				for (float count = 5f; count >= 0; count -= 0.1) {
+					StatusJPanel.setStatus(String.format(Bundle.getString("status_launching_in"), count));
 					Thread.sleep(100);
 				}
 				naveAtual.getControl().activateNextStage();

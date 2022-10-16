@@ -118,7 +118,7 @@ public class PathFinding extends ActiveVessel {
 		pathToTarget.add(currentRoverPos);
 		// Calculate the next points positions and add to the list on Orbital Ref
 		int index = 0;
-		while (distanceToTarget > 100) {
+		while (distanceToTarget > 50) {
 			Vector previousPoint = pathToTarget.get(index);
 			index++;
 			Vector directionToTarget =
@@ -144,26 +144,26 @@ public class PathFinding extends ActiveVessel {
 	private Vector avoidObstacles(Vector currentPoint, Vector targetDirection) throws RPCException, IOException {
 		// PONTO REF SUPERFICIE: X = CIMA, Y = NORTE, Z = LESTE;
 		// Distance of the next point in the path to the previous one:
-		double stepDistance = 10.0;
+		double stepDistance = 50.0;
 
 		// Raycast distance in front of rover:
 		double centerDistance =
-				raycastDistance(currentPoint, transformDirection(targetDirection, false), pontoRefSuperficie);
+				raycastDistance(currentPoint, transformDirection(targetDirection, false), pontoRefSuperficie, 20);
 		double left15degDistance =
 				raycastDistance(currentPoint, transformDirection(targetDirection.sum(L30DEG).normalize(), false),
-				                pontoRefSuperficie
+				                pontoRefSuperficie, 20
 				               );
 		double left30degDistance =
 				raycastDistance(currentPoint, transformDirection(targetDirection.sum(L60DEG).normalize(), false),
-				                pontoRefSuperficie
+				                pontoRefSuperficie, 20
 				               );
 		double right15degDistance =
 				raycastDistance(currentPoint, transformDirection(targetDirection.sum(R30DEG).normalize(), false),
-				                pontoRefSuperficie
+				                pontoRefSuperficie, 20
 				               );
 		double right30degDistance =
 				raycastDistance(currentPoint, transformDirection(targetDirection.sum(R60DEG).normalize(), false),
-				                pontoRefSuperficie
+				                pontoRefSuperficie, 20
 				               );
 
 		// Calculate the next point direction based on all raycast distances:
@@ -188,8 +188,8 @@ public class PathFinding extends ActiveVessel {
 		return transformSurfToOrb(currentPoint.sum(nextPointDirection.multiply(stepDistance)));
 	}
 
-	public double raycastDistance(Vector currentPoint, Vector targetDirection, SpaceCenter.ReferenceFrame reference) throws RPCException {
-		double searchDistance = 20.0;
+	public double raycastDistance(Vector currentPoint, Vector targetDirection, SpaceCenter.ReferenceFrame reference,
+	                              double searchDistance) throws RPCException {
 		return Math.min(
 				centroEspacial.raycastDistance(currentPoint.toTriplet(), targetDirection.toTriplet(), reference),
 				searchDistance

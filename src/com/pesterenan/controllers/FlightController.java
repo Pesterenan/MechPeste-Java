@@ -47,7 +47,6 @@ public class FlightController extends ActiveVessel implements Runnable {
 				if (MechPeste.getCurrentGameScene().equals(KRPC.GameScene.FLIGHT)) {
 					trocaDeNaves();
 					enviarTelemetria();
-//				InGameGUI.getInstance().checkButtons();
 				}
 				Thread.sleep(250);
 			} catch (InterruptedException | RPCException | StreamException | NullPointerException e) {

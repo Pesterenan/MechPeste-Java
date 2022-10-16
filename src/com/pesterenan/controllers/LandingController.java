@@ -75,9 +75,9 @@ public class LandingController extends ActiveVessel implements Runnable {
 					} else {
 						navigation.targetRadialOut();
 					}
-					velocityCtrl.adjustPID(getTWR() * velP, velI, velD);
-					double altPID = altitudeCtrl.calcPID(altitudeSup.get() / hoverAltitude * 100, 100);
-					double velPID = velocityCtrl.calcPID(velVertical.get(), altPID * gravityAcel);
+					velocityCtrl.adjustPID(velP, velI, velD);
+					double altPID = altitudeCtrl.calcPID((altitudeSup.get() / hoverAltitude) * 10000, 10000);
+					double velPID = velocityCtrl.calcPID(velVertical.get(), altPID * gravityAcel * 2);
 					throttle(velPID);
 					if (landFromHovering) {
 						naveAtual.getControl().setGear(true);

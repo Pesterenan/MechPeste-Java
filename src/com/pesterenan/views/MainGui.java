@@ -33,7 +33,6 @@ public class MainGui extends JFrame implements ActionListener {
 
 	public static MainGui getInstance() {
 		if (mainGui == null) {
-
 			mainGui = new MainGui();
 		}
 		return mainGui;

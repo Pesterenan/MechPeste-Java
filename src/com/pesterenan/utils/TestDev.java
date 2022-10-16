@@ -104,7 +104,7 @@ public class TestDev {
 				// descobrir a distancia do obstaculo na frente do vetor
 				double distanceToObstacle =
 						pathFinding.raycastDistance(radarSourcePosition, transformDirection(currentDirection),
-						                            pontoRefSuperficie
+						                            pontoRefSuperficie, 50
 						                           );
 				// criar vetor com a distancia calculada
 				Vector directionEndPoint = currentDirection.multiply(distanceToObstacle);

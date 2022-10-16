@@ -19,14 +19,13 @@ import java.util.Map;
 public class LiftoffController extends ActiveVessel implements Runnable {
 
 	private static final float PITCH_UP = 90;
-
+	private final ControlePID thrControl = new ControlePID();
 	private float currentPitch;
 	private float finalApoapsisAlt = 80000;
 	private float heading = 90;
 	private float roll = 90;
 	private boolean willDecoupleStages, willDeployPanelsAndRadiators;
 	private String gravityCurveModel = Modulos.CIRCULAR.get();
-	private final ControlePID thrControl = new ControlePID();
 
 	public LiftoffController(Map<String, String> commands) {
 		super(getConexao());
@@ -42,6 +41,7 @@ public class LiftoffController extends ActiveVessel implements Runnable {
 			setRoll(Float.parseFloat(commands.get(Modulos.ROLAGEM.get())));
 			setGravityCurveModel(commands.get(Modulos.INCLINACAO.get()));
 			willDeployPanelsAndRadiators = Boolean.parseBoolean(commands.get(Modulos.ABRIR_PAINEIS.get()));
+			System.out.println(willDeployPanelsAndRadiators);
 			willDecoupleStages = Boolean.parseBoolean(commands.get(Modulos.USAR_ESTAGIOS.get()));
 			currentBody = naveAtual.getOrbit().getBody();
 			pontoRefSuperficie = naveAtual.getSurfaceReferenceFrame();
@@ -53,6 +53,7 @@ public class LiftoffController extends ActiveVessel implements Runnable {
 			velHorizontal = getConexao().addStream(parametrosDeVoo, "getHorizontalSpeed");
 			apoastro = getConexao().addStream(naveAtual.getOrbit(), "getApoapsisAltitude");
 			periastro = getConexao().addStream(naveAtual.getOrbit(), "getPeriapsisAltitude");
+			thrControl.adjustOutput(0.1, 1.0);
 			gravityAcel = currentBody.getSurfaceGravity();
 		} catch (StreamException | RPCException ignored) {
 		}
@@ -107,6 +108,7 @@ public class LiftoffController extends ActiveVessel implements Runnable {
 			throttle(thrControl.calcPID(apoastro.get() / getFinalApoapsis() * 1000, 1000));
 			Thread.sleep(100);
 		}
+		throttle(0.0f);
 		if (willDeployPanelsAndRadiators) {
 			deployPanelsAndRadiators();
 		}
@@ -130,6 +132,7 @@ public class LiftoffController extends ActiveVessel implements Runnable {
 
 	private void deployPanelsAndRadiators() throws RPCException, InterruptedException {
 		List<Fairing> fairings = naveAtual.getParts().getFairings();
+		System.out.println(fairings);
 		if (fairings.size() > 0) {
 			StatusJPanel.setStatus(Bundle.getString("status_jettisoning_shields"));
 			for (Fairing f : fairings) {
@@ -137,6 +140,7 @@ public class LiftoffController extends ActiveVessel implements Runnable {
 					// Overly complicated way of getting the event from the button in the fairing
 					// to jettison the fairing, since the jettison method doesn't work.
 					String eventName = f.getPart().getModules().get(0).getEvents().get(0);
+					System.out.println(eventName);
 					f.getPart().getModules().get(0).triggerEvent(eventName);
 					Thread.sleep(10000);
 				}

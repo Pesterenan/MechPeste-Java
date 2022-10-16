@@ -15,6 +15,7 @@ import krpc.client.services.SpaceCenter.ReferenceFrame;
 import krpc.client.services.SpaceCenter.SolarPanel;
 import krpc.client.services.SpaceCenter.SolarPanelState;
 import krpc.client.services.SpaceCenter.Vessel;
+import org.javatuples.Pair;
 import org.javatuples.Triplet;
 
 import java.io.IOException;
@@ -23,30 +24,26 @@ import java.util.List;
 import java.util.Map;
 
 public class RoverController extends ActiveVessel implements Runnable {
-	private static final int MAX_RADAR_LINES = 10;
-	Vector nextPoint, pathDirection;
+	private static final int MAX_RADAR_LINES = 7;
+	private final ControlePID sterringCtrl = new ControlePID();
+	private final ControlePID acelCtrl = new ControlePID();
+	private final Map<String, String> commands;
+	private final List<Drawing.Line> radarLines = new ArrayList<>();
 	float distanceFromTargetLimit = 50;
 	float velocidadeCurva = 3;
 	ControlePID ctrlRolagem = new ControlePID(), ctrlArfagem = new ControlePID();
-	private String targetWaypointName = "";
+	private String targetWaypointName;
 	private Vessel targetVessel;
 	private float maxSpeed = 5;
-	private final ControlePID sterringCtrl = new ControlePID();
-	private final ControlePID acelCtrl = new ControlePID();
 	private ReferenceFrame pontoRefRover;
 	private boolean isAutoRoverRunning = true;
-	private final Map<String, String> commands;
 	private Drawing drawing;
 	private Stream<Float> bateriaAtual;
-	private Drawing.Line right30Line;
-	private Drawing.Line left30Line;
 	private Drawing.Line steeringLine;
 	private PathFinding pathFinding;
 	private Vector targetPoint = new Vector();
 	private Vector roverDirection;
-
 	private Drawing.Line dirRover;
-	private final List<Drawing.Line> radarLines = new ArrayList<>();
 
 
 	public RoverController(Map<String, String> commands) {
@@ -92,7 +89,7 @@ public class RoverController extends ActiveVessel implements Runnable {
 			steeringLine = drawing.addDirection(roverDirection.toTriplet(), pontoRefRover, 10, true);
 			steeringLine.setColor(new Triplet<>(1.0, 0.0, 1.0));
 			for (int i = 0; i <= MAX_RADAR_LINES; i++) {
-				Drawing.Line line = drawing.addDirection(roverDirection.toTriplet(), pontoRefRover, 10, true);
+				Drawing.Line line = drawing.addDirection(roverDirection.toTriplet(), pontoRefSuperficie, 1, true);
 				line.setColor(new Triplet<>(0.0, (1.0 / MAX_RADAR_LINES), 0.0));
 				line.setThickness(0.2f);
 				radarLines.add(line);
@@ -122,7 +119,9 @@ public class RoverController extends ActiveVessel implements Runnable {
 	}
 
 	private void drawLineBetweenPoints(Vector pointA, Vector pointB) throws RPCException {
-		Drawing.Line line = drawing.addLine(pointA.toTriplet(), pointB.toTriplet(), pontoRefOrbital, true);
+		Drawing.Line line = drawing.addLine(posRoverToSurf(pointA).toTriplet(), posRoverToSurf(pointB).toTriplet(),
+		                                    pontoRefSuperficie, true
+		                                   );
 		line.setThickness(0.5f);
 		line.setColor(new Triplet<>(1.0, 0.5, 0.0));
 	}
@@ -190,7 +189,7 @@ public class RoverController extends ActiveVessel implements Runnable {
 		return true;
 	}
 
-	private void setRoverThrottle(double throttle) throws IOException, RPCException, StreamException {
+	private void setRoverThrottle(double throttle) throws RPCException, StreamException {
 		if (velHorizontal.get() < (maxSpeed * 1.01)) {
 			naveAtual.getControl().setBrakes(false);
 			naveAtual.getControl().setWheelThrottle((float) throttle);
@@ -199,7 +198,7 @@ public class RoverController extends ActiveVessel implements Runnable {
 		}
 	}
 
-	private void setRoverSteering(double steering) throws IOException, RPCException, StreamException {
+	private void setRoverSteering(double steering) throws RPCException {
 		naveAtual.getControl().setWheelSteering((float) steering);
 	}
 
@@ -210,18 +209,20 @@ public class RoverController extends ActiveVessel implements Runnable {
 				posRoverToSurf(new Vector(naveAtual.position(pontoRefRover)).sum(new Vector(0.0, 3.0, 0.0)));
 
 		double roverAngle = (roverDirection.heading());
-		double targetAngle = (targetDirection.heading());
 		// fazer um raycast pra frente e verificar a distancia
-		double obstacleAhead = pathFinding.raycastDistance(radarSourcePosition, transformDirection(roverDirection),
-		                                                   pontoRefSuperficie
-		                                                  );
+		double obstacleAhead =
+				pathFinding.raycastDistance(radarSourcePosition, transformDirection(roverDirection),
+				                            pontoRefSuperficie,
+				                            20
+				                           );
 		// transformar a distancia num valor entre 0.25 e 1.0
 		double steeringPower = Utilities.remap(2, 20, 0.05, 0.5, obstacleAhead, true);
 		// usar esse valor pra muiltiplicar a direcao alvo
-		double targetDirectionWithRadar =
-				(targetDirection.multiply(steeringPower).sum(directionFromRadar()).normalize()).heading();
+		double targetDirectionWithRadar = (targetDirection.multiply(steeringPower)
+		                                                  .sum(directionFromRadar(naveAtual.boundingBox(pontoRefRover)))
+		                                                  .normalize()).heading();
 		double deltaAngle = Math.abs(targetDirectionWithRadar - roverAngle);
-		naveAtual.getControl().setSAS(velHorizontal.get() > velocidadeCurva && deltaAngle < 5);
+		naveAtual.getControl().setSAS(velHorizontal.get() > velocidadeCurva && deltaAngle < 31);
 		// Control Rover Throttle
 		setRoverThrottle(acelCtrl.calcPID(velHorizontal.get() / maxSpeed * 50, 50));
 		// Control Rover Steering
@@ -232,55 +233,93 @@ public class RoverController extends ActiveVessel implements Runnable {
 		}
 	}
 
-	private void setNextPointInPath() throws IOException, RPCException {
+	private void setNextPointInPath() {
 		targetPoint = pathFinding.getPathsFirstPoint();
 	}
 
-	private Vector directionFromRadar() throws RPCException, IOException {
+	private Vector directionFromRadar(Pair<Triplet<Double, Double, Double>, Triplet<Double, Double, Double>> boundingBox) throws RPCException, IOException {
 		// PONTO REF ROVER: X = DIREITA, Y = FRENTE, Z = BAIXO;
-		Vector radarSourcePosition =
-				posRoverToSurf(new Vector(naveAtual.position(pontoRefRover)).sum(new Vector(0.0, 3.0, 0.0)));
-		Vector roverDirection = new Vector(naveAtual.direction(pontoRefRover));
+		// Bounding box points from rover (LBU: Left, Back, Up - RFD: Right, Front, Down):
+		Vector LBU = new Vector(boundingBox.getValue0());
+		Vector RFD = new Vector(boundingBox.getValue1());
 
-		Vector bboxEsqSuperior = new Vector(naveAtual.boundingBox(pontoRefRover).getValue0());
-		Vector bboxDirInferior = new Vector(naveAtual.boundingBox(pontoRefRover).getValue1());
-		Vector radarSourceBoundingBoxPosition = posRoverToSurf(
-				new Vector((bboxEsqSuperior.x + bboxDirInferior.x) / 2, bboxDirInferior.y,
-				           (bboxEsqSuperior.z + bboxDirInferior.z) / 2
-				));
-		// Raycasting and calculating directions:
-		Vector calculatedDirection = new Vector();
-		for (int i = 1; i <= MAX_RADAR_LINES; i++) {
-			Drawing.Line line = radarLines.get(i);
-			Vector currentDirection = createRadarDirection(i);
-			// descobrir a distancia do obstaculo na frente do vetor
-			double distanceToObstacle =
-					pathFinding.raycastDistance(radarSourceBoundingBoxPosition, transformDirection(currentDirection),
-					                            pontoRefSuperficie
-					                           );
-			// criar vetor com a distancia calculada
-			Vector directionEndPoint = currentDirection.multiply(distanceToObstacle);
-			// Desenha a linha no jogo
-			line.setReferenceFrame(pontoRefSuperficie);
-			line.setStart(radarSourceBoundingBoxPosition.toTriplet());
-			line.setEnd(radarSourcePosition.sum(transformDirection(currentDirection).multiply(distanceToObstacle))
-			                               .toTriplet());
+		// Pre-calculated bbox positions
+		Vector lateralEsq = new Vector(LBU.x, LBU.y * 0.5 + RFD.y * 0.5, LBU.z * 0.5 + RFD.z * 0.5);
+		Vector latFrontEsq = new Vector(LBU.x, RFD.y * 0.5, LBU.z * 0.5 + RFD.z * 0.5);
+		Vector frontalEsq = new Vector(LBU.x, RFD.y, LBU.z * 0.5 + RFD.z * 0.5);
+		Vector frontal = new Vector(LBU.x * 0.5 + RFD.x * 0.5, RFD.y, LBU.z * 0.5 + RFD.z * 0.5);
+		Vector frontalDir = new Vector(RFD.x, RFD.y, LBU.z * 0.5 + RFD.z * 0.5);
+		Vector latFrontDir = new Vector(RFD.x, RFD.y * 0.5, LBU.z * 0.5 + RFD.z * 0.5);
+		Vector lateralDir = new Vector(RFD.x, LBU.y * 0.5 + RFD.y * 0.5, LBU.z * 0.5 + RFD.z * 0.5);
 
-			// soma o vetor na direcao calculada
-			calculatedDirection = calculatedDirection.sum(directionEndPoint);
-		}
+		// Pre-calculated bbox directions
+		Vector lateralEsqAngulo = new Vector(-Math.sin(Math.toRadians(90)), Math.cos(Math.toRadians(90)), 0.0);
+		Vector latFrontEsqAngulo = new Vector(-Math.sin(Math.toRadians(60)), Math.cos(Math.toRadians(60)), 0.0);
+		Vector frontalEsqAngulo = new Vector(-Math.sin(Math.toRadians(30)), Math.cos(Math.toRadians(30)), 0.0);
+		Vector frontalAngulo = new Vector(0.0, 1.0, 0.0);
+		Vector frontalDirAngulo = new Vector(Math.sin(Math.toRadians(30)), Math.cos(Math.toRadians(30)), 0.0);
+		Vector latFrontDirAngulo = new Vector(Math.sin(Math.toRadians(60)), Math.cos(Math.toRadians(60)), 0.0);
+		Vector lateralDirAngulo = new Vector(Math.sin(Math.toRadians(90)), Math.cos(Math.toRadians(90)), 0.0);
+
+		// Raytracing distance from points:
+		Vector lateralEsqRay = calculateRaycastDirection(lateralEsq, lateralEsqAngulo, 5);
+		Vector latFrontEsqRay = calculateRaycastDirection(latFrontEsq, latFrontEsqAngulo, 15);
+		Vector frontalEsqRay = calculateRaycastDirection(frontalEsq, frontalEsqAngulo, 25);
+		Vector frontalRay = calculateRaycastDirection(frontal, frontalAngulo, 35);
+		Vector frontalDirRay = calculateRaycastDirection(frontalDir, frontalDirAngulo, 25);
+		Vector latFrontDirRay = calculateRaycastDirection(latFrontDir, latFrontDirAngulo, 15);
+		Vector lateralDirRay = calculateRaycastDirection(lateralDir, lateralDirAngulo, 5);
+
+		Drawing.Line line0 = radarLines.get(0);
+		line0.setStart(posRoverToSurf(lateralEsq).toTriplet());
+		line0.setEnd(posRoverToSurf(lateralEsqRay).toTriplet());
+		Drawing.Line line1 = radarLines.get(1);
+		line1.setStart(posRoverToSurf(latFrontEsq).toTriplet());
+		line1.setEnd(posRoverToSurf(latFrontEsqRay).toTriplet());
+		Drawing.Line line2 = radarLines.get(2);
+		line2.setStart(posRoverToSurf(frontalEsq).toTriplet());
+		line2.setEnd(posRoverToSurf(frontalEsqRay).toTriplet());
+		Drawing.Line line3 = radarLines.get(3);
+		line3.setStart(posRoverToSurf(frontal).toTriplet());
+		line3.setEnd(posRoverToSurf(frontalRay).toTriplet());
+		Drawing.Line line4 = radarLines.get(4);
+		line4.setStart(posRoverToSurf(frontalDir).toTriplet());
+		line4.setEnd(posRoverToSurf(frontalDirRay).toTriplet());
+		Drawing.Line line5 = radarLines.get(5);
+		line5.setStart(posRoverToSurf(latFrontDir).toTriplet());
+		line5.setEnd(posRoverToSurf(latFrontDirRay).toTriplet());
+		Drawing.Line line6 = radarLines.get(6);
+		line6.setStart(posRoverToSurf(lateralDir).toTriplet());
+		line6.setEnd(posRoverToSurf(lateralDirRay).toTriplet());
+
+
+		Vector calculatedDirection = new Vector().sum(lateralEsqRay)
+		                                         .sum(latFrontEsqRay)
+		                                         .sum(frontalEsqRay)
+		                                         .sum(frontalRay)
+		                                         .sum(frontalDirRay)
+		                                         .sum(latFrontDirRay)
+		                                         .sum(lateralDirRay);
 
 		steeringLine.setReferenceFrame(pontoRefSuperficie);
-		steeringLine.setStart(radarSourcePosition.toTriplet());
+		steeringLine.setStart(posRoverToSurf(frontal).toTriplet());
 		steeringLine.setEnd(
-				radarSourcePosition.sum(transformDirection(calculatedDirection.normalize()).multiply(50)).toTriplet());
-		return calculatedDirection.normalize();
+				posRoverToSurf(frontal).sum(transformDirection(calculatedDirection.normalize()).multiply(10))
+				                       .toTriplet());
+		return (calculatedDirection.normalize());
 	}
 
-	private Vector createRadarDirection(int iteration) {
-		double angle = (180.0 / MAX_RADAR_LINES) * iteration;
+	private Vector calculateRaycastDirection(Vector point, Vector direction, double distance) throws RPCException {
+		double raycast =
+				pathFinding.raycastDistance(posRoverToSurf(point), transformDirection(direction), pontoRefSuperficie,
+				                            distance
+				                           );
+		return direction.multiply(raycast);
+	}
+
+	private Vector createRadarDirection(double angle) {
 		int sign = angle > 90 ? -1 : 1;
-		angle = angle > 90 ? angle - 90 : angle;
+		angle = angle >= 90 ? angle - 90 : angle;
 		return new Vector(Math.sin(Math.toRadians(angle)) * sign, Math.cos(Math.toRadians(angle)), 0.0);
 	}
 
@@ -288,15 +327,15 @@ public class RoverController extends ActiveVessel implements Runnable {
 		return new Vector(centroEspacial.transformDirection(vector.toTriplet(), pontoRefRover, pontoRefSuperficie));
 	}
 
-	private Vector posSurfToRover(Vector vector) throws IOException, RPCException {
+	private Vector posSurfToRover(Vector vector) throws RPCException {
 		return new Vector(centroEspacial.transformPosition(vector.toTriplet(), pontoRefSuperficie, pontoRefRover));
 	}
 
-	private Vector posRoverToSurf(Vector vector) throws IOException, RPCException {
+	private Vector posRoverToSurf(Vector vector) throws RPCException {
 		return new Vector(centroEspacial.transformPosition(vector.toTriplet(), pontoRefRover, pontoRefSuperficie));
 	}
 
-	private Vector posOrbToSurf(Vector vector) throws IOException, RPCException {
+	private Vector posOrbToSurf(Vector vector) throws RPCException {
 		return new Vector(centroEspacial.transformPosition(vector.toTriplet(), pontoRefOrbital, pontoRefSuperficie));
 	}
 }
