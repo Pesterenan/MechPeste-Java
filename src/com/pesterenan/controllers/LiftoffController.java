@@ -6,6 +6,7 @@ import com.pesterenan.resources.Bundle;
 import com.pesterenan.utils.ControlePID;
 import com.pesterenan.utils.Modulos;
 import com.pesterenan.utils.Utilities;
+import com.pesterenan.utils.Vector;
 import com.pesterenan.views.StatusJPanel;
 import krpc.client.RPCException;
 import krpc.client.StreamException;
@@ -41,7 +42,6 @@ public class LiftoffController extends ActiveVessel implements Runnable {
 			setRoll(Float.parseFloat(commands.get(Modulos.ROLAGEM.get())));
 			setGravityCurveModel(commands.get(Modulos.INCLINACAO.get()));
 			willDeployPanelsAndRadiators = Boolean.parseBoolean(commands.get(Modulos.ABRIR_PAINEIS.get()));
-			System.out.println(willDeployPanelsAndRadiators);
 			willDecoupleStages = Boolean.parseBoolean(commands.get(Modulos.USAR_ESTAGIOS.get()));
 			currentBody = naveAtual.getOrbit().getBody();
 			pontoRefSuperficie = naveAtual.getSurfaceReferenceFrame();
@@ -53,7 +53,7 @@ public class LiftoffController extends ActiveVessel implements Runnable {
 			velHorizontal = getConexao().addStream(parametrosDeVoo, "getHorizontalSpeed");
 			apoastro = getConexao().addStream(naveAtual.getOrbit(), "getApoapsisAltitude");
 			periastro = getConexao().addStream(naveAtual.getOrbit(), "getPeriapsisAltitude");
-			thrControl.adjustOutput(0.1, 1.0);
+			thrControl.adjustOutput(0.0, 1.0);
 			gravityAcel = currentBody.getSurfaceGravity();
 		} catch (StreamException | RPCException ignored) {
 		}
@@ -71,10 +71,17 @@ public class LiftoffController extends ActiveVessel implements Runnable {
 		}
 	}
 
+	private void tuneAutoPilot() throws RPCException {
+		naveAtual.getControl().setRCS(true);
+		ap.setTimeToPeak(new Vector(6.28, 6.28, 6.28).toTriplet());
+		ap.setDecelerationTime(new Vector(3.14, 3.14, 3.14).toTriplet());
+	}
+
 	private void gravityCurve() throws RPCException, StreamException, InterruptedException {
 		ap.setReferenceFrame(pontoRefSuperficie);
 		ap.targetPitchAndHeading(currentPitch, getHeading());
 		ap.setTargetRoll(getRoll());
+		tuneAutoPilot();
 		ap.engage();
 		throttle(1f);
 
@@ -132,15 +139,13 @@ public class LiftoffController extends ActiveVessel implements Runnable {
 
 	private void deployPanelsAndRadiators() throws RPCException, InterruptedException {
 		List<Fairing> fairings = naveAtual.getParts().getFairings();
-		System.out.println(fairings);
 		if (fairings.size() > 0) {
 			StatusJPanel.setStatus(Bundle.getString("status_jettisoning_shields"));
 			for (Fairing f : fairings) {
-				if (!f.getJettisoned()) {
+				if (f.getJettisoned()) {
 					// Overly complicated way of getting the event from the button in the fairing
 					// to jettison the fairing, since the jettison method doesn't work.
 					String eventName = f.getPart().getModules().get(0).getEvents().get(0);
-					System.out.println(eventName);
 					f.getPart().getModules().get(0).triggerEvent(eventName);
 					Thread.sleep(10000);
 				}
@@ -193,10 +198,10 @@ public class LiftoffController extends ActiveVessel implements Runnable {
 		return this.roll;
 	}
 
-	public void setRoll(float heading) {
-		final int MIN_HEADING = 0;
-		final int MAX_HEADING = 360;
-		this.roll = (float) Utilities.clamp(heading, MIN_HEADING, MAX_HEADING);
+	public void setRoll(float roll) {
+		final int MIN_ROLL = 0;
+		final int MAX_ROLL = 360;
+		this.roll = (float) Utilities.clamp(roll, MIN_ROLL, MAX_ROLL);
 	}
 
 	private void setGravityCurveModel(String model) {
