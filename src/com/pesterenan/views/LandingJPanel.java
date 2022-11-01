@@ -42,12 +42,14 @@ public class LandingJPanel extends JPanel implements ActionListener {
 
 		txfHover.setHorizontalAlignment(SwingConstants.CENTER);
 		txfHover.setColumns(10);
+		txfHover.setEnabled(false);
 
 		btnHover.addActionListener(this);
 		btnHover.setSize(ParametersJPanel.BTN_DIMENSION);
 		btnHover.setPreferredSize(btnHover.getSize());
 		btnHover.setMinimumSize(btnHover.getSize());
 		btnHover.setMaximumSize(btnHover.getSize());
+		btnHover.setEnabled(false);
 
 		btnBack.addActionListener(this);
 		btnBack.setSize(ParametersJPanel.BTN_DIMENSION);

@@ -57,7 +57,7 @@ public class LandingController extends ActiveVessel implements Runnable {
 		if (commands.get(Modulos.MODULO.get()).equals(Modulos.MODULO_POUSO_SOBREVOAR.get())) {
 			this.hoverAltitude = Double.parseDouble(commands.get(Modulos.ALTITUDE_SOBREVOO.get()));
 			hoveringMode = true;
-			altitudeCtrl.adjustOutput(-0.2, 1);
+
 			hoverArea();
 		}
 		if (commands.get(Modulos.MODULO.get()).equals(Modulos.MODULO_POUSO.get())) {
@@ -67,6 +67,8 @@ public class LandingController extends ActiveVessel implements Runnable {
 
 	private void hoverArea() {
 		try {
+			altitudeCtrl.adjustOutput(-0.8, 1.2);
+			velocityCtrl.adjustOutput(0, 1);
 			ap.engage();
 			while (hoveringMode) {
 				try {
@@ -75,9 +77,10 @@ public class LandingController extends ActiveVessel implements Runnable {
 					} else {
 						navigation.targetRadialOut();
 					}
-					velocityCtrl.adjustPID(velP, velI, velD);
-					double altPID = altitudeCtrl.calcPID((altitudeSup.get() / hoverAltitude) * 10000, 10000);
-					double velPID = velocityCtrl.calcPID(velVertical.get(), altPID * gravityAcel * 2);
+					double altPID = altitudeCtrl.calcPID((altitudeSup.get() / hoverAltitude) * 50, 50);
+					System.out.println(altPID + "ALT PID");
+					double velPID = velocityCtrl.calcPID((velVertical.get() / (altPID * gravityAcel)) * 50, 50);
+					System.out.println(velPID + "VEL PID");
 					throttle(velPID);
 					if (landFromHovering) {
 						naveAtual.getControl().setGear(true);

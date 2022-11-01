@@ -6,7 +6,6 @@ import com.pesterenan.resources.Bundle;
 import com.pesterenan.utils.ControlePID;
 import com.pesterenan.utils.Modulos;
 import com.pesterenan.utils.Utilities;
-import com.pesterenan.utils.Vector;
 import com.pesterenan.views.StatusJPanel;
 import krpc.client.RPCException;
 import krpc.client.StreamException;
@@ -71,11 +70,6 @@ public class LiftoffController extends ActiveVessel implements Runnable {
 		}
 	}
 
-	private void tuneAutoPilot() throws RPCException {
-		naveAtual.getControl().setRCS(true);
-		ap.setTimeToPeak(new Vector(6.28, 6.28, 6.28).toTriplet());
-		ap.setDecelerationTime(new Vector(3.14, 3.14, 3.14).toTriplet());
-	}
 
 	private void gravityCurve() throws RPCException, StreamException, InterruptedException {
 		ap.setReferenceFrame(pontoRefSuperficie);

@@ -23,9 +23,9 @@ public class RoverJPanel extends JPanel implements ActionListener {
 	private final JButton btnBack = new JButton();
 	private final JButton btnDrive = new JButton();
 	private final JPanel pnlTargetChoice = new JPanel();
+	private final ButtonGroup bgChoice = new ButtonGroup();
 	private JRadioButton rbTargetVessel;
 	private JRadioButton rbWaypointOnMap;
-	private final ButtonGroup bgChoice = new ButtonGroup();
 	private JLabel lblMaxSpeed;
 	private JTextField txfMaxSpeed;
 
@@ -227,14 +227,14 @@ public class RoverJPanel extends JPanel implements ActionListener {
 
 	private boolean validateTextFields() {
 		try {
-			if (Float.parseFloat(txfMaxSpeed.getText()) < 5) {
+			if (Float.parseFloat(txfMaxSpeed.getText()) < 3) {
 				throw new NumberFormatException();
 			}
 			if (txfWaypointName.getText().equals("")) {
 				throw new IllegalArgumentException();
 			}
 		} catch (NumberFormatException e) {
-			StatusJPanel.setStatus(Bundle.getString("pnl_rover_max_speed_above_5")); //$NON-NLS-1$
+			StatusJPanel.setStatus(Bundle.getString("pnl_rover_max_speed_above_3")); //$NON-NLS-1$
 			return false;
 		} catch (IllegalArgumentException e) {
 			StatusJPanel.setStatus(Bundle.getString("pnl_rover_waypoint_name_not_empty")); //$NON-NLS-1$

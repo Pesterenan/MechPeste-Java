@@ -12,17 +12,13 @@ import org.javatuples.Triplet;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class PathFinding extends ActiveVessel {
 
-	public static final Vector L30DEG = new Vector(Math.sin(Math.toRadians(30)), Math.cos(Math.toRadians(30)), 0.0);
-	public static final Vector L60DEG = new Vector(Math.sin(Math.toRadians(60)), Math.cos(Math.toRadians(60)), 0.0);
-	public static final Vector L90DEG = new Vector(Math.sin(Math.toRadians(90)), Math.cos(Math.toRadians(90)), 0.0);
-	public static final Vector R30DEG = new Vector(-Math.sin(Math.toRadians(30)), Math.cos(Math.toRadians(30)), 0.0);
-	public static final Vector R60DEG = new Vector(-Math.sin(Math.toRadians(60)), Math.cos(Math.toRadians(60)), 0.0);
-	public static final Vector R90DEG = new Vector(-Math.sin(Math.toRadians(90)), Math.cos(Math.toRadians(90)), 0.0);
 	private static final float SEARCHING_DISTANCE = 4400000;
 	private WaypointManager waypointManager;
+	private String waypointName;
 	private List<Waypoint> waypointsToReach;
 	private List<Vector> pathToTarget;
 	private Drawing drawing;
@@ -38,19 +34,22 @@ public class PathFinding extends ActiveVessel {
 			waypointsToReach = new ArrayList<>();
 			pathToTarget = new ArrayList<>();
 			drawing = Drawing.newInstance(getConexao());
-
 		} catch (RPCException e) {
 			throw new RuntimeException(e);
 		}
 	}
 
 	public void addWaypointsOnSameBody(String waypointName) throws RPCException {
-		for (Waypoint waypoint : waypointManager.getWaypoints()) {
-			boolean hasSameName = waypoint.getName().toLowerCase().contains(waypointName.toLowerCase());
-			boolean isOnSameBody = waypoint.getBody().equals(currentBody);
-			if (hasSameName && isOnSameBody) {
-				waypointsToReach.add(waypoint);
-			}
+		this.waypointName = waypointName;
+		waypointsToReach =
+				waypointManager.getWaypoints().stream().filter(wp -> hasSameName(wp)).collect(Collectors.toList());
+	}
+
+	private boolean hasSameName(Waypoint wp) {
+		try {
+			return wp.getName().equals(waypointName) && wp.getBody().equals(currentBody);
+		} catch (RPCException e) {
+			return false;
 		}
 	}
 
@@ -118,18 +117,17 @@ public class PathFinding extends ActiveVessel {
 		pathToTarget.add(currentRoverPos);
 		// Calculate the next points positions and add to the list on Orbital Ref
 		int index = 0;
-		while (distanceToTarget > 50) {
-			Vector previousPoint = pathToTarget.get(index);
-			index++;
-			Vector directionToTarget =
-					transformOrbToSurf(targetPosition).subtract(transformOrbToSurf(previousPoint)).normalize();
-			Vector calculatedNextPoint =
-					avoidObstacles(transformOrbToSurf(previousPoint), transformDirection(directionToTarget, true));
+		while (distanceToTarget > 10) {
+			Vector currentPoint = pathToTarget.get(index);
+			Vector targetDirection =
+					transformOrbToSurf(targetPosition).subtract(transformOrbToSurf(currentPoint)).normalize();
 			Vector nextPoint =
-					transformSurfToOrb(transformOrbToSurf(getPosOnSurface(calculatedNextPoint)).sum(roverHeight));
-			drawLineBetweenPoints(previousPoint, nextPoint);
+					transformSurfToOrb(calculateNextPoint(transformOrbToSurf(currentPoint), targetDirection));
+			drawLineBetweenPoints(currentPoint, nextPoint);
 			pathToTarget.add(nextPoint);
-			double distanceBetweenPoints = Vector.distance(previousPoint, nextPoint);
+			index++;
+			double distanceBetweenPoints =
+					Vector.distance(transformOrbToSurf(currentPoint), transformOrbToSurf(nextPoint));
 			distanceToTarget -= distanceBetweenPoints;
 		}
 		pathToTarget.add(getPosOnSurface(targetPosition));
@@ -141,51 +139,13 @@ public class PathFinding extends ActiveVessel {
 		line.setColor(new Triplet<>(1.0, 0.5, 0.0));
 	}
 
-	private Vector avoidObstacles(Vector currentPoint, Vector targetDirection) throws RPCException, IOException {
+	private Vector calculateNextPoint(Vector currentPoint, Vector targetDirection) throws RPCException, IOException {
 		// PONTO REF SUPERFICIE: X = CIMA, Y = NORTE, Z = LESTE;
-		// Distance of the next point in the path to the previous one:
-		double stepDistance = 50.0;
-
-		// Raycast distance in front of rover:
-		double centerDistance =
-				raycastDistance(currentPoint, transformDirection(targetDirection, false), pontoRefSuperficie, 20);
-		double left15degDistance =
-				raycastDistance(currentPoint, transformDirection(targetDirection.sum(L30DEG).normalize(), false),
-				                pontoRefSuperficie, 20
-				               );
-		double left30degDistance =
-				raycastDistance(currentPoint, transformDirection(targetDirection.sum(L60DEG).normalize(), false),
-				                pontoRefSuperficie, 20
-				               );
-		double right15degDistance =
-				raycastDistance(currentPoint, transformDirection(targetDirection.sum(R30DEG).normalize(), false),
-				                pontoRefSuperficie, 20
-				               );
-		double right30degDistance =
-				raycastDistance(currentPoint, transformDirection(targetDirection.sum(R60DEG).normalize(), false),
-				                pontoRefSuperficie, 20
-				               );
-
-		// Calculate the next point direction based on all raycast distances:
-		Vector nextPointDirection = transformDirection(targetDirection, false).multiply(centerDistance)
-//																																				.sum(transformDirection(targetDirection,
-//																																								false).sum(L30DEG)
-//																																																											 .normalize()
-//																																																											 .multiply(left15degDistance))
-//																																				.sum(transformDirection(targetDirection,
-//																																								false).sum(L60DEG)
-//																																																											 .normalize()
-//																																																											 .multiply(left30degDistance))
-//																																				.sum(transformDirection(targetDirection,
-//																																								false).sum(R30DEG)
-//																																																											 .normalize()
-//																																																											 .multiply(right15degDistance))
-//																																				.sum(transformDirection(targetDirection,
-//																																								false).sum(R60DEG)
-//																																																											 .normalize()
-//																																																											 .multiply(right30degDistance))
-                                                                              .normalize();
-		return transformSurfToOrb(currentPoint.sum(nextPointDirection.multiply(stepDistance)));
+		double stepDistance = 100.0;
+		// Calculate the next point position on surface:
+		Vector nextPoint =
+				getPosOnSurface(transformSurfToOrb(currentPoint.sum(targetDirection.multiply(stepDistance))));
+		return transformOrbToSurf(nextPoint).sum(new Vector(2.0, 0.0, 0.0));
 	}
 
 	public double raycastDistance(Vector currentPoint, Vector targetDirection, SpaceCenter.ReferenceFrame reference,

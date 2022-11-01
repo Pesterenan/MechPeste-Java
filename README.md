@@ -1,48 +1,75 @@
 # **MechPeste**
 
-Esse pequeno Mod de funções utiliza o mod KRPC como ponte de conexão para o game Kerbal Space
+Este aplicativo utiliza o mod KRPC como ponte de conexão para o game Kerbal Space
 Program de modo a poder controlar os foguetes e naves utilizando scripts de automação e navegação.
-Há funções de decolagem orbital, pouso automático (suicide burn), manobras, e pilotagem automática
-de rovers.
 
-## **Requisitos**
+É possivel decolar seus foguetes automaticamente, além de realizar pousos automáticos, executar
+manobras, e pilotar rovers.
+
+## **Requisitos:**
+
 ---
-É necessário ter o [Java](https://java.com/pt-BR/) atualizado para rodar o arquivo "MechPeste.jar" e
-também ter o mod [KRPC](https://github.com/krpc/krpc/releases/download/v0.4.8/krpc-0.4.8.zip)
-instalado na pasta do Kerbal.
+É necessário ter o [Java](https://java.com/pt-BR/) instalado para utilizar o "MechPeste.jar".
+Uma versão mais atualizada do
+mod [KRPC](https://github.com/nullprofile/krpc/releases/download/0.4.9-1.12.1/krpc-0.4.9-1.12.1.zip)
+pode ser instalada diretamente do aplicativo MechPeste pelo menu Arquivo > Instalar KRPC.
 
-## **Como utilizar:**
+## **Como instalar:**
+
 ---
-Baixe a versão mais recente na aba de Releases ao lado >> e depois é so abrir o arquivo "
-MechPeste.jar".
-Se o jogo estiver aberto ele tentará se conectar ao mod KRPC e então é só clicar numa das funções
-para utilizar com a nave.
+Baixe a versão mais recente na aba de Releases ao lado >> e depois abra o arquivo "MechPeste.jar".
 
-Caso ainda não tenha criado um server, clique em "Add Server" e depois em "Start Server" dentro do
-jogo no mod KRPC, assim o MechPeste conseguirá se conectar.
+### Primeiro Uso:
+
+O MechPeste funciona em modo Janela, se o jogo estiver aberto ele tentará se conectar ao mod KRPC.
+Caso ainda não tenha criado um server, clique em **"Add Server"** e depois em **"Start Server"**
+dentro
+do jogo no mod KRPC, assim o MechPeste conseguirá se conectar.
+
+> Habilite também a auto-conexão nas opções avançadas:
+> Clique em "Show advanced settings", e habilite "Auto-start server" e "Auto-accept new clients",
+> assim a conexão será automática.
 
 ## *Funções*
 
+---
+
 ### *Decolagem Orbital*
 
-Digite a altura de órbita final que o script tentará alcançar, e também a direção da curva
+Digite a altitude final do apoastro que o script tentará alcançar, e também a direção da curva
 gravitacional em volta do planeta (de 0 a 359 graus, 90 sendo a direção Leste). Clique em iniciar e
-aguarde o lançamento e execução das manobras.
+
+A Rolagem indica pra qual direção do foguete irá virar para a direção estabelecida.
+Escolha o modelo de curva, sendo do mais brando (Sinusoidal) até o mais extremo (Exponencial).
+
+Escolha abrir painéis, e utilizar coifas, e se quer soltar os estágios durante a decolagem.
+Cliquem em Decolagem e aguarde o lançamento e execução das manobras.
 
 ### *Pouso Automático*
 
-Inicie o Script assim que estiver pretendendo pousar o foguete. Ele inicia a primeira ignição abaixo
-de 10km e depois calcula e pousa suavamente próximo ao solo no último momento.
-A função "Sobrevoar área" tenta fazer com que a nave sobrevoe onde está na altura estipulada.
+Inicie o Script e o aplicativo tentará primeiro baixar sua órbita, até o periastro zerar, e após
+isso, ficará calculando a distância até o último momento para começar a desacelerar.
+Durante o pouso, o foguete se orientará automaticamente pra cima, e pousará em baixa velocidade.
+
+~~Para sobrevoar a área, digite a altitude que o MechPeste tentará manter, e clique em "Sobrevoar",
+após isso, para descer, clique em "Descer".~~
 
 ### *Manobras*
 
 Essa função consegue executar a próxima manobra criada, ou então tenta circularizar a órbita atual
 no Apoastro ou no Periastro.
+Não tente circularizar caso a órbita atual sejá hiperbólica, ou parabólica.
+
+~~O botão ajustar tenta ajustar a inclinação da órbita atual, de acordo com algum alvo, facilitando
+o rendezvous.~~
 
 ### *Auto Rover*
 
-Esse script faz um Rover seguir uma rota até um determinado Marcador ou então Alvo selecionado pelo
-jogador. Escolha qual o tipo de alvo a seguir, e no caso de Marcador digite o nome dele na caixa de
-texto e também a velocidade máxima que o rover pode alcançar. Clique em iniciar e ele comecará a se
-mover para o alvo.
+Esse script faz um Rover seguir uma rota até um determinado Marcador ou Alvo selecionado pelo
+jogador.
+
+Escolha qual o tipo de alvo a seguir, e no caso de Marcador digite o nome dele na caixa de
+texto e também a velocidade máxima que o rover pode alcançar.
+
+A velocidade mínima permitida é de 3m/s. Clique em Pilotar e ele comecará a se
+mover para o alvo, desviando dos obstáculos à frente.

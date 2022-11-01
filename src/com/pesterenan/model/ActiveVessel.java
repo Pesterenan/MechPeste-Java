@@ -2,6 +2,7 @@ package com.pesterenan.model;
 
 import com.pesterenan.MechPeste;
 import com.pesterenan.resources.Bundle;
+import com.pesterenan.utils.Vector;
 import com.pesterenan.views.StatusJPanel;
 import krpc.client.Connection;
 import krpc.client.RPCException;
@@ -88,6 +89,12 @@ public class ActiveVessel {
 
 	protected void throttle(double acel) throws RPCException {
 		throttle((float) acel);
+	}
+
+	protected void tuneAutoPilot() throws RPCException {
+		System.out.println(naveAtual.getMomentOfInertia() + "INERCIA");
+		ap.setTimeToPeak(new Vector(5, 5, 5).toTriplet());
+		ap.setDecelerationTime(new Vector(5, 5, 5).toTriplet());
 	}
 
 	protected void liftoff() throws InterruptedException {

@@ -38,6 +38,7 @@ public class ManeuverController extends ActiveVessel implements Runnable {
 			ctrlRCS.adjustOutput(0.5, 1.0);
 			currentBody = naveAtual.getOrbit().getBody();
 			fineAdjustment = canFineAdjust(commands.get(Modulos.AJUSTE_FINO.get()));
+			tuneAutoPilot();
 		} catch (RPCException e) {
 			throw new RuntimeException(e);
 		}
@@ -263,16 +264,20 @@ public class ManeuverController extends ActiveVessel implements Runnable {
 
 	public void orientToManeuverNode(Node maneuverNode) {
 		try {
-			float roll = ap.getTargetRoll();
-			roll = Float.isNaN(roll) ? 0 : roll;
-			ap.setTargetRoll(roll);
+			StatusJPanel.setStatus(Bundle.getString("status_orienting_ship"));
 			ap.engage();
-			while (ap.getError() > 1) {
-				nav.targetManeuver(maneuverNode);
-				StatusJPanel.setStatus(Bundle.getString("status_orienting_ship"));
-				Thread.sleep(100);
+			ap.setTargetRoll(0);
+			nav.targetManeuver(maneuverNode);
+			System.out.println("iniciando rolagem");
+			while (ap.getRollError() > 3) {
+				ap.wait_();
 			}
-		} catch (InterruptedException | RPCException e) {
+			System.out.println("iniciando miragem");
+			while (ap.getError() > 3) {
+				ap.wait_();
+			}
+			System.out.println("miragem terminada");
+		} catch (RPCException e) {
 			disengageAfterException(Bundle.getString("status_couldnt_orient"));
 		}
 	}
@@ -324,8 +329,6 @@ public class ManeuverController extends ActiveVessel implements Runnable {
 					break;
 				}
 				nav.targetManeuver(noDeManobra);
-//			throttle(Utilities.remap(noDeManobra.getDeltaV() * limiteParaDesacelerar, 0, 1, 0.1,
-//			queimaRestante.get().getValue1()));
 				throttle(ctrlManeuver.calcPID(
 						(noDeManobra.getDeltaV() - queimaRestante.get().getValue1()) / noDeManobra.getDeltaV() * 1000,
 						1000
