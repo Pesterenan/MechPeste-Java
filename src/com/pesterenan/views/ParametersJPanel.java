@@ -1,25 +1,23 @@
 package com.pesterenan.views;
 
-import java.awt.CardLayout;
-import java.awt.Dimension;
+import javax.swing.*;
+import java.awt.*;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-
-import javax.swing.JPanel;
 
 public class ParametersJPanel extends JPanel implements PropertyChangeListener {
 
 	private static final long serialVersionUID = 1L;
 
-	private JPanel pnlParameters = this;
-	private CardLayout cardLayout = new CardLayout(0, 0);
-	public static Dimension dmsParameters = new Dimension(314, 216);
+	private final JPanel pnlParameters = this;
+	private final CardLayout cardLayout = new CardLayout(0, 0);
+	public static final Dimension dmsParameters = new Dimension(314, 216);
 	public static final Dimension BTN_DIMENSION = new Dimension(110, 25);
-	private TelemetryJPanel pnlTelemetry = new TelemetryJPanel();
-	private JPanel pnlLiftoff = new LiftoffJPanel();
-	private JPanel pnlLanding = new LandingJPanel();
-	private JPanel pnlManeuver = new ManeuverJPanel();
-	private JPanel pnlRover = new RoverJPanel();
+	private final TelemetryJPanel pnlTelemetry = new TelemetryJPanel();
+	private final JPanel pnlLiftoff = new LiftoffJPanel();
+	private final JPanel pnlLanding = new LandingJPanel();
+	private final JPanel pnlManeuver = new ManeuverJPanel();
+	private final JPanel pnlRover = new RoverJPanel();
 
 	public ParametersJPanel() {
 		initComponents();

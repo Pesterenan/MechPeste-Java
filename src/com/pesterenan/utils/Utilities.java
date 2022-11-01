@@ -10,13 +10,15 @@ public class Utilities {
 		return (value - start) / (end - start);
 	}
 
-	public static double remap(double inputMin, double inputMax, double outputMin, double outputMax, double value) {
+	public static double remap(double inputMin, double inputMax, double outputMin, double outputMax, double value,
+	                           boolean clampOutput) {
 		double between = inverseLinearInterpolation(inputMin, inputMax, value);
-		return linearInterpolation(outputMin, outputMax, between);
+		double remappedOutput = linearInterpolation(outputMin, outputMax, between);
+		return clampOutput ? clamp(remappedOutput, outputMin, outputMax) : remappedOutput;
 	}
 
-	public static double clamp(double value, double min, double max) {
-		return (value > max ? max : Math.max(value, min));
+	public static double clamp(double value, double minimum, double maximum) {
+		return Math.max(Math.min(value, maximum), minimum);
 	}
 
 	// Easing functions
