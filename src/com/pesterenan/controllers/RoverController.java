@@ -164,12 +164,22 @@ public class RoverController extends ActiveVessel implements Runnable {
 		if (chargePercentage > minChargeLevel) {
 			return false;
 		}
+
+		return true;
+	}
+	
+	private void rechargeRover() throws RPCException, StreamException, InterruptedException {
+		
+		float totalCharge = naveAtual.getResources().max("ElectricCharge");
+		float currentCharge = naveAtual.getResources().amount("ElectricCharge");
+		
 		setRoverThrottle(0);
 		naveAtual.getControl().setLights(false);
 		naveAtual.getControl().setBrakes(true);
+		Thread.sleep(3000); // Give some time for the rover to slow down
 		if (velHorizontal.get() < 1 && naveAtual.getControl().getBrakes()) {
-			Thread.sleep(1000);
 			double chargeTime = 0;
+			double TotalEnergyFlow = 0;
 			List<SolarPanel> solarPanels = naveAtual.getParts()
 			                                        .getSolarPanels()
 			                                        .stream()
@@ -177,12 +187,12 @@ public class RoverController extends ActiveVessel implements Runnable {
 			                                        .collect(Collectors.toList());
 			if (solarPanels.isEmpty()) {
 				isAutoRoverRunning = false;
-				return false;
+				return;
 			}
 			for (SolarPanel sp : solarPanels) {
-				chargeTime += sp.getEnergyFlow();
+				TotalEnergyFlow += sp.getEnergyFlow();
 			}
-			chargeTime = ((totalCharge - currentCharge) / chargeTime);
+			chargeTime = ((totalCharge - currentCharge) / TotalEnergyFlow);
 			StatusJPanel.setStatus("Segundos de Carga: " + chargeTime);
 			if (chargeTime < 1 || chargeTime > 21600) {
 				chargeTime = 3600;
@@ -190,7 +200,6 @@ public class RoverController extends ActiveVessel implements Runnable {
 			centroEspacial.warpTo((centroEspacial.getUT() + chargeTime), 10000, 4);
 			naveAtual.getControl().setLights(true);
 		}
-		return true;
 	}
 
 	private void driveRover() throws IOException, RPCException, StreamException {
