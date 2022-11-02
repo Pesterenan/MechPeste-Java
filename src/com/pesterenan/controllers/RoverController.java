@@ -79,6 +79,7 @@ public class RoverController extends ActiveVessel implements Runnable {
 				radarLines.add(line);
 			}
 			pathFinding = new PathFinding(getConexao());
+			haveSolarPanels = detectSolarPanels();
 			// AJUSTAR CONTROLES PID:
 			acelCtrl.adjustOutput(0, 1);
 			sterringCtrl.adjustOutput(-1, 1);
@@ -139,7 +140,13 @@ public class RoverController extends ActiveVessel implements Runnable {
 					}
 				}
 			} else {
-				rechargeRover();
+				if (haveSolarPanels) {
+					rechargeRover();
+				} else {
+					isAutoRoverRunning = false;
+					System.out.println("Sem painéis solares e sem bateria");
+				}
+				
 			}
 			Thread.sleep(50);
 		}
@@ -188,10 +195,7 @@ public class RoverController extends ActiveVessel implements Runnable {
 			                                        .stream()
 			                                        .filter(RoverController::isSolarPanelNotBroken)
 			                                        .collect(Collectors.toList());
-			if (solarPanels.isEmpty()) {
-				isAutoRoverRunning = false;
-				return;
-			}
+
 			for (SolarPanel sp : solarPanels) {
 				TotalEnergyFlow += sp.getEnergyFlow();
 			}
