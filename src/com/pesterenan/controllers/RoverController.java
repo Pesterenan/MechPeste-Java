@@ -153,6 +153,9 @@ public class RoverController extends ActiveVessel implements Runnable {
 		return distance > distanceFromTargetLimit;
 	}
 
+	// According to the clean code rules, this function bellow has 2 problems
+	// It is doing a lot of different things, functions are suppose to do only one thing
+	// This function is doing more than what it's name declare, such functions are hiding places for bugs 
 	private boolean needToChargeBatteries() throws RPCException, IOException, StreamException, InterruptedException {
 		float totalCharge = naveAtual.getResources().max("ElectricCharge");
 		float currentCharge = naveAtual.getResources().amount("ElectricCharge");
