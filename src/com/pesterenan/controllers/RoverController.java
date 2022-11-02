@@ -126,6 +126,8 @@ public class RoverController extends ActiveVessel implements Runnable {
 			} else {
 				setNextPointInPath();
 			}
+			
+			
 			if (!needToChargeBatteries()) {
 				if (isFarFromTarget()) {
 					naveAtual.getControl().setBrakes(false);
@@ -148,10 +150,12 @@ public class RoverController extends ActiveVessel implements Runnable {
 				}
 				
 			}
+			
+			
 			Thread.sleep(50);
 		}
 		naveAtual.getControl().setBrakes(true);
-		Thread.sleep(1000);
+		Thread.sleep(1000); // I don't know what's the purpose of this, but will keep it because you probably had your reasons, in the future you may replace this comment with an explanation
 	}
 
 	private void setNextPointInPath() {
@@ -163,9 +167,6 @@ public class RoverController extends ActiveVessel implements Runnable {
 		return distance > distanceFromTargetLimit;
 	}
 
-	// According to the clean code rules, this function bellow has 2 problems
-	// It is doing a lot of different things, functions are suppose to do only one thing
-	// This function is doing more than what it's name declare, such functions are hiding places for bugs 
 	private boolean needToChargeBatteries() throws RPCException, IOException, StreamException, InterruptedException {
 		float totalCharge = naveAtual.getResources().max("ElectricCharge");
 		float currentCharge = naveAtual.getResources().amount("ElectricCharge");
@@ -186,8 +187,9 @@ public class RoverController extends ActiveVessel implements Runnable {
 		setRoverThrottle(0);
 		naveAtual.getControl().setLights(false);
 		naveAtual.getControl().setBrakes(true);
-		Thread.sleep(3000); // Give some time for the rover to slow down
+		
 		if (velHorizontal.get() < 1 && naveAtual.getControl().getBrakes()) {
+			Thread.sleep(1000); // I don't know what's the purpose of this, but will keep it because you probably had your reasons, in the future you may replace this comment with an explanation
 			double chargeTime = 0;
 			double TotalEnergyFlow = 0;
 			List<SolarPanel> solarPanels = naveAtual.getParts()
