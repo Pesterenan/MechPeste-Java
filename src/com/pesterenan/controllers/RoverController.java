@@ -41,6 +41,7 @@ public class RoverController extends ActiveVessel implements Runnable {
 	private Vector targetPoint = new Vector();
 	private Vector roverDirection = new Vector();
 	private Drawing.Line dirRover;
+	private boolean haveSolarPanels;
 
 	public RoverController(Map<String, String> commands) {
 		super(getConexao());
@@ -137,6 +138,8 @@ public class RoverController extends ActiveVessel implements Runnable {
 						pathFinding.findNearestWaypoint();
 					}
 				}
+			} else {
+				rechargeRover();
 			}
 			Thread.sleep(50);
 		}
@@ -199,6 +202,20 @@ public class RoverController extends ActiveVessel implements Runnable {
 			}
 			centroEspacial.warpTo((centroEspacial.getUT() + chargeTime), 10000, 4);
 			naveAtual.getControl().setLights(true);
+		}
+	}
+	
+	private boolean detectSolarPanels() throws RPCException {
+		List<SolarPanel> solarPanels = naveAtual.getParts()
+                .getSolarPanels()
+                .stream()
+                .filter(RoverController::isSolarPanelNotBroken)
+                .collect(Collectors.toList());
+		
+		if (solarPanels.isEmpty()) {
+		return false;
+		} else {
+			return true;
 		}
 	}
 
