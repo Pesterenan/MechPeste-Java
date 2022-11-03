@@ -41,7 +41,6 @@ public class RoverController extends ActiveVessel implements Runnable {
 	private Vector targetPoint = new Vector();
 	private Vector roverDirection = new Vector();
 	private Drawing.Line dirRover;
-	private boolean haveSolarPanels;
 
 	public RoverController(Map<String, String> commands) {
 		super(getConexao());
@@ -79,7 +78,6 @@ public class RoverController extends ActiveVessel implements Runnable {
 				radarLines.add(line);
 			}
 			pathFinding = new PathFinding(getConexao());
-			haveSolarPanels = hasWorkingSolarPanels();
 			// AJUSTAR CONTROLES PID:
 			acelCtrl.adjustOutput(0, 1);
 			sterringCtrl.adjustOutput(-1, 1);
@@ -142,7 +140,7 @@ public class RoverController extends ActiveVessel implements Runnable {
 					}
 				}
 			} else { // Rover needs recharging 
-				if (haveSolarPanels) {
+				if (hasWorkingSolarPanels()) {
 					rechargeRover();
 				} else {
 					isAutoRoverRunning = false;
