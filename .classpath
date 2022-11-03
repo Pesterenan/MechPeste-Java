@@ -6,8 +6,8 @@
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="lib" path="src/jars/javatuples-1.2.jar"/>
-	<classpathentry kind="lib" path="C:/Users/renan/git/MechPeste-Java/src/jars/krpc-java-0.4.9.jar" sourcepath="src/jars/krpc-java-0.4.9.jar"/>
-	<classpathentry kind="lib" path="src/jars/protobuf-java-3.5.1.jar"/>
+	<classpathentry kind="lib" path="/home/night/Downloads/javatuples-1.2.jar"/>
+	<classpathentry kind="lib" path="/home/night/Downloads/krpc-java-0.4.8.jar" sourcepath="src/jars/krpc-java-0.4.9.jar"/>
+	<classpathentry kind="lib" path="/home/night/Downloads/protobuf-java-3.5.1.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
