@@ -132,7 +132,7 @@ public class RoverController extends ActiveVessel implements Runnable {
 				if (isFarFromTarget()) {
 					naveAtual.getControl().setBrakes(false);
 					driveRover();
-				} else {
+				} else { // Rover arrived at destiny
 					naveAtual.getControl().setBrakes(true);
 					pathFinding.removePathsCurrentPoint();
 					if (commands.get(Modulos.TIPO_ALVO_ROVER.get()).equals(Modulos.MARCADOR_MAPA.get()) &&
@@ -141,7 +141,7 @@ public class RoverController extends ActiveVessel implements Runnable {
 						pathFinding.findNearestWaypoint();
 					}
 				}
-			} else {
+			} else { // Rover needs recharging 
 				if (haveSolarPanels) {
 					rechargeRover();
 				} else {
