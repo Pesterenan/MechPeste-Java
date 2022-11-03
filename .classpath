@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry exported="true" kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8">
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8">
 		<attributes>
 			<attribute name="module" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry exported="true" kind="lib" path="/home/night/Documents/GitHub/MechPeste-Java/bin/krpc-java-0.4.8.jar" sourcepath="src/jars/krpc-java-0.4.9.jar"/>
 	<classpathentry kind="src" path="src"/>
-	<classpathentry exported="true" kind="lib" path="/home/night/Documents/GitHub/MechPeste-Java/bin/javatuples-1.2.jar"/>
-	<classpathentry exported="true" kind="lib" path="/home/night/Documents/GitHub/MechPeste-Java/bin/protobuf-java-3.5.1.jar"/>
+	<classpathentry kind="lib" path="src/jars/javatuples-1.2.jar"/>
+	<classpathentry kind="lib" path="C:/Users/renan/git/MechPeste-Java/src/jars/krpc-java-0.4.9.jar" sourcepath="src/jars/krpc-java-0.4.9.jar"/>
+	<classpathentry kind="lib" path="src/jars/protobuf-java-3.5.1.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
