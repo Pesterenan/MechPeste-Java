@@ -153,7 +153,7 @@ public class RoverController extends ActiveVessel implements Runnable {
 			Thread.sleep(50);
 		}
 		naveAtual.getControl().setBrakes(true);
-		Thread.sleep(1000); // I don't know what's the purpose of this, but will keep it because you probably had your reasons, in the future you may replace this comment with an explanation
+		Thread.sleep(1000);
 	}
 
 	private void setNextPointInPath() {
@@ -187,7 +187,7 @@ public class RoverController extends ActiveVessel implements Runnable {
 		naveAtual.getControl().setBrakes(true);
 		
 		if (velHorizontal.get() < 1 && naveAtual.getControl().getBrakes()) {
-			Thread.sleep(1000); // I don't know what's the purpose of this, but will keep it because you probably had your reasons, in the future you may replace this comment with an explanation
+			Thread.sleep(1000);
 			double chargeTime = 0;
 			double totalEnergyFlow = 0;
 			List<SolarPanel> solarPanels = naveAtual.getParts()
