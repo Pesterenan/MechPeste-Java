@@ -79,7 +79,7 @@ public class RoverController extends ActiveVessel implements Runnable {
 				radarLines.add(line);
 			}
 			pathFinding = new PathFinding(getConexao());
-			haveSolarPanels = detectSolarPanels();
+			haveSolarPanels = hasWorkingSolarPanels();
 			// AJUSTAR CONTROLES PID:
 			acelCtrl.adjustOutput(0, 1);
 			sterringCtrl.adjustOutput(-1, 1);
@@ -211,7 +211,7 @@ public class RoverController extends ActiveVessel implements Runnable {
 		}
 	}
 	
-	private boolean detectSolarPanels() throws RPCException {
+	private boolean hasWorkingSolarPanels() throws RPCException {
 		List<SolarPanel> solarPanels = naveAtual.getParts()
                 .getSolarPanels()
                 .stream()
