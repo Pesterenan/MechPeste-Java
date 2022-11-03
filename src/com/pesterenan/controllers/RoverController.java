@@ -125,7 +125,6 @@ public class RoverController extends ActiveVessel implements Runnable {
 				setNextPointInPath();
 			}
 			
-			
 			if (!needToChargeBatteries()) {
 				if (isFarFromTarget()) {
 					naveAtual.getControl().setBrakes(false);
@@ -146,10 +145,7 @@ public class RoverController extends ActiveVessel implements Runnable {
 					isAutoRoverRunning = false;
 					System.out.println("Sem painéis solares e sem bateria");
 				}
-				
 			}
-			
-			
 			Thread.sleep(50);
 		}
 		naveAtual.getControl().setBrakes(true);
@@ -173,7 +169,6 @@ public class RoverController extends ActiveVessel implements Runnable {
 		if (chargePercentage > minChargeLevel) {
 			return false;
 		}
-
 		return true;
 	}
 	
@@ -320,7 +315,6 @@ public class RoverController extends ActiveVessel implements Runnable {
 		line8.setStart(posRoverToSurf(lateralDir).toTriplet());
 		line8.setEnd(posRoverToSurf(lateralDirRay).toTriplet());
 
-
 		Vector calculatedDirection = new Vector().sum(lateralEsqRay)
 		                                         .sum(latFrontEsqRay)
 		                                         .sum(frontalEsqRay)
@@ -389,5 +383,4 @@ public class RoverController extends ActiveVessel implements Runnable {
 		line.setThickness(0.5f);
 		line.setColor(new Triplet<>(1.0, 0.5, 0.0));
 	}
-
 }
