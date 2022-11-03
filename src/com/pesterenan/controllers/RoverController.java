@@ -189,7 +189,7 @@ public class RoverController extends ActiveVessel implements Runnable {
 		if (velHorizontal.get() < 1 && naveAtual.getControl().getBrakes()) {
 			Thread.sleep(1000); // I don't know what's the purpose of this, but will keep it because you probably had your reasons, in the future you may replace this comment with an explanation
 			double chargeTime = 0;
-			double TotalEnergyFlow = 0;
+			double totalEnergyFlow = 0;
 			List<SolarPanel> solarPanels = naveAtual.getParts()
 			                                        .getSolarPanels()
 			                                        .stream()
@@ -197,9 +197,9 @@ public class RoverController extends ActiveVessel implements Runnable {
 			                                        .collect(Collectors.toList());
 
 			for (SolarPanel sp : solarPanels) {
-				TotalEnergyFlow += sp.getEnergyFlow();
+				totalEnergyFlow += sp.getEnergyFlow();
 			}
-			chargeTime = ((totalCharge - currentCharge) / TotalEnergyFlow);
+			chargeTime = ((totalCharge - currentCharge) / totalEnergyFlow);
 			StatusJPanel.setStatus("Segundos de Carga: " + chargeTime);
 			if (chargeTime < 1 || chargeTime > 21600) {
 				chargeTime = 3600;
