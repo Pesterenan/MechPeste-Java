@@ -6,8 +6,8 @@
 			<attribute name="module" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="src\com\pesterenan\resources\krpc-java-0.4.9.jar"/>
-	<classpathentry kind="lib" path="src\com\pesterenan\resources\javatuples-1.2.jar"/>
-	<classpathentry kind="lib" path="src\com\pesterenan\resources\protobuf-java-3.5.1.jar"/>
+	<classpathentry kind="lib" path="src/com/pesterenan/resources/krpc-java-0.4.9.jar"/>
+	<classpathentry kind="lib" path="src/com/pesterenan/resources/javatuples-1.2.jar"/>
+	<classpathentry kind="lib" path="src/com/pesterenan/resources/protobuf-java-3.5.1.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
