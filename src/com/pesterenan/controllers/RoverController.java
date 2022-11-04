@@ -124,11 +124,12 @@ public class RoverController extends ActiveVessel implements Runnable {
 			} else {
 				setNextPointInPath();
 			}
+			
 			if (!needToChargeBatteries()) {
 				if (isFarFromTarget()) {
 					naveAtual.getControl().setBrakes(false);
 					driveRover();
-				} else {
+				} else { // Rover arrived at destiny
 					naveAtual.getControl().setBrakes(true);
 					pathFinding.removePathsCurrentPoint();
 					if (commands.get(Modulos.TIPO_ALVO_ROVER.get()).equals(Modulos.MARCADOR_MAPA.get()) &&
@@ -136,6 +137,13 @@ public class RoverController extends ActiveVessel implements Runnable {
 						pathFinding.removeWaypointFromList();
 						pathFinding.findNearestWaypoint();
 					}
+				}
+			} else { // Rover needs recharging 
+				if (hasWorkingSolarPanels()) {
+					rechargeRover();
+				} else {
+					isAutoRoverRunning = false;
+					System.out.println("Sem painéis solares e sem bateria");
 				}
 			}
 			Thread.sleep(50);
@@ -161,25 +169,32 @@ public class RoverController extends ActiveVessel implements Runnable {
 		if (chargePercentage > minChargeLevel) {
 			return false;
 		}
+		return true;
+	}
+	
+	private void rechargeRover() throws RPCException, StreamException, InterruptedException {
+		
+		float totalCharge = naveAtual.getResources().max("ElectricCharge");
+		float currentCharge = naveAtual.getResources().amount("ElectricCharge");
+		
 		setRoverThrottle(0);
 		naveAtual.getControl().setLights(false);
 		naveAtual.getControl().setBrakes(true);
+		
 		if (velHorizontal.get() < 1 && naveAtual.getControl().getBrakes()) {
 			Thread.sleep(1000);
 			double chargeTime = 0;
+			double totalEnergyFlow = 0;
 			List<SolarPanel> solarPanels = naveAtual.getParts()
 			                                        .getSolarPanels()
 			                                        .stream()
 			                                        .filter(RoverController::isSolarPanelNotBroken)
 			                                        .collect(Collectors.toList());
-			if (solarPanels.isEmpty()) {
-				isAutoRoverRunning = false;
-				return false;
-			}
+
 			for (SolarPanel sp : solarPanels) {
-				chargeTime += sp.getEnergyFlow();
+				totalEnergyFlow += sp.getEnergyFlow();
 			}
-			chargeTime = ((totalCharge - currentCharge) / chargeTime);
+			chargeTime = ((totalCharge - currentCharge) / totalEnergyFlow);
 			StatusJPanel.setStatus("Segundos de Carga: " + chargeTime);
 			if (chargeTime < 1 || chargeTime > 21600) {
 				chargeTime = 3600;
@@ -187,7 +202,20 @@ public class RoverController extends ActiveVessel implements Runnable {
 			centroEspacial.warpTo((centroEspacial.getUT() + chargeTime), 10000, 4);
 			naveAtual.getControl().setLights(true);
 		}
-		return true;
+	}
+	
+	private boolean hasWorkingSolarPanels() throws RPCException {
+		List<SolarPanel> solarPanels = naveAtual.getParts()
+                .getSolarPanels()
+                .stream()
+                .filter(RoverController::isSolarPanelNotBroken)
+                .collect(Collectors.toList());
+		
+		if (solarPanels.isEmpty()) {
+		return false;
+		} else {
+			return true;
+		}
 	}
 
 	private void driveRover() throws IOException, RPCException, StreamException {
@@ -287,7 +315,6 @@ public class RoverController extends ActiveVessel implements Runnable {
 		line8.setStart(posRoverToSurf(lateralDir).toTriplet());
 		line8.setEnd(posRoverToSurf(lateralDirRay).toTriplet());
 
-
 		Vector calculatedDirection = new Vector().sum(lateralEsqRay)
 		                                         .sum(latFrontEsqRay)
 		                                         .sum(frontalEsqRay)
@@ -356,5 +383,4 @@ public class RoverController extends ActiveVessel implements Runnable {
 		line.setThickness(0.5f);
 		line.setColor(new Triplet<>(1.0, 0.5, 0.0));
 	}
-
 }
