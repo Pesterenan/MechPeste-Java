@@ -1,19 +1,14 @@
 .shelf/
 .idea/
-workspace.xml
 .settings/
 bin/
 tmp/
-.metadata
-.classpath
-.project
 *.tmp
 *.bak
 *.swp
 *~.nib
+.factorypath
 local.properties
 .loadpath
-.factorypath
-mp_erros.log
-mp_config.cfg
-kRPC - Java.pdf
+.metadata
+workspace.xml
