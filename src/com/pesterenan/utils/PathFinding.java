@@ -45,9 +45,10 @@ public class PathFinding extends ActiveVessel {
 				waypointManager.getWaypoints().stream().filter(wp -> hasSameName(wp)).collect(Collectors.toList());
 	}
 
-	private boolean hasSameName(Waypoint wp) {
+	private boolean hasSameName(Waypoint waypoint) {
 		try {
-			return wp.getName().equals(waypointName) && wp.getBody().equals(currentBody);
+			return waypoint.getName().toLowerCase().contains(waypointName.toLowerCase()) &&
+					waypoint.getBody().equals(currentBody);
 		} catch (RPCException e) {
 			return false;
 		}
