@@ -44,15 +44,20 @@ public class Navigation extends ActiveVessel {
 		Vector radial = new Vector(
 				centroEspacial.transformDirection(RADIAL, naveAtual.getSurfaceReferenceFrame(), pontoRefOrbital));
 		double landingX =
-				Utilities.remap(0.0, 10.0, radial.x, retrograde.x, Utilities.clamp(velHorizontal.get(), 0, 10), false);
+				Utilities.remap(0.0, 5, radial.x, retrograde.x, Utilities.clamp(velHorizontal.get(), 0, 5), false);
 		double landingY =
-				Utilities.remap(0.0, 10.0, radial.y, retrograde.y, Utilities.clamp(velHorizontal.get(), 0, 10), false);
+				Utilities.remap(0.0, 5, radial.y, retrograde.y, Utilities.clamp(velHorizontal.get(), 0, 5), false);
 		double landingZ =
-				Utilities.remap(0.0, 10.0, radial.z, retrograde.z, Utilities.clamp(velHorizontal.get(), 0, 10), false);
+				Utilities.remap(0.0, 5, radial.z, retrograde.z, Utilities.clamp(velHorizontal.get(), 0, 5), false);
 		Vector landingVector = new Vector(landingX, landingY, landingZ);
 		targetDirection(landingVector.toTriplet());
 	}
 
+	public void targetPrograde() throws RPCException {
+		targetDirection(centroEspacial.transformDirection(PROGRADE, naveAtual.getSurfaceVelocityReferenceFrame(),
+		                                                  pontoRefOrbital
+		                                                 ));
+	}
 
 	public void targetRadialOut() throws RPCException {
 		targetDirection(

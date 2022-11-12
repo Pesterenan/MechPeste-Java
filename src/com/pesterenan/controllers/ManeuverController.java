@@ -269,11 +269,11 @@ public class ManeuverController extends ActiveVessel implements Runnable {
 			ap.setTargetRoll(0);
 			nav.targetManeuver(maneuverNode);
 			System.out.println("iniciando rolagem");
-			while (ap.getRollError() > 3) {
+			while (ap.getRollError() > 5) {
 				ap.wait_();
 			}
 			System.out.println("iniciando miragem");
-			while (ap.getError() > 3) {
+			while (ap.getError() > 5) {
 				ap.wait_();
 			}
 			System.out.println("miragem terminada");
