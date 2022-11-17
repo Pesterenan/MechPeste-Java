@@ -6,8 +6,22 @@ public class Utilities {
 		return (1.0 - value) * start + value * end;
 	}
 
+	public static Vector linearInterpolation(Vector start, Vector end, double value) {
+		double x = linearInterpolation(start.x, end.x, value);
+		double y = linearInterpolation(start.y, end.y, value);
+		double z = linearInterpolation(start.z, end.z, value);
+		return new Vector(x, y, z);
+	}
+
 	public static double inverseLinearInterpolation(double start, double end, double value) {
 		return (value - start) / (end - start);
+	}
+
+	public static Vector inverseLinearInterpolation(Vector start, Vector end, double value) {
+		double x = inverseLinearInterpolation(start.x, end.x, value);
+		double y = inverseLinearInterpolation(start.y, end.y, value);
+		double z = inverseLinearInterpolation(start.z, end.z, value);
+		return new Vector(x, y, z);
 	}
 
 	public static double remap(double inputMin, double inputMax, double outputMin, double outputMax, double value,

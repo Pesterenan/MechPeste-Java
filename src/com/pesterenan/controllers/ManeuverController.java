@@ -267,7 +267,7 @@ public class ManeuverController extends ActiveVessel implements Runnable {
 			StatusJPanel.setStatus(Bundle.getString("status_orienting_ship"));
 			ap.engage();
 			ap.setTargetRoll(0);
-			nav.targetManeuver(maneuverNode);
+			nav.aimAtManeuver(maneuverNode);
 			System.out.println("iniciando rolagem");
 			while (ap.getRollError() > 5) {
 				ap.wait_();
@@ -313,7 +313,7 @@ public class ManeuverController extends ActiveVessel implements Runnable {
 			while (inicioDaQueima > 0) {
 				inicioDaQueima = noDeManobra.getTimeTo() - (duracaoDaQueima / 2.0);
 				inicioDaQueima = Math.max(inicioDaQueima, 0.0);
-				nav.targetManeuver(noDeManobra);
+				nav.aimAtManeuver(noDeManobra);
 				StatusJPanel.setStatus(String.format(Bundle.getString("status_maneuver_ignition_in"), inicioDaQueima));
 				Thread.sleep(100);
 			}
@@ -328,7 +328,7 @@ public class ManeuverController extends ActiveVessel implements Runnable {
 				if (queimaRestante.get().getValue1() < (fineAdjustment ? 2 : 0.5)) {
 					break;
 				}
-				nav.targetManeuver(noDeManobra);
+				nav.aimAtManeuver(noDeManobra);
 				throttle(ctrlManeuver.calcPID(
 						(noDeManobra.getDeltaV() - queimaRestante.get().getValue1()) / noDeManobra.getDeltaV() * 1000,
 						1000

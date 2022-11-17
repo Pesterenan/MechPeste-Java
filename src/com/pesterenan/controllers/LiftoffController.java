@@ -107,7 +107,7 @@ public class LiftoffController extends ActiveVessel implements Runnable {
 		naveAtual.getControl().setRCS(true);
 
 		while (parametrosDeVoo.getDynamicPressure() > 10) {
-			nav.targetPrograde();
+			nav.aimAtPrograde();
 			throttle(thrControl.calcPID(apoastro.get() / getFinalApoapsis() * 1000, 1000));
 			Thread.sleep(100);
 		}

@@ -93,7 +93,7 @@ public class PathFinding extends ActiveVessel {
 
 	public void removeWaypointFromList() throws RPCException {
 		if (!waypointsToReach.isEmpty()) {
-			if (!waypointsToReach.get(0).getHasContract()) {
+			if (!(waypointsToReach.get(0).getHasContract())) {
 				waypointsToReach.remove(0);
 			}
 		}
