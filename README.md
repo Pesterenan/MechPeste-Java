@@ -51,8 +51,8 @@ Inicie o Script e o aplicativo tentará primeiro baixar sua órbita, até o peri
 isso, ficará calculando a distância até o último momento para começar a desacelerar.
 Durante o pouso, o foguete se orientará automaticamente pra cima, e pousará em baixa velocidade.
 
-~~Para sobrevoar a área, digite a altitude que o MechPeste tentará manter, e clique em "Sobrevoar",
-após isso, para descer, clique em "Descer".~~
+Para sobrevoar a área, digite a altitude que o MechPeste tentará manter, e clique em "Sobrevoar",
+após isso, para descer, clique em "Descer".
 
 ### *Manobras*
 
