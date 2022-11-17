@@ -81,7 +81,7 @@ public class Vector {
 	 * negativo dos valores do alvo.
 	 */
 	public static Vector targetOppositeDirection(Vector start, Vector end) {
-		return new Vector(-end.x + start.x, -end.y + start.y, end.z - start.z).normalize();
+		return end.subtract(start).multiply(-1).normalize();
 	}
 
 	/**

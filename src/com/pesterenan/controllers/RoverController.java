@@ -18,17 +18,14 @@ import org.javatuples.Pair;
 import org.javatuples.Triplet;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 public class RoverController extends ActiveVessel implements Runnable {
-	private static final int MAX_RADAR_LINES = 9;
 	private final ControlePID sterringCtrl = new ControlePID();
 	private final ControlePID acelCtrl = new ControlePID();
 	private final Map<String, String> commands;
-	private final List<Drawing.Line> radarLines = new ArrayList<>();
 	float distanceFromTargetLimit = 50;
 	float velocidadeCurva = 3;
 	private float maxSpeed = 3;
@@ -36,11 +33,9 @@ public class RoverController extends ActiveVessel implements Runnable {
 	private boolean isAutoRoverRunning = true;
 	private Drawing drawing;
 	private Stream<Float> bateriaAtual;
-	private Drawing.Line steeringLine;
 	private PathFinding pathFinding;
 	private Vector targetPoint = new Vector();
 	private Vector roverDirection = new Vector();
-	private Drawing.Line dirRover;
 
 	public RoverController(Map<String, String> commands) {
 		super(getConexao());
@@ -66,17 +61,6 @@ public class RoverController extends ActiveVessel implements Runnable {
 			maxSpeed = Float.parseFloat(commands.get(Modulos.VELOCIDADE_MAX.get()));
 			roverDirection = new Vector(naveAtual.direction(pontoRefRover));
 			drawing = Drawing.newInstance(getConexao());
-			dirRover = drawing.addDirection(roverDirection.toTriplet(), pontoRefRover, 10, true);
-			dirRover.setColor(new Triplet<>(1.0, 0.0, 0.0));
-			dirRover.setThickness(0.2f);
-			steeringLine = drawing.addDirection(roverDirection.toTriplet(), pontoRefRover, 10, true);
-			steeringLine.setColor(new Triplet<>(1.0, 0.0, 1.0));
-			for (int i = 0; i < MAX_RADAR_LINES; i++) {
-				Drawing.Line line = drawing.addDirection(roverDirection.toTriplet(), pontoRefSuperficie, 1, true);
-				line.setColor(new Triplet<>(0.0, (1.0 / MAX_RADAR_LINES), 0.0));
-				line.setThickness(0.2f);
-				radarLines.add(line);
-			}
 			pathFinding = new PathFinding(getConexao());
 			// AJUSTAR CONTROLES PID:
 			acelCtrl.adjustOutput(0, 1);
@@ -124,7 +108,7 @@ public class RoverController extends ActiveVessel implements Runnable {
 			} else {
 				setNextPointInPath();
 			}
-			
+
 			if (!needToChargeBatteries()) {
 				if (isFarFromTarget()) {
 					naveAtual.getControl().setBrakes(false);
@@ -143,7 +127,6 @@ public class RoverController extends ActiveVessel implements Runnable {
 					rechargeRover();
 				} else {
 					isAutoRoverRunning = false;
-					System.out.println("Sem painéis solares e sem bateria");
 				}
 			}
 			Thread.sleep(50);
@@ -171,16 +154,16 @@ public class RoverController extends ActiveVessel implements Runnable {
 		}
 		return true;
 	}
-	
+
 	private void rechargeRover() throws RPCException, StreamException, InterruptedException {
-		
+
 		float totalCharge = naveAtual.getResources().max("ElectricCharge");
 		float currentCharge = naveAtual.getResources().amount("ElectricCharge");
-		
+
 		setRoverThrottle(0);
 		naveAtual.getControl().setLights(false);
 		naveAtual.getControl().setBrakes(true);
-		
+
 		if (velHorizontal.get() < 1 && naveAtual.getControl().getBrakes()) {
 			Thread.sleep(1000);
 			double chargeTime = 0;
@@ -203,16 +186,16 @@ public class RoverController extends ActiveVessel implements Runnable {
 			naveAtual.getControl().setLights(true);
 		}
 	}
-	
+
 	private boolean hasWorkingSolarPanels() throws RPCException {
 		List<SolarPanel> solarPanels = naveAtual.getParts()
-                .getSolarPanels()
-                .stream()
-                .filter(RoverController::isSolarPanelNotBroken)
-                .collect(Collectors.toList());
-		
+		                                        .getSolarPanels()
+		                                        .stream()
+		                                        .filter(RoverController::isSolarPanelNotBroken)
+		                                        .collect(Collectors.toList());
+
 		if (solarPanels.isEmpty()) {
-		return false;
+			return false;
 		} else {
 			return true;
 		}
@@ -287,34 +270,6 @@ public class RoverController extends ActiveVessel implements Runnable {
 		Vector latFrontDirRay = calculateRaycastDirection(latFrontDir, latFrontDirAngulo, 22);
 		Vector lateralDirRay = calculateRaycastDirection(lateralDir, lateralDirAngulo, 20);
 
-		Drawing.Line line0 = radarLines.get(0);
-		line0.setStart(posRoverToSurf(lateralEsq).toTriplet());
-		line0.setEnd(posRoverToSurf(lateralEsqRay).toTriplet());
-		Drawing.Line line1 = radarLines.get(1);
-		line1.setStart(posRoverToSurf(latFrontEsq).toTriplet());
-		line1.setEnd(posRoverToSurf(latFrontEsqRay).toTriplet());
-		Drawing.Line line2 = radarLines.get(2);
-		line2.setStart(posRoverToSurf(frontalEsq).toTriplet());
-		line2.setEnd(posRoverToSurf(frontalEsqRay).toTriplet());
-		Drawing.Line line3 = radarLines.get(3);
-		line3.setStart(posRoverToSurf(frontalEsq2).toTriplet());
-		line3.setEnd(posRoverToSurf(frontalEsqRay2).toTriplet());
-		Drawing.Line line4 = radarLines.get(4);
-		line4.setStart(posRoverToSurf(frontal).toTriplet());
-		line4.setEnd(posRoverToSurf(frontalRay).toTriplet());
-		Drawing.Line line5 = radarLines.get(5);
-		line5.setStart(posRoverToSurf(frontalDir2).toTriplet());
-		line5.setEnd(posRoverToSurf(frontalDirRay2).toTriplet());
-		Drawing.Line line6 = radarLines.get(6);
-		line6.setStart(posRoverToSurf(frontalDir).toTriplet());
-		line6.setEnd(posRoverToSurf(frontalDirRay).toTriplet());
-		Drawing.Line line7 = radarLines.get(7);
-		line7.setStart(posRoverToSurf(latFrontDir).toTriplet());
-		line7.setEnd(posRoverToSurf(latFrontDirRay).toTriplet());
-		Drawing.Line line8 = radarLines.get(8);
-		line8.setStart(posRoverToSurf(lateralDir).toTriplet());
-		line8.setEnd(posRoverToSurf(lateralDirRay).toTriplet());
-
 		Vector calculatedDirection = new Vector().sum(lateralEsqRay)
 		                                         .sum(latFrontEsqRay)
 		                                         .sum(frontalEsqRay)
@@ -325,11 +280,6 @@ public class RoverController extends ActiveVessel implements Runnable {
 		                                         .sum(latFrontDirRay)
 		                                         .sum(lateralDirRay);
 
-		steeringLine.setReferenceFrame(pontoRefSuperficie);
-		steeringLine.setStart(posRoverToSurf(frontal).toTriplet());
-		steeringLine.setEnd(
-				posRoverToSurf(frontal).sum(transformDirection(calculatedDirection.normalize()).multiply(10))
-				                       .toTriplet());
 		return (calculatedDirection.normalize());
 	}
 
@@ -374,13 +324,5 @@ public class RoverController extends ActiveVessel implements Runnable {
 
 	private void setRoverSteering(double steering) throws RPCException {
 		naveAtual.getControl().setWheelSteering((float) steering);
-	}
-
-	private void drawLineBetweenPoints(Vector pointA, Vector pointB) throws RPCException {
-		Drawing.Line line = drawing.addLine(posRoverToSurf(pointA).toTriplet(), posRoverToSurf(pointB).toTriplet(),
-		                                    pontoRefSuperficie, true
-		                                   );
-		line.setThickness(0.5f);
-		line.setColor(new Triplet<>(1.0, 0.5, 0.0));
 	}
 }

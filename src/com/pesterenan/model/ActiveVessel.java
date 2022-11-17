@@ -92,7 +92,6 @@ public class ActiveVessel {
 	}
 
 	protected void tuneAutoPilot() throws RPCException {
-		System.out.println(naveAtual.getMomentOfInertia() + "INERCIA");
 		ap.setTimeToPeak(new Vector(5, 5, 5).toTriplet());
 		ap.setDecelerationTime(new Vector(5, 5, 5).toTriplet());
 	}

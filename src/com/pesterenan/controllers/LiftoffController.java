@@ -5,6 +5,7 @@ import com.pesterenan.model.ActiveVessel;
 import com.pesterenan.resources.Bundle;
 import com.pesterenan.utils.ControlePID;
 import com.pesterenan.utils.Modulos;
+import com.pesterenan.utils.Navigation;
 import com.pesterenan.utils.Utilities;
 import com.pesterenan.views.StatusJPanel;
 import krpc.client.RPCException;
@@ -26,6 +27,7 @@ public class LiftoffController extends ActiveVessel implements Runnable {
 	private float roll = 90;
 	private boolean willDecoupleStages, willDeployPanelsAndRadiators;
 	private String gravityCurveModel = Modulos.CIRCULAR.get();
+	private final Navigation nav = new Navigation();
 
 	public LiftoffController(Map<String, String> commands) {
 		super(getConexao());
@@ -103,9 +105,9 @@ public class LiftoffController extends ActiveVessel implements Runnable {
 	private void finalizeCurve() throws RPCException, StreamException, InterruptedException {
 		StatusJPanel.setStatus(Bundle.getString("status_maintaining_until_orbit"));
 		naveAtual.getControl().setRCS(true);
-		ap.setReferenceFrame(pontoRefOrbital);
+
 		while (parametrosDeVoo.getDynamicPressure() > 10) {
-			ap.setTargetDirection(parametrosDeVoo.getPrograde());
+			nav.aimAtPrograde();
 			throttle(thrControl.calcPID(apoastro.get() / getFinalApoapsis() * 1000, 1000));
 			Thread.sleep(100);
 		}

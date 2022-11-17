@@ -18,7 +18,7 @@ import java.util.Map;
 
 public class LandingJPanel extends JPanel implements ActionListener {
 	private static final long serialVersionUID = 1L;
-	private final JTextField txfHover = new JTextField("100"); //$NON-NLS-1$
+	private final JTextField txfHover = new JTextField("50"); //$NON-NLS-1$
 	private final JButton btnHover = new JButton(Bundle.getString("pnl_land_btn_hover")); //$NON-NLS-1$
 	private final JButton btnAutoLanding = new JButton(Bundle.getString("pnl_land_btn_land")); //$NON-NLS-1$
 	private final JButton btnBack = new JButton(Bundle.getString("pnl_land_btn_back")); //$NON-NLS-1$
@@ -42,14 +42,12 @@ public class LandingJPanel extends JPanel implements ActionListener {
 
 		txfHover.setHorizontalAlignment(SwingConstants.CENTER);
 		txfHover.setColumns(10);
-		txfHover.setEnabled(false);
 
 		btnHover.addActionListener(this);
 		btnHover.setSize(ParametersJPanel.BTN_DIMENSION);
 		btnHover.setPreferredSize(btnHover.getSize());
 		btnHover.setMinimumSize(btnHover.getSize());
 		btnHover.setMaximumSize(btnHover.getSize());
-		btnHover.setEnabled(false);
 
 		btnBack.addActionListener(this);
 		btnBack.setSize(ParametersJPanel.BTN_DIMENSION);
