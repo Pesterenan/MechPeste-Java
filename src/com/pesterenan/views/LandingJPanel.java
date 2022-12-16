@@ -33,10 +33,10 @@ public class LandingJPanel extends JPanel implements ActionListener {
 	}
 
 	private void initComponents() {
-		setPreferredSize(ParametersJPanel.dmsParameters);
-		setSize(ParametersJPanel.dmsParameters);
+		setPreferredSize(MainGui.dmsPanels);
+		setSize(MainGui.dmsPanels);
 		setBorder(new TitledBorder(null, Bundle.getString("pnl_land_border"), TitledBorder.LEADING,
-		                           //$NON-NLS-1$
+		                           // $NON-NLS-1$
 		                           TitledBorder.TOP, null, null
 		));
 
@@ -62,20 +62,17 @@ public class LandingJPanel extends JPanel implements ActionListener {
 		btnAutoLanding.setMaximumSize(btnAutoLanding.getSize());
 
 		GroupLayout groupLayout = new GroupLayout(this);
-		groupLayout.setHorizontalGroup(groupLayout.createParallelGroup(Alignment.LEADING)
+		groupLayout.setHorizontalGroup(groupLayout.createParallelGroup(Alignment.TRAILING)
 		                                          .addGroup(groupLayout.createSequentialGroup()
+		                                                               .addContainerGap(10, Short.MAX_VALUE)
 		                                                               .addGroup(groupLayout.createParallelGroup(
 				                                                                                    Alignment.LEADING)
 		                                                                                    .addGroup(
 				                                                                                    groupLayout.createSequentialGroup()
-				                                                                                               .addContainerGap()
 				                                                                                               .addComponent(
 						                                                                                               lblAutolanding)
 				                                                                                               .addPreferredGap(
-						                                                                                               ComponentPlacement.RELATED,
-						                                                                                               105,
-						                                                                                               Short.MAX_VALUE
-				                                                                                                               )
+						                                                                                               ComponentPlacement.RELATED)
 				                                                                                               .addComponent(
 						                                                                                               btnAutoLanding,
 						                                                                                               GroupLayout.PREFERRED_SIZE,
@@ -83,28 +80,19 @@ public class LandingJPanel extends JPanel implements ActionListener {
 						                                                                                               GroupLayout.PREFERRED_SIZE
 				                                                                                                            ))
 		                                                                                    .addGroup(
-				                                                                                    Alignment.TRAILING,
-				                                                                                    groupLayout.createSequentialGroup()
-				                                                                                               .addContainerGap()
-				                                                                                               .addComponent(
-						                                                                                               btnBack,
-						                                                                                               GroupLayout.PREFERRED_SIZE,
-						                                                                                               GroupLayout.DEFAULT_SIZE,
-						                                                                                               GroupLayout.PREFERRED_SIZE
-				                                                                                                            )
-		                                                                                             )
-		                                                                                    .addGroup(
-				                                                                                    Alignment.TRAILING,
 				                                                                                    groupLayout.createSequentialGroup()
 				                                                                                               .addGap(6)
 				                                                                                               .addComponent(
 						                                                                                               pnlHover,
-						                                                                                               GroupLayout.DEFAULT_SIZE,
-						                                                                                               290,
-						                                                                                               Short.MAX_VALUE
-				                                                                                                            )
-		                                                                                             ))
-		                                                               .addGap(6)));
+						                                                                                               GroupLayout.PREFERRED_SIZE,
+						                                                                                               267,
+						                                                                                               GroupLayout.PREFERRED_SIZE
+				                                                                                                            )))
+		                                                               .addGap(59)
+		                                                               .addComponent(btnBack,
+		                                                                             GroupLayout.PREFERRED_SIZE, 120,
+		                                                                             GroupLayout.PREFERRED_SIZE
+		                                                                            )));
 		groupLayout.setVerticalGroup(groupLayout.createParallelGroup(Alignment.LEADING)
 		                                        .addGroup(groupLayout.createSequentialGroup()
 		                                                             .addGroup(groupLayout.createParallelGroup(
@@ -120,50 +108,61 @@ public class LandingJPanel extends JPanel implements ActionListener {
 		                                                                           GroupLayout.PREFERRED_SIZE,
 		                                                                           60, GroupLayout.PREFERRED_SIZE
 		                                                                          )
-		                                                             .addPreferredGap(ComponentPlacement.RELATED, 62,
+		                                                             .addPreferredGap(ComponentPlacement.RELATED, 68,
 		                                                                              Short.MAX_VALUE
 		                                                                             )
 		                                                             .addComponent(btnBack, GroupLayout.PREFERRED_SIZE,
 		                                                                           GroupLayout.DEFAULT_SIZE,
 		                                                                           GroupLayout.PREFERRED_SIZE
 		                                                                          )
-		                                                             .addContainerGap()));
+		                                                             .addGap(10)));
 		setLayout(groupLayout);
 		pnlHover.setBorder(new TitledBorder(
 				new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)),
 				Bundle.getString("pnl_land_pnl_hover_border"), TitledBorder.LEADING, TitledBorder.TOP, null,
-				//$NON-NLS-1$
+				// $NON-NLS-1$
 				new Color(0, 0, 0)
 		));
 
 		lblAlt = new JLabel(Bundle.getString("pnl_land_lbl_alt")); //$NON-NLS-1$
 		GroupLayout glPnlHover = new GroupLayout(pnlHover);
 		glPnlHover.setHorizontalGroup(glPnlHover.createParallelGroup(Alignment.TRAILING)
-		                                        .addGroup(glPnlHover.createSequentialGroup()
-		                                                            .addContainerGap()
-		                                                            .addComponent(lblAlt)
-		                                                            .addPreferredGap(ComponentPlacement.RELATED)
-		                                                            .addComponent(txfHover, GroupLayout.PREFERRED_SIZE,
-		                                                                          GroupLayout.DEFAULT_SIZE,
-		                                                                          GroupLayout.PREFERRED_SIZE
-		                                                                         )
-		                                                            .addPreferredGap(ComponentPlacement.RELATED, 21,
-		                                                                             Short.MAX_VALUE
-		                                                                            )
-		                                                            .addComponent(btnHover)));
+		                                        .addGroup(Alignment.LEADING, glPnlHover.createSequentialGroup()
+		                                                                               .addContainerGap()
+		                                                                               .addComponent(lblAlt)
+		                                                                               .addPreferredGap(
+				                                                                               ComponentPlacement.RELATED)
+		                                                                               .addComponent(txfHover,
+		                                                                                             GroupLayout.PREFERRED_SIZE,
+		                                                                                             GroupLayout.DEFAULT_SIZE,
+		                                                                                             GroupLayout.PREFERRED_SIZE
+		                                                                                            )
+		                                                                               .addGap(26)
+		                                                                               .addComponent(btnHover,
+		                                                                                             GroupLayout.PREFERRED_SIZE,
+		                                                                                             GroupLayout.DEFAULT_SIZE,
+		                                                                                             GroupLayout.PREFERRED_SIZE
+		                                                                                            )
+		                                                                               .addContainerGap(175,
+		                                                                                                Short.MAX_VALUE
+		                                                                                               )));
 		glPnlHover.setVerticalGroup(glPnlHover.createParallelGroup(Alignment.LEADING)
 		                                      .addGroup(glPnlHover.createSequentialGroup()
 		                                                          .addGap(5)
 		                                                          .addGroup(glPnlHover.createParallelGroup(
 				                                                                              Alignment.BASELINE)
-		                                                                              .addComponent(btnHover)
 		                                                                              .addComponent(lblAlt)
 		                                                                              .addComponent(txfHover,
 		                                                                                            GroupLayout.PREFERRED_SIZE,
 		                                                                                            GroupLayout.DEFAULT_SIZE,
 		                                                                                            GroupLayout.PREFERRED_SIZE
+		                                                                                           )
+		                                                                              .addComponent(btnHover,
+		                                                                                            GroupLayout.PREFERRED_SIZE,
+		                                                                                            GroupLayout.DEFAULT_SIZE,
+		                                                                                            GroupLayout.PREFERRED_SIZE
 		                                                                                           ))
-		                                                          .addContainerGap(17, Short.MAX_VALUE)));
+		                                                          .addContainerGap(18, Short.MAX_VALUE)));
 		pnlHover.setLayout(glPnlHover);
 	}
 
@@ -172,7 +171,7 @@ public class LandingJPanel extends JPanel implements ActionListener {
 			handleBtnHoverActionPerformed(e);
 		}
 		if (e.getSource() == btnBack) {
-			handleBtnBackActionPerformed(e);
+			MainGui.backToTelemetry();
 		}
 		if (e.getSource() == btnAutoLanding) {
 			handleBtnAutoLandingActionPerformed(e);
@@ -182,11 +181,7 @@ public class LandingJPanel extends JPanel implements ActionListener {
 	protected void handleBtnAutoLandingActionPerformed(ActionEvent e) {
 		Map<String, String> commands = new HashMap<>();
 		commands.put(Modulos.MODULO.get(), Modulos.MODULO_POUSO.get());
-		MechPeste.startModule(commands);
-	}
-
-	protected void handleBtnBackActionPerformed(ActionEvent e) {
-		MainGui.getParametros().firePropertyChange("Telemetria", false, true);
+		MechPeste.startModule(-1, commands);
 	}
 
 	protected void handleBtnHoverActionPerformed(ActionEvent e) {
@@ -207,7 +202,7 @@ public class LandingJPanel extends JPanel implements ActionListener {
 			Map<String, String> commands = new HashMap<>();
 			commands.put(Modulos.MODULO.get(), Modulos.MODULO_POUSO_SOBREVOAR.get());
 			commands.put(Modulos.ALTITUDE_SOBREVOO.get(), txfHover.getText());
-			MechPeste.startModule(commands);
+			MechPeste.startModule(-1, commands);
 			btnHover.setText(Bundle.getString("pnl_land_land")); //$NON-NLS-1$
 		}
 	}

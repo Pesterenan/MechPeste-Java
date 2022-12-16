@@ -1,33 +1,31 @@
 package com.pesterenan;
 
-import com.pesterenan.controllers.FlightController;
-import com.pesterenan.controllers.LandingController;
-import com.pesterenan.controllers.LiftoffController;
-import com.pesterenan.controllers.ManeuverController;
-import com.pesterenan.controllers.RoverController;
+import com.pesterenan.model.ActiveVessel;
 import com.pesterenan.resources.Bundle;
+import com.pesterenan.utils.Modulos;
+import com.pesterenan.views.FunctionsAndTelemetryJPanel;
 import com.pesterenan.views.MainGui;
 import com.pesterenan.views.StatusJPanel;
 import krpc.client.Connection;
 import krpc.client.RPCException;
 import krpc.client.services.KRPC;
+import krpc.client.services.SpaceCenter;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 
-import static com.pesterenan.utils.Modulos.*;
 import static com.pesterenan.views.StatusJPanel.setStatus;
 
 public class MechPeste {
-	private static MechPeste mechPeste = null;
-	private static Connection connection;
-	private static Thread threadModulos;
-	private static Thread threadTelemetria = null;
-	private static FlightController flightCtrl = null;
+	private static final Map<Integer, ActiveVessel> currentVessels = new HashMap<>();
 	private static KRPC krpc;
-	private static final List<Thread> runningThreads = new ArrayList<>();
+	private static MechPeste mechPeste;
+	private static SpaceCenter centroEspacial;
+	private static Connection connection;
+	private static long activeVesselTimer = 0;
+	private static long vesselStatusTimer = 0;
+	private static int currentVesselId = -1;
 
 	private MechPeste() {
 		MainGui.getInstance();
@@ -36,81 +34,88 @@ public class MechPeste {
 
 	public static void main(String[] args) {
 		MechPeste.getInstance();
+		checkActiveVessel();
 	}
 
 	public static MechPeste getInstance() {
 		if (mechPeste == null) {
 			mechPeste = new MechPeste();
+
+			Thread.getAllStackTraces().keySet().forEach(Thread::toString);
+
 		}
 		return mechPeste;
 	}
 
-	public static void startModule(Map<String, String> commands) {
-		String moduleToRun = commands.get(MODULO.get());
-		if (moduleToRun.equals(MODULO_DECOLAGEM.get())) {
-			executeLiftoffModule(commands);
+	private static void connectToActiveVessel() {
+		try {
+			SpaceCenter.Vessel currentVessel = centroEspacial.getActiveVessel();
+			currentVesselId = currentVessel.hashCode();
+			ActiveVessel activeVessel = new ActiveVessel(connection, currentVessel, currentVesselId);
+			currentVessels.put(currentVesselId, activeVessel);
+		} catch (RPCException e) {
+			throw new RuntimeException(e);
 		}
-		if (moduleToRun.equals(MODULO_POUSO_SOBREVOAR.get()) || moduleToRun.equals(MODULO_POUSO.get())) {
-			executeLandingModule(commands);
-		}
-		if (moduleToRun.equals(MODULO_MANOBRAS.get())) {
-			executeManeuverModule(commands);
-		}
-		if (moduleToRun.equals(MODULO_ROVER.get())) {
-			executeRoverModule(commands);
-		}
-		MainGui.getParametros().firePropertyChange("Telemetria", false, true);
 	}
 
-	private static void executeLiftoffModule(Map<String, String> commands) {
-		Thread liftoffThread = new Thread(new LiftoffController(commands));
-		runningThreads.add(liftoffThread);
-		liftoffThread.start();
+	private static void checkActiveVessel() {
+		while (getConnection() != null) {
+			long currentTime = System.currentTimeMillis();
+			try {
+				int activeVesselId = centroEspacial.getActiveVessel().hashCode();
+				if (currentTime > activeVesselTimer + 1000) {
+					// If the current active vessel changes, create a new connection
+					if (currentVesselId != activeVesselId) {
+						if (!currentVessels.containsKey(activeVesselId)) {
+							connectToActiveVessel();
+						}
+						currentVesselId = activeVesselId;
+					}
+					System.out.println(currentTime + " " + currentVessels);
+					Thread.getAllStackTraces().keySet().forEach(t -> {
+						String name = t.getName();
+						if (name.contains("Vessel")) {
+							Thread.State state = t.getState();
+							int priority = t.getPriority();
+							String type = t.isDaemon() ? "Daemon" : "Normal";
+							System.out.printf("%-12s \t %s \t %d \t %s\n", name, state, priority, type);
+						}
+					});
+					activeVesselTimer = currentTime;
+				}
+				if (currentTime > vesselStatusTimer + 100) {
+					if (currentVesselId != -1) {
+						setStatus(currentVessels.get(currentVesselId).getCurrentStatus());
+						FunctionsAndTelemetryJPanel.updateTelemetry(
+								currentVessels.get(currentVesselId).getTelemetryData());
+					}
+					vesselStatusTimer = currentTime;
+				}
+			} catch (RPCException e) {
+				System.out.println("couldn't get active vessel");
+			}
+		}
 	}
 
-	private static void executeLandingModule(Map<String, String> commands) {
-		Thread landingThread = new Thread(new LandingController(commands));
-		runningThreads.add(landingThread);
-		landingThread.start();
-	}
-
-	private static void executeManeuverModule(Map<String, String> commands) {
-		Thread maneuverThread = new Thread(new ManeuverController(commands));
-		runningThreads.add(maneuverThread);
-		maneuverThread.start();
-	}
-
-	private static void executeRoverModule(Map<String, String> commands) {
-		Thread roverThread = new Thread(new RoverController(commands));
-		runningThreads.add(roverThread);
-		roverThread.start();
+	public static void startModule(int currentVesselId, Map<String, String> commands) {
+		int vesselId = currentVesselId;
+		try {
+			if (currentVesselId == -1) {
+				vesselId = centroEspacial.getActiveVessel().hashCode();
+			}
+			currentVessels.get(vesselId).startModule(commands);
+			MainGui.getCardJPanels().firePropertyChange(Modulos.MODULO_TELEMETRIA.get(), false, true);
+		} catch (RPCException ignored) {
+		}
 	}
 
 	public static void finalizarTarefa() {
 		System.out.println("Active Threads: " + Thread.activeCount());
-		System.out.println(runningThreads);
-		for (int i = runningThreads.size() - 1; i >= 0; i--) {
-			System.out.println(runningThreads.get(i).getName());
-			System.out.println(runningThreads.get(i).getState());
-			runningThreads.get(i).interrupt();
-			if (runningThreads.get(i).getState().equals(Thread.State.TERMINATED)) {
-				runningThreads.remove(i);
-			}
-		}
-		System.out.println("Active Threads: " + Thread.activeCount());
-		System.out.println(runningThreads);
+		System.out.println(currentVessels);
 	}
 
 	public static Connection getConnection() {
 		return connection;
-	}
-
-	private static Thread getTelemetry() {
-		return threadTelemetria;
-	}
-
-	private static void setThreadTelemetria(Thread thread) {
-		threadTelemetria = thread;
 	}
 
 	public static KRPC.GameScene getCurrentGameScene() throws RPCException {
@@ -123,18 +128,13 @@ public class MechPeste {
 			connection = null;
 			connection = Connection.newInstance("MechPeste - Pesterenan");
 			krpc = KRPC.newInstance(connection);
-			startTelemetry();
+			centroEspacial = SpaceCenter.newInstance(getConnection());
+			activeVesselTimer = System.currentTimeMillis();
 			setStatus(Bundle.getString("status_connected"));
 			StatusJPanel.isBtnConnectVisible(false);
 		} catch (IOException e) {
 			setStatus(Bundle.getString("status_error_connection"));
 			StatusJPanel.isBtnConnectVisible(true);
 		}
-	}
-
-	private void startTelemetry() {
-		flightCtrl = new FlightController(getConnection());
-		setThreadTelemetria(new Thread(flightCtrl));
-		getTelemetry().start();
 	}
 }

@@ -8,6 +8,7 @@ import javax.swing.*;
 import javax.swing.GroupLayout.Alignment;
 import javax.swing.LayoutStyle.ComponentPlacement;
 import javax.swing.border.TitledBorder;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.HashMap;
@@ -17,16 +18,16 @@ public class LiftoffJPanel extends JPanel implements ActionListener {
 
 	private static final long serialVersionUID = 1L;
 	private final JLabel lblFinalApoapsis = new JLabel(Bundle.getString("pnl_lift_lbl_final_apoapsis"));
-	//$NON-NLS-1$
+	// $NON-NLS-1$
 	private final JLabel lblHeading = new JLabel(Bundle.getString("pnl_lift_lbl_direction"));
-	//$NON-NLS-1$
+	// $NON-NLS-1$
 	private final JLabel lblRoll = new JLabel(Bundle.getString("pnl_lift_lbl_roll")); //$NON-NLS-1$
 	private final JLabel lblCurveModel = new JLabel(Bundle.getString("pnl_lift_lbl_gravity_curve"));
-	//$NON-NLS-1$
+	// $NON-NLS-1$
 	private final JTextField txfFinalApoapsis = new JTextField("80000"); //$NON-NLS-1$
 	private final JTextField txfHeading = new JTextField("90"); //$NON-NLS-1$
 	private final JButton btnLiftoff = new JButton(Bundle.getString("pnl_lift_btn_liftoff"));
-	//$NON-NLS-1$
+	// $NON-NLS-1$
 	private final JButton btnBack = new JButton(Bundle.getString("pnl_lift_btn_back")); //$NON-NLS-1$
 	private final JComboBox<String> cbGravityCurveModel = new JComboBox<>();
 	private JSlider sldRoll;
@@ -38,16 +39,16 @@ public class LiftoffJPanel extends JPanel implements ActionListener {
 	}
 
 	private void initComponents() {
-		setPreferredSize(ParametersJPanel.dmsParameters);
-		setSize(ParametersJPanel.dmsParameters);
+		setPreferredSize(new Dimension(464, 216));
+		setSize(new Dimension(464, 216));
 		setBorder(new TitledBorder(null, Bundle.getString("pnl_lift_pnl_title"), TitledBorder.LEADING,
 		                           TitledBorder.TOP,
-		                           //$NON-NLS-1$
+		                           // $NON-NLS-1$
 		                           null, null
 		));
 		lblFinalApoapsis.setLabelFor(txfFinalApoapsis);
 		txfFinalApoapsis.setText("80000"); //$NON-NLS-1$
-		txfFinalApoapsis.setToolTipText(Bundle.getString("pnl_lift_txf_final_apo_tooltip")); //$NON
+		txfFinalApoapsis.setToolTipText(Bundle.getString("pnl_lift_txf_final_apo_tooltip")); // $NON
 		// -NLS-1$
 
 		btnLiftoff.addActionListener(this);
@@ -62,7 +63,7 @@ public class LiftoffJPanel extends JPanel implements ActionListener {
 		btnBack.setMaximumSize(btnBack.getSize());
 
 		cbGravityCurveModel.setToolTipText(Bundle.getString("pnl_lift_cb_gravity_curve_tooltip"));
-		//$NON-NLS-1$
+		// $NON-NLS-1$
 		cbGravityCurveModel.setModel(new DefaultComboBoxModel<>(
 				new String[]{ Modulos.SINUSOIDAL.get(), Modulos.QUADRATICA.get(), Modulos.CUBICA.get(),
 						Modulos.CIRCULAR.get(), Modulos.EXPONENCIAL.get() }));
@@ -272,7 +273,7 @@ public class LiftoffJPanel extends JPanel implements ActionListener {
 
 	public void actionPerformed(ActionEvent e) {
 		if (e.getSource() == btnBack) {
-			handleBtnBackActionPerformed(e);
+			MainGui.backToTelemetry();
 		}
 		if (e.getSource() == btnLiftoff) {
 			handleBtnLiftoffActionPerformed(e);
@@ -289,11 +290,7 @@ public class LiftoffJPanel extends JPanel implements ActionListener {
 			commands.put(Modulos.INCLINACAO.get(), cbGravityCurveModel.getSelectedItem().toString());
 			commands.put(Modulos.USAR_ESTAGIOS.get(), String.valueOf(chkDecoupleStages.isSelected()));
 			commands.put(Modulos.ABRIR_PAINEIS.get(), String.valueOf(chkOpenPanels.isSelected()));
-			MechPeste.startModule(commands);
+			MechPeste.startModule(-1, commands);
 		}
-	}
-
-	protected void handleBtnBackActionPerformed(ActionEvent e) {
-		MainGui.getParametros().firePropertyChange("Telemetria", false, true);
 	}
 }

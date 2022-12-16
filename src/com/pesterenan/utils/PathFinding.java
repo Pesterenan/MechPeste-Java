@@ -24,7 +24,7 @@ public class PathFinding extends ActiveVessel {
 	private Drawing drawing;
 
 	public PathFinding(Connection con) {
-		super(con);
+		super();
 		initializeParameters();
 	}
 
@@ -33,7 +33,7 @@ public class PathFinding extends ActiveVessel {
 			waypointManager = centroEspacial.getWaypointManager();
 			waypointsToReach = new ArrayList<>();
 			pathToTarget = new ArrayList<>();
-			drawing = Drawing.newInstance(getConexao());
+			drawing = Drawing.newInstance(getConnection());
 		} catch (RPCException e) {
 			throw new RuntimeException(e);
 		}
@@ -118,7 +118,7 @@ public class PathFinding extends ActiveVessel {
 		pathToTarget.add(currentRoverPos);
 		// Calculate the next points positions and add to the list on Orbital Ref
 		int index = 0;
-		while (distanceToTarget > 10) {
+		while (distanceToTarget > 50) {
 			Vector currentPoint = pathToTarget.get(index);
 			Vector targetDirection =
 					transformOrbToSurf(targetPosition).subtract(transformOrbToSurf(currentPoint)).normalize();

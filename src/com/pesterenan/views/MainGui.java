@@ -1,26 +1,37 @@
 package com.pesterenan.views;
 
 import com.pesterenan.resources.Bundle;
+import com.pesterenan.utils.Modulos;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 
-public class MainGui extends JFrame implements ActionListener {
+public class MainGui extends JFrame implements ActionListener, PropertyChangeListener {
 	private static final long serialVersionUID = 1L;
+	public static final Dimension dmsPanels = new Dimension(464, 216);
+
 	private static MainGui mainGui = null;
 	private static StatusJPanel pnlStatus;
-	private static FunctionsJPanel pnlFuncoes;
-	private static ParametersJPanel pnlParametros;
+	private static FunctionsAndTelemetryJPanel pnlFunctionsAndTelemetry;
 	private final Dimension dmsMainGui = new Dimension(480, 300);
 	private final JPanel ctpMainGui = new JPanel();
+	private final static JPanel cardJPanels = new JPanel();
 	private JMenuBar menuBar;
 	private JMenu mnFile;
 	private JMenuItem mntmExit;
 	private JMenu mnHelp;
 	private JMenuItem mntmAbout;
 	private JMenuItem mntmInstallKrpc;
+	private LiftoffJPanel pnlLiftoff;
+
+	private final CardLayout cardLayout = new CardLayout(0, 0);
+	private LandingJPanel pnlLanding;
+	private ManeuverJPanel pnlManeuver;
+	private RoverJPanel pnlRover;
 
 	private MainGui() {
 		try {
@@ -38,10 +49,6 @@ public class MainGui extends JFrame implements ActionListener {
 		return mainGui;
 	}
 
-	public static ParametersJPanel getParametros() {
-		return pnlParametros;
-	}
-
 	private void initComponents() {
 		setAlwaysOnTop(true);
 		setTitle("MechPeste - Pesterenan"); //$NON-NLS-1$
@@ -56,7 +63,7 @@ public class MainGui extends JFrame implements ActionListener {
 		mnFile = new JMenu(Bundle.getString("main_mn_file")); //$NON-NLS-1$
 		menuBar.add(mnFile);
 
-		mntmInstallKrpc = new JMenuItem("Install KRPC");
+		mntmInstallKrpc = new JMenuItem(Bundle.getString("main_mntm_install_krpc"));
 		mntmInstallKrpc.addActionListener(this);
 		mnFile.add(mntmInstallKrpc);
 
@@ -73,12 +80,24 @@ public class MainGui extends JFrame implements ActionListener {
 		setContentPane(ctpMainGui);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-		pnlFuncoes = new FunctionsJPanel();
-		pnlParametros = new ParametersJPanel();
+		pnlFunctionsAndTelemetry = new FunctionsAndTelemetryJPanel();
+		pnlLiftoff = new LiftoffJPanel();
+		pnlLanding = new LandingJPanel();
+		pnlManeuver = new ManeuverJPanel();
+		pnlRover = new RoverJPanel();
 		pnlStatus = new StatusJPanel();
+
+		cardJPanels.setLayout(cardLayout);
+		cardJPanels.setSize(dmsPanels);
+		cardJPanels.add(pnlFunctionsAndTelemetry, Modulos.MODULO_TELEMETRIA.get());
+		cardJPanels.add(pnlLiftoff, Modulos.MODULO_DECOLAGEM.get());
+		cardJPanels.add(pnlLanding, Modulos.MODULO_POUSO.get());
+		cardJPanels.add(pnlManeuver, Modulos.MODULO_MANOBRAS.get());
+		cardJPanels.add(pnlRover, Modulos.MODULO_ROVER.get());
+		cardJPanels.addPropertyChangeListener(this);
+
 		ctpMainGui.setLayout(new BorderLayout(0, 0));
-		ctpMainGui.add(pnlFuncoes, BorderLayout.WEST);
-		ctpMainGui.add(pnlParametros, BorderLayout.CENTER);
+		ctpMainGui.add(cardJPanels, BorderLayout.CENTER);
 		ctpMainGui.add(pnlStatus, BorderLayout.SOUTH);
 	}
 
@@ -97,5 +116,38 @@ public class MainGui extends JFrame implements ActionListener {
 
 	protected void handleMntmExitActionPerformed(ActionEvent e) {
 		System.exit(0);
+	}
+
+	@Override
+	public void propertyChange(PropertyChangeEvent evt) {
+		if (evt.getSource() == cardJPanels) {
+			handlePnlTelemetriaPropertyChange(evt);
+		}
+	}
+
+	protected void handlePnlTelemetriaPropertyChange(PropertyChangeEvent evt) {
+		if (evt.getPropertyName().equals(Modulos.MODULO_DECOLAGEM.get())) {
+			cardLayout.show(cardJPanels, Modulos.MODULO_DECOLAGEM.get());
+		}
+		if (evt.getPropertyName().equals(Modulos.MODULO_POUSO.get())) {
+			cardLayout.show(cardJPanels, Modulos.MODULO_POUSO.get());
+		}
+		if (evt.getPropertyName().equals(Modulos.MODULO_MANOBRAS.get())) {
+			cardLayout.show(cardJPanels, Modulos.MODULO_MANOBRAS.get());
+		}
+		if (evt.getPropertyName().equals(Modulos.MODULO_ROVER.get())) {
+			cardLayout.show(cardJPanels, Modulos.MODULO_ROVER.get());
+		}
+		if (evt.getPropertyName().equals(Modulos.MODULO_TELEMETRIA.get())) {
+			cardLayout.show(cardJPanels, Modulos.MODULO_TELEMETRIA.get());
+		}
+	}
+
+	public static JPanel getCardJPanels() {
+		return cardJPanels;
+	}
+
+	public static void backToTelemetry() {
+		cardJPanels.firePropertyChange(Modulos.MODULO_TELEMETRIA.get(), false, true);
 	}
 }

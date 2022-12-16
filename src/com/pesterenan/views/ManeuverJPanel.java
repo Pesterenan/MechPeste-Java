@@ -227,12 +227,8 @@ public class ManeuverJPanel extends JPanel implements ActionListener {
 			handleManeuverFunction(Modulos.AJUSTAR.get());
 		}
 		if (e.getSource() == btnBack) {
-			handleBtnVoltarActionPerformed(e);
+			MainGui.backToTelemetry();
 		}
-	}
-
-	protected void handleBtnVoltarActionPerformed(ActionEvent e) {
-		MainGui.getParametros().firePropertyChange("Telemetria", false, true);
 	}
 
 	protected void handleManeuverFunction(String maneuverFunction) {
@@ -240,6 +236,6 @@ public class ManeuverJPanel extends JPanel implements ActionListener {
 		commands.put(Modulos.MODULO.get(), Modulos.MODULO_MANOBRAS.get());
 		commands.put(Modulos.FUNCAO.get(), maneuverFunction);
 		commands.put(Modulos.AJUSTE_FINO.get(), String.valueOf(chkFineAdjusment.isSelected()));
-		MechPeste.startModule(commands);
+		MechPeste.startModule(-1, commands);
 	}
 }

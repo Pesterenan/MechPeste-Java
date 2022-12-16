@@ -1,5 +1,7 @@
 package com.pesterenan.utils;
 
+import com.pesterenan.resources.Bundle;
+
 public class Utilities {
 
 	public static double linearInterpolation(double start, double end, double value) {
@@ -56,4 +58,27 @@ public class Utilities {
 		return value == 0 ? 0 : Math.pow(2, 10 * value - 10);
 	}
 
+	public static String convertToMetersMagnitudes(double meters) {
+		String decimalPlaces = "%.2f"; //$NON-NLS-1$
+		if (meters >= 1000000000) {
+			return String.format(decimalPlaces + "Gm", meters / 1000000000); //$NON-NLS-1$
+		} else if (meters >= 1000000) {
+			return String.format(decimalPlaces + "Mm", meters / 1000000); //$NON-NLS-1$
+		} else if (meters >= 1000) {
+			return String.format(decimalPlaces + "km", meters / 1000); //$NON-NLS-1$
+		} else {
+			return String.format(decimalPlaces + "m", meters); //$NON-NLS-1$
+		}
+	}
+
+	public String formatElapsedTime(Double totalSeconds) {
+		int years = (totalSeconds.intValue() / 9201600);
+		int days = (totalSeconds.intValue() / 21600) % 426;
+		int hours = (totalSeconds.intValue() / 3600) % 6;
+		int minutes = (totalSeconds.intValue() % 3600) / 60;
+		int seconds = totalSeconds.intValue() % 60;
+		return String.format(Bundle.getString("pnl_tel_lbl_date_template"), years, days, hours, minutes,
+		                     seconds
+		                    ); //$NON-NLS-1$
+	}
 }
