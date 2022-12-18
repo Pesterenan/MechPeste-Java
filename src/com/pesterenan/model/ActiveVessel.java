@@ -55,9 +55,7 @@ public class ActiveVessel implements Runnable {
 	protected int currentVesselId = 0;
 	protected Thread activeVesselThread;
 	protected Thread controllerThread;
-	private String currentFunction = Modulos.MODULO_TELEMETRIA.get();
 	private long timer = 0;
-	private Controller controller;
 	private String currentStatus = Bundle.getString("status_ready");
 
 	public ActiveVessel() {
@@ -68,7 +66,7 @@ public class ActiveVessel implements Runnable {
 		setNaveAtual(currentVessel);
 		this.currentVesselId = currentVesselId;
 		initializeParameters();
-		activeVesselThread = new Thread(this, "Vessel nº" + String.valueOf(getNaveAtual().hashCode()));
+		activeVesselThread = new Thread(this, "Vessel nº" + getNaveAtual().hashCode());
 		activeVesselThread.start();
 	}
 
@@ -123,7 +121,7 @@ public class ActiveVessel implements Runnable {
 
 	public void checarConexao() {
 		try {
-			if (MechPeste.getCurrentGameScene().equals(GameScene.FLIGHT)) {
+			if (MechPeste.newInstance().getCurrentGameScene().equals(GameScene.FLIGHT)) {
 				setNaveAtual(centroEspacial.getActiveVessel());
 				setCurrentStatus(Bundle.getString("status_connected"));
 				isBtnConnectVisible(false);
@@ -163,6 +161,7 @@ public class ActiveVessel implements Runnable {
 						timer = currentTime;
 					}
 				}
+				centroEspacial.setActiveVessel(naveAtual);
 				getNaveAtual().getControl().activateNextStage();
 			}
 			setCurrentStatus(Bundle.getString("status_liftoff"));
@@ -191,8 +190,9 @@ public class ActiveVessel implements Runnable {
 	}
 
 	public void startModule(Map<String, String> commands) {
-		currentFunction = commands.get(Modulos.MODULO.get());
 		this.commands = commands;
+		String currentFunction = commands.get(Modulos.MODULO.get());
+		Controller controller;
 		if (currentFunction.equals(Modulos.MODULO_DECOLAGEM.get())) {
 			controller = new LiftoffController(this);
 			controllerThread = new Thread(controller, activeVesselThread.getName() + "Liftoff");
@@ -238,7 +238,7 @@ public class ActiveVessel implements Runnable {
 	@Override
 	public void run() {
 		try {
-			while (true) {
+			while (activeVesselThread.isAlive()) {
 				long currentTime = System.currentTimeMillis();
 				if (currentTime > timer + 100) {
 					recordTelemetryData();

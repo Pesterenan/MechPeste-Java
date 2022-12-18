@@ -42,11 +42,10 @@ public class MainGui extends JFrame implements ActionListener, PropertyChangeLis
 		}
 	}
 
-	public static MainGui getInstance() {
+	public static void newInstance() {
 		if (mainGui == null) {
 			mainGui = new MainGui();
 		}
-		return mainGui;
 	}
 
 	private void initComponents() {

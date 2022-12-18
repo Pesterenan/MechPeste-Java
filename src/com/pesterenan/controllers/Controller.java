@@ -19,22 +19,22 @@ public class Controller implements Runnable {
 			activeVessel.pontoRefSuperficie = activeVessel.getNaveAtual().getSurfaceReferenceFrame();
 			activeVessel.parametrosDeVoo = activeVessel.getNaveAtual().flight(activeVessel.pontoRefOrbital);
 			activeVessel.altitude =
-					activeVessel.getConnection().addStream(activeVessel.parametrosDeVoo, "getMeanAltitude");
+					ActiveVessel.getConnection().addStream(activeVessel.parametrosDeVoo, "getMeanAltitude");
 			activeVessel.altitudeSup =
-					activeVessel.getConnection().addStream(activeVessel.parametrosDeVoo, "getSurfaceAltitude");
-			activeVessel.apoastro = activeVessel.getConnection()
+					ActiveVessel.getConnection().addStream(activeVessel.parametrosDeVoo, "getSurfaceAltitude");
+			activeVessel.apoastro = ActiveVessel.getConnection()
 			                                    .addStream(activeVessel.getNaveAtual().getOrbit(),
 			                                               "getApoapsisAltitude"
 			                                              );
-			activeVessel.periastro = activeVessel.getConnection()
+			activeVessel.periastro = ActiveVessel.getConnection()
 			                                     .addStream(activeVessel.getNaveAtual().getOrbit(),
 			                                                "getPeriapsisAltitude"
 			                                               );
 			activeVessel.velVertical =
-					activeVessel.getConnection().addStream(activeVessel.parametrosDeVoo, "getVerticalSpeed");
+					ActiveVessel.getConnection().addStream(activeVessel.parametrosDeVoo, "getVerticalSpeed");
 			activeVessel.velHorizontal =
-					activeVessel.getConnection().addStream(activeVessel.parametrosDeVoo, "getHorizontalSpeed");
-			activeVessel.tempoMissao = activeVessel.getConnection().addStream(activeVessel.getNaveAtual(), "getMET");
+					ActiveVessel.getConnection().addStream(activeVessel.parametrosDeVoo, "getHorizontalSpeed");
+			activeVessel.tempoMissao = ActiveVessel.getConnection().addStream(activeVessel.getNaveAtual(), "getMET");
 			activeVessel.bateriaTotal = activeVessel.getNaveAtual().getResources().max("ElectricCharge");
 			activeVessel.ap.setReferenceFrame(activeVessel.pontoRefSuperficie);
 			activeVessel.gravityAcel = activeVessel.getNaveAtual().getOrbit().getBody().getSurfaceGravity();

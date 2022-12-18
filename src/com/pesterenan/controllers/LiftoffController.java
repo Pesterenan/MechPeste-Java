@@ -118,6 +118,7 @@ public class LiftoffController extends Controller {
 	private void decoupleStage() {
 		try {
 			activeVessel.setCurrentStatus(Bundle.getString("status_separating_stage"));
+			ActiveVessel.centroEspacial.setActiveVessel(activeVessel.getNaveAtual());
 			activeVessel.getNaveAtual().getControl().activateNextStage();
 			Thread.sleep(1000);
 		} catch (RPCException | InterruptedException ignored) {

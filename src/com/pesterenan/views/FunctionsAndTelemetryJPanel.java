@@ -24,7 +24,6 @@ public class FunctionsAndTelemetryJPanel extends JPanel implements ActionListene
 	private JButton btnLanding;
 	private JButton btnManeuver;
 	private JButton btnRover;
-	private JPanel pnlTelemetry;
 
 	private static JLabel altitudeValorLabel = new JLabel("");
 	private static JLabel altitudeSupValorLabel = new JLabel("");
@@ -44,7 +43,7 @@ public class FunctionsAndTelemetryJPanel extends JPanel implements ActionListene
 				                 null,
 				                 null
 				));
-		pnlTelemetry = new JPanel();
+		JPanel pnlTelemetry = new JPanel();
 		pnlTelemetry.setBorder(
 				new TitledBorder(null, Bundle.getString("pnl_tel_border"), TitledBorder.LEADING, TitledBorder.TOP,
 				                 null,

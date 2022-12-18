@@ -45,15 +45,15 @@ public class RoverController extends Controller {
 			activeVessel.parametrosDeVoo = activeVessel.getNaveAtual().flight(activeVessel.pontoRefOrbital);
 			pontoRefRover = activeVessel.getNaveAtual().getReferenceFrame();
 			activeVessel.velHorizontal =
-					activeVessel.getConnection().addStream(activeVessel.parametrosDeVoo, "getHorizontalSpeed");
-			bateriaAtual = activeVessel.getConnection()
+					ActiveVessel.getConnection().addStream(activeVessel.parametrosDeVoo, "getHorizontalSpeed");
+			bateriaAtual = ActiveVessel.getConnection()
 			                           .addStream(activeVessel.getNaveAtual().getResources(), "amount",
 			                                      "ElectricCharge"
 			                                     );
 			maxSpeed = Float.parseFloat(activeVessel.commands.get(Modulos.VELOCIDADE_MAX.get()));
 			roverDirection = new Vector(activeVessel.getNaveAtual().direction(pontoRefRover));
-			drawing = Drawing.newInstance(activeVessel.getConnection());
-			pathFinding = new PathFinding(activeVessel.getConnection());
+			drawing = Drawing.newInstance(ActiveVessel.getConnection());
+			pathFinding = new PathFinding(ActiveVessel.getConnection());
 			// AJUSTAR CONTROLES PID:
 			acelCtrl.adjustOutput(0, 1);
 			sterringCtrl.adjustOutput(-1, 1);
@@ -97,7 +97,7 @@ public class RoverController extends Controller {
 		}
 		if (activeVessel.commands.get(Modulos.TIPO_ALVO_ROVER.get()).equals(Modulos.NAVE_ALVO.get())) {
 			Vector targetVesselPosition =
-					new Vector(activeVessel.centroEspacial.getTargetVessel().position(activeVessel.pontoRefOrbital));
+					new Vector(ActiveVessel.centroEspacial.getTargetVessel().position(activeVessel.pontoRefOrbital));
 			pathFinding.buildPathToTarget(targetVesselPosition);
 		}
 	}
@@ -153,10 +153,7 @@ public class RoverController extends Controller {
 		float currentCharge = activeVessel.getNaveAtual().getResources().amount("ElectricCharge");
 		float minChargeLevel = 10.0f;
 		float chargePercentage = (float) Math.ceil(currentCharge * 100 / totalCharge);
-		if (chargePercentage > minChargeLevel) {
-			return false;
-		}
-		return true;
+		return !(chargePercentage > minChargeLevel);
 	}
 
 	private void rechargeRover() throws RPCException, StreamException, InterruptedException {
@@ -187,7 +184,7 @@ public class RoverController extends Controller {
 			if (chargeTime < 1 || chargeTime > 21600) {
 				chargeTime = 3600;
 			}
-			activeVessel.centroEspacial.warpTo((activeVessel.centroEspacial.getUT() + chargeTime), 10000, 4);
+			ActiveVessel.centroEspacial.warpTo((ActiveVessel.centroEspacial.getUT() + chargeTime), 10000, 4);
 			activeVessel.getNaveAtual().getControl().setLights(true);
 		}
 	}
@@ -200,11 +197,7 @@ public class RoverController extends Controller {
 		                                           .filter(this::isSolarPanelNotBroken)
 		                                           .collect(Collectors.toList());
 
-		if (solarPanels.isEmpty()) {
-			return false;
-		} else {
-			return true;
-		}
+		return !solarPanels.isEmpty();
 	}
 
 	private void driveRover() throws IOException, RPCException, StreamException {
@@ -304,27 +297,27 @@ public class RoverController extends Controller {
 	}
 
 	private Vector transformDirection(Vector vector) throws RPCException {
-		return new Vector(activeVessel.centroEspacial.transformDirection(vector.toTriplet(), pontoRefRover,
+		return new Vector(ActiveVessel.centroEspacial.transformDirection(vector.toTriplet(), pontoRefRover,
 		                                                                 activeVessel.pontoRefSuperficie
 		                                                                ));
 	}
 
 	private Vector posSurfToRover(Vector vector) throws RPCException {
 		return new Vector(
-				activeVessel.centroEspacial.transformPosition(vector.toTriplet(), activeVessel.pontoRefSuperficie,
+				ActiveVessel.centroEspacial.transformPosition(vector.toTriplet(), activeVessel.pontoRefSuperficie,
 				                                              pontoRefRover
 				                                             ));
 	}
 
 	private Vector posRoverToSurf(Vector vector) throws RPCException {
-		return new Vector(activeVessel.centroEspacial.transformPosition(vector.toTriplet(), pontoRefRover,
+		return new Vector(ActiveVessel.centroEspacial.transformPosition(vector.toTriplet(), pontoRefRover,
 		                                                                activeVessel.pontoRefSuperficie
 		                                                               ));
 	}
 
 	private Vector posOrbToSurf(Vector vector) throws RPCException {
 		return new Vector(
-				activeVessel.centroEspacial.transformPosition(vector.toTriplet(), activeVessel.pontoRefOrbital,
+				ActiveVessel.centroEspacial.transformPosition(vector.toTriplet(), activeVessel.pontoRefOrbital,
 				                                              activeVessel.pontoRefSuperficie
 				                                             ));
 	}

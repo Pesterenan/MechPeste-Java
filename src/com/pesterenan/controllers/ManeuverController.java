@@ -133,7 +133,7 @@ public class ManeuverController extends Controller {
 		double[] dv = { 0, 0, 0 };
 		try {
 			double[] incNodesUt = getTimeToIncNodes(targetOrbit);
-			uTatClosestNode = Math.min(incNodesUt[0], incNodesUt[1]) - activeVessel.centroEspacial.getUT();
+			uTatClosestNode = Math.min(incNodesUt[0], incNodesUt[1]) - ActiveVessel.centroEspacial.getUT();
 		} catch (Exception ignored) {
 		}
 		return createManeuver(uTatClosestNode, dv);
@@ -220,11 +220,11 @@ public class ManeuverController extends Controller {
 	}
 
 	private Orbit getTargetOrbit() throws RPCException {
-		if (activeVessel.centroEspacial.getTargetBody() != null) {
-			return activeVessel.centroEspacial.getTargetBody().getOrbit();
+		if (ActiveVessel.centroEspacial.getTargetBody() != null) {
+			return ActiveVessel.centroEspacial.getTargetBody().getOrbit();
 		}
-		if (activeVessel.centroEspacial.getTargetVessel() != null) {
-			return activeVessel.centroEspacial.getTargetVessel().getOrbit();
+		if (ActiveVessel.centroEspacial.getTargetVessel() != null) {
+			return ActiveVessel.centroEspacial.getTargetVessel().getOrbit();
 		}
 		return null;
 	}
@@ -234,7 +234,7 @@ public class ManeuverController extends Controller {
 		try {
 			activeVessel.getNaveAtual()
 			            .getControl()
-			            .addNode(activeVessel.centroEspacial.getUT() + laterTime, (float) deltaV[0], (float) deltaV[1],
+			            .addNode(ActiveVessel.centroEspacial.getUT() + laterTime, (float) deltaV[0], (float) deltaV[1],
 			                     (float) deltaV[2]
 			                    );
 			List<Node> currentNodes = activeVessel.getNaveAtual().getControl().getNodes();
@@ -291,7 +291,7 @@ public class ManeuverController extends Controller {
 			}
 		}
 		double empuxo = activeVessel.getNaveAtual().getAvailableThrust();
-		double isp = activeVessel.getNaveAtual().getSpecificImpulse() * activeVessel.CONST_GRAV;
+		double isp = activeVessel.getNaveAtual().getSpecificImpulse() * ActiveVessel.CONST_GRAV;
 		double massaTotal = activeVessel.getNaveAtual().getMass();
 		double massaSeca = massaTotal / Math.exp(noDeManobra.getDeltaV() / isp);
 		double taxaDeQueima = empuxo / isp;
@@ -306,7 +306,7 @@ public class ManeuverController extends Controller {
 			double inicioDaQueima = noDeManobra.getTimeTo() - (duracaoDaQueima / 2.0) - (fineAdjustment ? 5 : 0);
 			StatusJPanel.setStatus(Bundle.getString("status_maneuver_warp"));
 			if (inicioDaQueima > 30) {
-				activeVessel.centroEspacial.warpTo((activeVessel.centroEspacial.getUT() + inicioDaQueima - 10), 100000,
+				ActiveVessel.centroEspacial.warpTo((ActiveVessel.centroEspacial.getUT() + inicioDaQueima - 10), 100000,
 				                                   4
 				                                  );
 			}
@@ -320,7 +320,7 @@ public class ManeuverController extends Controller {
 				Thread.sleep(100);
 			}
 			// Executar a manobra:
-			Stream<Triplet<Double, Double, Double>> queimaRestante = activeVessel.getConnection()
+			Stream<Triplet<Double, Double, Double>> queimaRestante = ActiveVessel.getConnection()
 			                                                                     .addStream(noDeManobra,
 			                                                                                "remainingBurnVector",
 			                                                                                noDeManobra.getReferenceFrame()

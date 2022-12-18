@@ -87,7 +87,7 @@ public class TelemetryJPanel extends JPanel implements PropertyChangeListener {
 		btnCancelar.setPreferredSize(btnCancelar.getSize());
 		btnCancelar.setMinimumSize(btnCancelar.getSize());
 		btnCancelar.setMaximumSize(btnCancelar.getSize());
-		btnCancelar.addActionListener(e -> MechPeste.finalizarTarefa());
+		btnCancelar.addActionListener(e -> MechPeste.newInstance().finalizarTarefa());
 		add(btnCancelar);
 	}
 

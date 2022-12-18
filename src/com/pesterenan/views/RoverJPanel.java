@@ -221,7 +221,7 @@ public class RoverJPanel extends JPanel implements ActionListener {
 			commands.put(Modulos.TIPO_ALVO_ROVER.get(), bgChoice.getSelection().getActionCommand());
 			commands.put(Modulos.NOME_MARCADOR.get(), txfWaypointName.getText());
 			commands.put(Modulos.VELOCIDADE_MAX.get(), txfMaxSpeed.getText());
-			MechPeste.startModule(-1, commands);
+			MechPeste.newInstance().startModule(-1, commands);
 		}
 	}
 

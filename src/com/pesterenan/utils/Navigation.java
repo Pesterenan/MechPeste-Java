@@ -27,25 +27,25 @@ public class Navigation extends Controller {
 //			drawing = Drawing.newInstance(getConexao());
 			activeVessel.parametrosDeVoo = activeVessel.getNaveAtual().flight(activeVessel.pontoRefOrbital);
 			activeVessel.velHorizontal =
-					activeVessel.getConnection().addStream(activeVessel.parametrosDeVoo, "getHorizontalSpeed");
+					ActiveVessel.getConnection().addStream(activeVessel.parametrosDeVoo, "getHorizontalSpeed");
 		} catch (RPCException | StreamException ignored) {
 		}
 	}
 
 	public void aimAtManeuver(Node maneuver) throws RPCException {
-		aimAtDirection(activeVessel.centroEspacial.transformDirection(PROGRADE, maneuver.getReferenceFrame(),
+		aimAtDirection(ActiveVessel.centroEspacial.transformDirection(PROGRADE, maneuver.getReferenceFrame(),
 		                                                              activeVessel.pontoRefOrbital
 		                                                             ));
 	}
 
 	public void aimForLanding() throws RPCException, StreamException {
 		Vector currentPosition = new Vector(activeVessel.getNaveAtual().position(activeVessel.pontoRefOrbital));
-		Vector retrograde = new Vector(activeVessel.centroEspacial.transformPosition(RETROGRADE,
+		Vector retrograde = new Vector(ActiveVessel.centroEspacial.transformPosition(RETROGRADE,
 		                                                                             activeVessel.getNaveAtual()
 		                                                                                         .getSurfaceVelocityReferenceFrame(),
 		                                                                             activeVessel.pontoRefOrbital
 		                                                                            )).subtract(currentPosition);
-		Vector radial = new Vector(activeVessel.centroEspacial.transformDirection(RADIAL, activeVessel.getNaveAtual()
+		Vector radial = new Vector(ActiveVessel.centroEspacial.transformDirection(RADIAL, activeVessel.getNaveAtual()
 		                                                                                              .getSurfaceReferenceFrame(),
 		                                                                          activeVessel.pontoRefOrbital
 		                                                                         ));
@@ -112,21 +112,21 @@ public class Navigation extends Controller {
 //	}
 
 	public void aimAtPrograde() throws RPCException {
-		aimAtDirection(activeVessel.centroEspacial.transformDirection(PROGRADE, activeVessel.getNaveAtual()
+		aimAtDirection(ActiveVessel.centroEspacial.transformDirection(PROGRADE, activeVessel.getNaveAtual()
 		                                                                                    .getSurfaceVelocityReferenceFrame(),
 		                                                              activeVessel.pontoRefOrbital
 		                                                             ));
 	}
 
 	public void aimAtRadialOut() throws RPCException {
-		aimAtDirection(activeVessel.centroEspacial.transformDirection(RADIAL, activeVessel.getNaveAtual()
+		aimAtDirection(ActiveVessel.centroEspacial.transformDirection(RADIAL, activeVessel.getNaveAtual()
 		                                                                                  .getSurfaceReferenceFrame(),
 		                                                              activeVessel.pontoRefOrbital
 		                                                             ));
 	}
 
 	public void aimAtRetrograde() throws RPCException {
-		aimAtDirection(activeVessel.centroEspacial.transformDirection(RETROGRADE, activeVessel.getNaveAtual()
+		aimAtDirection(ActiveVessel.centroEspacial.transformDirection(RETROGRADE, activeVessel.getNaveAtual()
 		                                                                                      .getSurfaceVelocityReferenceFrame(),
 		                                                              activeVessel.pontoRefOrbital
 		                                                             ));

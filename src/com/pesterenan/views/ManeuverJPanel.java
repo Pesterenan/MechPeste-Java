@@ -236,6 +236,6 @@ public class ManeuverJPanel extends JPanel implements ActionListener {
 		commands.put(Modulos.MODULO.get(), Modulos.MODULO_MANOBRAS.get());
 		commands.put(Modulos.FUNCAO.get(), maneuverFunction);
 		commands.put(Modulos.AJUSTE_FINO.get(), String.valueOf(chkFineAdjusment.isSelected()));
-		MechPeste.startModule(-1, commands);
+		MechPeste.newInstance().startModule(-1, commands);
 	}
 }

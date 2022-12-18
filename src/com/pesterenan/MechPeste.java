@@ -2,7 +2,6 @@ package com.pesterenan;
 
 import com.pesterenan.model.ActiveVessel;
 import com.pesterenan.resources.Bundle;
-import com.pesterenan.utils.Modulos;
 import com.pesterenan.views.FunctionsAndTelemetryJPanel;
 import com.pesterenan.views.MainGui;
 import com.pesterenan.views.StatusJPanel;
@@ -18,52 +17,43 @@ import java.util.Map;
 import static com.pesterenan.views.StatusJPanel.setStatus;
 
 public class MechPeste {
+	public static final int CHECK_VESSEL_INTERVAL_IN_MS = 1000;
 	private static final Map<Integer, ActiveVessel> currentVessels = new HashMap<>();
+	public static final int CHECK_STATUS_INTERVAL_IN_MS = 100;
 	private static KRPC krpc;
 	private static MechPeste mechPeste;
 	private static SpaceCenter centroEspacial;
 	private static Connection connection;
-	private static long activeVesselTimer = 0;
-	private static long vesselStatusTimer = 0;
+	private static long checkVesselTimer = 0;
+	private static long checkStatusTimer = 0;
 	private static int currentVesselId = -1;
 
 	private MechPeste() {
-		MainGui.getInstance();
-		connectToKSP();
+		MainGui.newInstance();
 	}
 
 	public static void main(String[] args) {
-		MechPeste.getInstance();
-		checkActiveVessel();
+		MechPeste.newInstance().connectToKSP();
+		MechPeste.newInstance().checkActiveVessel();
 	}
 
-	public static MechPeste getInstance() {
+	public static MechPeste newInstance() {
 		if (mechPeste == null) {
 			mechPeste = new MechPeste();
-
-			Thread.getAllStackTraces().keySet().forEach(Thread::toString);
-
 		}
 		return mechPeste;
 	}
 
-	private static void connectToActiveVessel() {
-		try {
-			SpaceCenter.Vessel currentVessel = centroEspacial.getActiveVessel();
-			currentVesselId = currentVessel.hashCode();
-			ActiveVessel activeVessel = new ActiveVessel(connection, currentVessel, currentVesselId);
-			currentVessels.put(currentVesselId, activeVessel);
-		} catch (RPCException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	private static void checkActiveVessel() {
+	private void checkActiveVessel() {
 		while (getConnection() != null) {
-			long currentTime = System.currentTimeMillis();
 			try {
+				if (!MechPeste.newInstance().getCurrentGameScene().equals(KRPC.GameScene.FLIGHT)) {
+					return;
+				}
+
+				long currentTime = System.currentTimeMillis();
 				int activeVesselId = centroEspacial.getActiveVessel().hashCode();
-				if (currentTime > activeVesselTimer + 1000) {
+				if (currentTime > checkVesselTimer + CHECK_VESSEL_INTERVAL_IN_MS) {
 					// If the current active vessel changes, create a new connection
 					if (currentVesselId != activeVesselId) {
 						if (!currentVessels.containsKey(activeVesselId)) {
@@ -71,65 +61,76 @@ public class MechPeste {
 						}
 						currentVesselId = activeVesselId;
 					}
-					System.out.println(currentTime + " " + currentVessels);
 					Thread.getAllStackTraces().keySet().forEach(t -> {
 						String name = t.getName();
 						if (name.contains("Vessel")) {
 							Thread.State state = t.getState();
-							int priority = t.getPriority();
 							String type = t.isDaemon() ? "Daemon" : "Normal";
-							System.out.printf("%-12s \t %s \t %d \t %s\n", name, state, priority, type);
+							System.out.printf("%-12s \t %s \t %d \t %s\n", name, state, currentTime, type);
 						}
 					});
-					activeVesselTimer = currentTime;
+					checkVesselTimer = currentTime;
 				}
-				if (currentTime > vesselStatusTimer + 100) {
+				if (currentTime > checkStatusTimer + CHECK_STATUS_INTERVAL_IN_MS) {
 					if (currentVesselId != -1) {
-						setStatus(currentVessels.get(currentVesselId).getCurrentStatus());
-						FunctionsAndTelemetryJPanel.updateTelemetry(
-								currentVessels.get(currentVesselId).getTelemetryData());
+						ActiveVessel av = currentVessels.get(currentVesselId);
+						setStatus(av.getCurrentStatus());
+						FunctionsAndTelemetryJPanel.updateTelemetry(av.getTelemetryData());
 					}
-					vesselStatusTimer = currentTime;
+					checkStatusTimer = currentTime;
 				}
-			} catch (RPCException e) {
-				System.out.println("couldn't get active vessel");
+
+			} catch (RPCException ignored) {
 			}
 		}
 	}
 
-	public static void startModule(int currentVesselId, Map<String, String> commands) {
+	private void connectToActiveVessel() {
+		try {
+			SpaceCenter.Vessel currentVessel = centroEspacial.getActiveVessel();
+			currentVesselId = currentVessel.hashCode();
+			ActiveVessel activeVessel = new ActiveVessel(connection, currentVessel, currentVesselId);
+			currentVessels.put(currentVesselId, activeVessel);
+		} catch (RPCException ignored) {
+			System.out.println(Bundle.getString("status_couldnt_switch_vessel"));
+		}
+	}
+
+	public void startModule(Map<String, String> commands) {
+		startModule(-1, commands);
+	}
+
+	public void startModule(int currentVesselId, Map<String, String> commands) {
 		int vesselId = currentVesselId;
 		try {
 			if (currentVesselId == -1) {
 				vesselId = centroEspacial.getActiveVessel().hashCode();
 			}
 			currentVessels.get(vesselId).startModule(commands);
-			MainGui.getCardJPanels().firePropertyChange(Modulos.MODULO_TELEMETRIA.get(), false, true);
 		} catch (RPCException ignored) {
 		}
 	}
 
-	public static void finalizarTarefa() {
+	public void finalizarTarefa() {
 		System.out.println("Active Threads: " + Thread.activeCount());
 		System.out.println(currentVessels);
 	}
 
-	public static Connection getConnection() {
+	public Connection getConnection() {
 		return connection;
 	}
 
-	public static KRPC.GameScene getCurrentGameScene() throws RPCException {
+	public KRPC.GameScene getCurrentGameScene() throws RPCException {
 		return krpc.getCurrentGameScene();
 	}
 
 	public void connectToKSP() {
 		setStatus(Bundle.getString("status_connecting"));
 		try {
-			connection = null;
 			connection = Connection.newInstance("MechPeste - Pesterenan");
 			krpc = KRPC.newInstance(connection);
 			centroEspacial = SpaceCenter.newInstance(getConnection());
-			activeVesselTimer = System.currentTimeMillis();
+			checkVesselTimer = System.currentTimeMillis();
 			setStatus(Bundle.getString("status_connected"));
 			StatusJPanel.isBtnConnectVisible(false);
 		} catch (IOException e) {

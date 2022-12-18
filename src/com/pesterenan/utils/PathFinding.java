@@ -42,7 +42,7 @@ public class PathFinding extends ActiveVessel {
 	public void addWaypointsOnSameBody(String waypointName) throws RPCException {
 		this.waypointName = waypointName;
 		waypointsToReach =
-				waypointManager.getWaypoints().stream().filter(wp -> hasSameName(wp)).collect(Collectors.toList());
+				waypointManager.getWaypoints().stream().filter(this::hasSameName).collect(Collectors.toList());
 	}
 
 	private boolean hasSameName(Waypoint waypoint) {

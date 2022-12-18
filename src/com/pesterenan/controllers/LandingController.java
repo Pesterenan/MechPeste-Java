@@ -253,11 +253,10 @@ public class LandingController extends Controller implements Runnable {
 	private double calculateEllipticTrajectory(double a, double b) {
 		double semiMajor = Math.max(a * 2, b * 2);
 		double semiMinor = Math.min(a * 2, b * 2);
-		double trajectoryLength = Math.PI * Math.sqrt((semiMajor * semiMajor + semiMinor * semiMinor)) / 4;
-		return trajectoryLength;
+		return Math.PI * Math.sqrt((semiMajor * semiMajor + semiMinor * semiMinor)) / 4;
 	}
 
-	private static enum MODE {
-		DEORBITING, APPROACHING, GOING_UP, HOVERING, GOING_DOWN, LANDING, WAITING;
+	private enum MODE {
+		DEORBITING, APPROACHING, GOING_UP, HOVERING, GOING_DOWN, LANDING, WAITING
 	}
 }
