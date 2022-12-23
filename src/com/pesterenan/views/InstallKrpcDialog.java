@@ -34,7 +34,7 @@ public class InstallKrpcDialog extends JDialog {
 	private void initComponents() {
 		setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
 		setResizable(false);
-		setBounds(centerDialogOnScreen());
+		setBounds(MainGui.centerDialogOnScreen());
 		setAlwaysOnTop(true);
 		setModalityType(ModalityType.APPLICATION_MODAL);
 		setTitle(Bundle.getString("installer_dialog_title")); //$NON-NLS-1$
@@ -210,16 +210,6 @@ public class InstallKrpcDialog extends JDialog {
 			btnDownloadInstall.setEnabled(false);
 			setStatus("");
 		}
-	}
-
-	private Rectangle centerDialogOnScreen() {
-		Dimension SCREEN_DIMENSIONS = Toolkit.getDefaultToolkit().getScreenSize();
-		Dimension DIALOG_DIMENSIONS = new Dimension(400, 240);
-		int w = DIALOG_DIMENSIONS.width;
-		int h = DIALOG_DIMENSIONS.height;
-		int x = (SCREEN_DIMENSIONS.width - w) / 2;
-		int y = (SCREEN_DIMENSIONS.height - h) / 2;
-		return new Rectangle(x, y, w, h);
 	}
 
 	public static void setStatus(String status) {

@@ -54,7 +54,8 @@ public class ActiveVessel implements Runnable {
 	public Map<String, String> commands;
 	protected int currentVesselId = 0;
 	protected Thread activeVesselThread;
-	protected Thread controllerThread;
+	protected Thread controllerThread = null;
+	protected Controller controller;
 	private long timer = 0;
 	private String currentStatus = Bundle.getString("status_ready");
 
@@ -192,29 +193,31 @@ public class ActiveVessel implements Runnable {
 	public void startModule(Map<String, String> commands) {
 		this.commands = commands;
 		String currentFunction = commands.get(Modulos.MODULO.get());
-		Controller controller;
-		if (currentFunction.equals(Modulos.MODULO_DECOLAGEM.get())) {
-			controller = new LiftoffController(this);
-			controllerThread = new Thread(controller, activeVesselThread.getName() + "Liftoff");
-			controllerThread.start();
-		}
-		if (currentFunction.equals(Modulos.MODULO_POUSO_SOBREVOAR.get()) ||
-				currentFunction.equals(Modulos.MODULO_POUSO.get())) {
-			controller = new LandingController(this);
-			controllerThread = new Thread(controller, activeVesselThread.getName() + "Landing");
-			controllerThread.start();
-		}
-		if (currentFunction.equals(Modulos.MODULO_MANOBRAS.get())) {
-			controller = new ManeuverController(this);
-			controllerThread = new Thread(controller, activeVesselThread.getName() + "Maneuver");
-			controllerThread.start();
-		}
-		if (currentFunction.equals(Modulos.MODULO_ROVER.get())) {
-			controller = new RoverController(this);
-			controllerThread = new Thread(controller, activeVesselThread.getName() + "Rover");
-			controllerThread.start();
-		}
-		System.out.println(currentFunction);
+		System.out.println(Thread.activeCount() + " ANTES THREADS");
+		if (controllerThread == null) {
+			if (currentFunction.equals(Modulos.MODULO_DECOLAGEM.get())) {
+				controller = new LiftoffController(this);
+				controllerThread = new Thread(controller, activeVesselThread.getName() + "Liftoff");
+				controllerThread.start();
+			}
+			if (currentFunction.equals(Modulos.MODULO_POUSO_SOBREVOAR.get()) ||
+					currentFunction.equals(Modulos.MODULO_POUSO.get())) {
+				controller = new LandingController(this);
+				controllerThread = new Thread(controller, activeVesselThread.getName() + "Landing");
+				controllerThread.start();
+			}
+			if (currentFunction.equals(Modulos.MODULO_MANOBRAS.get())) {
+				controller = new ManeuverController(this);
+				controllerThread = new Thread(controller, activeVesselThread.getName() + "Maneuver");
+				controllerThread.start();
+			}
+			if (currentFunction.equals(Modulos.MODULO_ROVER.get())) {
+				controller = new RoverController(this);
+				controllerThread = new Thread(controller, activeVesselThread.getName() + "Rover");
+				controllerThread.start();
+			}			
+		} 
+		System.out.println(Thread.activeCount() + " DEPOIS THREADS");
 	}
 
 	public void recordTelemetryData() {

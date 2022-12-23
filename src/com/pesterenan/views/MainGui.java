@@ -22,10 +22,12 @@ public class MainGui extends JFrame implements ActionListener, PropertyChangeLis
 	private final static JPanel cardJPanels = new JPanel();
 	private JMenuBar menuBar;
 	private JMenu mnFile;
-	private JMenuItem mntmExit;
+	private JMenu mnOptions;
 	private JMenu mnHelp;
-	private JMenuItem mntmAbout;
 	private JMenuItem mntmInstallKrpc;
+	private JMenuItem mntmExit;
+	private JMenuItem mntmMultiControl;
+	private JMenuItem mntmAbout;
 	private LiftoffJPanel pnlLiftoff;
 
 	private final CardLayout cardLayout = new CardLayout(0, 0);
@@ -62,9 +64,16 @@ public class MainGui extends JFrame implements ActionListener, PropertyChangeLis
 		mnFile = new JMenu(Bundle.getString("main_mn_file")); //$NON-NLS-1$
 		menuBar.add(mnFile);
 
+		mnOptions = new JMenu(Bundle.getString("main_mn_options")); //$NON-NLS-1$
+		menuBar.add(mnOptions);
+
 		mntmInstallKrpc = new JMenuItem(Bundle.getString("main_mntm_install_krpc"));
 		mntmInstallKrpc.addActionListener(this);
 		mnFile.add(mntmInstallKrpc);
+
+		mntmMultiControl = new JMenuItem(Bundle.getString("main_mntm_multi_control"));
+		mntmMultiControl.addActionListener(this);
+		mnOptions.add(mntmMultiControl);
 
 		mnFile.add(new JSeparator());
 		mntmExit = new JMenuItem(Bundle.getString("main_mntm_exit")); //$NON-NLS-1$
@@ -75,6 +84,7 @@ public class MainGui extends JFrame implements ActionListener, PropertyChangeLis
 		menuBar.add(mnHelp);
 
 		mntmAbout = new JMenuItem(Bundle.getString("main_mntm_about")); //$NON-NLS-1$
+		mntmAbout.addActionListener(this);
 		mnHelp.add(mntmAbout);
 		setContentPane(ctpMainGui);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -101,12 +111,22 @@ public class MainGui extends JFrame implements ActionListener, PropertyChangeLis
 	}
 
 	public void actionPerformed(ActionEvent e) {
+		if (e.getSource() == mntmAbout) {
+			handleMntmAboutActionPerformed(e);
+		}
 		if (e.getSource() == mntmInstallKrpc) {
 			handleMntmInstallKrpcActionPerformed(e);
 		}
 		if (e.getSource() == mntmExit) {
 			handleMntmExitActionPerformed(e);
 		}
+		if (e.getSource() == mntmMultiControl) {
+			handleMntmMultiControlActionPerformed(e);
+		}
+	}
+
+	private void handleMntmMultiControlActionPerformed(ActionEvent e) {
+		MultiControlDialog mc = new MultiControlDialog();
 	}
 
 	protected void handleMntmInstallKrpcActionPerformed(ActionEvent e) {
@@ -122,6 +142,16 @@ public class MainGui extends JFrame implements ActionListener, PropertyChangeLis
 		if (evt.getSource() == cardJPanels) {
 			handlePnlTelemetriaPropertyChange(evt);
 		}
+	}
+
+	public static Rectangle centerDialogOnScreen() {
+		Dimension SCREEN_DIMENSIONS = Toolkit.getDefaultToolkit().getScreenSize();
+		Dimension DIALOG_DIMENSIONS = new Dimension(400, 240);
+		int w = DIALOG_DIMENSIONS.width;
+		int h = DIALOG_DIMENSIONS.height;
+		int x = (SCREEN_DIMENSIONS.width - w) / 2;
+		int y = (SCREEN_DIMENSIONS.height - h) / 2;
+		return new Rectangle(x, y, w, h);
 	}
 
 	protected void handlePnlTelemetriaPropertyChange(PropertyChangeEvent evt) {
@@ -148,5 +178,9 @@ public class MainGui extends JFrame implements ActionListener, PropertyChangeLis
 
 	public static void backToTelemetry() {
 		cardJPanels.firePropertyChange(Modulos.MODULO_TELEMETRIA.get(), false, true);
+	}
+
+	protected void handleMntmAboutActionPerformed(ActionEvent e) {
+		AboutJFrame about = new AboutJFrame();
 	}
 }

@@ -30,7 +30,8 @@ public enum Modulos {
 	NAVE_ALVO("Nave alvo"),
 	MARCADOR_MAPA("Marcador no mapa"),
 	NOME_MARCADOR("Nome do marcador"),
-	VELOCIDADE_MAX("Velocidade Máxima");
+	VELOCIDADE_MAX("Velocidade Máxima"),
+	POUSAR("Pousar nave");
 
 	final String t;
 

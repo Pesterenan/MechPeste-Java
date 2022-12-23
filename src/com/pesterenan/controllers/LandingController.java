@@ -16,7 +16,6 @@ public class LandingController extends Controller implements Runnable {
 	private static final double velP = 0.025;
 	private static final double velI = 0.001;
 	private static final double velD = 0.01;
-	private static boolean landFromHovering = false;
 	private final ControlePID altitudeCtrl = new ControlePID();
 	private final ControlePID velocityCtrl = new ControlePID();
 	private Navigation navigation;
@@ -44,15 +43,12 @@ public class LandingController extends Controller implements Runnable {
 		if (activeVessel.commands.get(Modulos.MODULO.get()).equals(Modulos.MODULO_POUSO_SOBREVOAR.get())) {
 			this.hoverAltitude = Double.parseDouble(activeVessel.commands.get(Modulos.ALTITUDE_SOBREVOO.get()));
 			hoveringMode = true;
+			System.out.println(activeVessel.commands.get(Modulos.POUSAR.get()));
 			hoverArea();
 		}
 		if (activeVessel.commands.get(Modulos.MODULO.get()).equals(Modulos.MODULO_POUSO.get())) {
 			autoLanding();
 		}
-	}
-
-	public static void land() {
-		landFromHovering = true;
 	}
 
 	private void hoverArea() {
@@ -62,6 +58,13 @@ public class LandingController extends Controller implements Runnable {
 				long currentTime = System.currentTimeMillis();
 				if (currentTime > timer + 25) {
 					try {
+						// Land if asked:
+						boolean landFromHovering = Boolean.getBoolean(activeVessel.commands.get(Modulos.POUSAR.get()));
+						if (landFromHovering) {
+							activeVessel.setCurrentStatus(Bundle.getString("status_starting_landing"));
+							activeVessel.getNaveAtual().getControl().setGear(true);
+							currentMode = MODE.LANDING;
+						}
 						altitudeErrorPercentage = activeVessel.altitudeSup.get() / hoverAltitude * HUNDRED_PERCENT;
 						// Select which mode depending on altitude error:
 						if (altitudeErrorPercentage > HUNDRED_PERCENT) {
@@ -70,12 +73,6 @@ public class LandingController extends Controller implements Runnable {
 							currentMode = MODE.GOING_UP;
 						} else {
 							currentMode = MODE.HOVERING;
-						}
-						// Land if asked:
-						if (landFromHovering) {
-							activeVessel.setCurrentStatus(Bundle.getString("status_starting_landing"));
-							activeVessel.getNaveAtual().getControl().setGear(true);
-							currentMode = MODE.LANDING;
 						}
 						changeControlMode();
 					} catch (RPCException | StreamException e) {
@@ -232,7 +229,6 @@ public class LandingController extends Controller implements Runnable {
 				activeVessel.getNaveAtual().getSituation().equals(VesselSituation.SPLASHED)) {
 			activeVessel.setCurrentStatus(Bundle.getString("status_landed"));
 			hoveringMode = false;
-			landFromHovering = false;
 			activeVessel.throttle(0.0f);
 			activeVessel.getNaveAtual().getControl().setSAS(true);
 			activeVessel.getNaveAtual().getControl().setRCS(true);

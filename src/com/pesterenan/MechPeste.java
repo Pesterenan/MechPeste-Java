@@ -1,20 +1,30 @@
 package com.pesterenan;
 
+import static com.pesterenan.views.StatusJPanel.setStatus;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
+import javax.swing.DefaultListModel;
+import javax.swing.ListModel;
+
 import com.pesterenan.model.ActiveVessel;
 import com.pesterenan.resources.Bundle;
+import com.pesterenan.utils.Vector;
 import com.pesterenan.views.FunctionsAndTelemetryJPanel;
 import com.pesterenan.views.MainGui;
 import com.pesterenan.views.StatusJPanel;
+
 import krpc.client.Connection;
 import krpc.client.RPCException;
 import krpc.client.services.KRPC;
 import krpc.client.services.SpaceCenter;
-
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
-import static com.pesterenan.views.StatusJPanel.setStatus;
+import krpc.client.services.SpaceCenter.Vessel;
 
 public class MechPeste {
 	public static final int CHECK_VESSEL_INTERVAL_IN_MS = 1000;
@@ -27,6 +37,7 @@ public class MechPeste {
 	private static long checkVesselTimer = 0;
 	private static long checkStatusTimer = 0;
 	private static int currentVesselId = -1;
+	private static List<String> vesselsToControl = new ArrayList<>();
 
 	private MechPeste() {
 		MainGui.newInstance();
@@ -66,7 +77,7 @@ public class MechPeste {
 						if (name.contains("Vessel")) {
 							Thread.State state = t.getState();
 							String type = t.isDaemon() ? "Daemon" : "Normal";
-							System.out.printf("%-12s \t %s \t %d \t %s\n", name, state, currentTime, type);
+//							System.out.printf("%-12s \t %s \t %d \t %s\n", name, state, currentTime, type);
 						}
 					});
 					checkVesselTimer = currentTime;
@@ -96,7 +107,19 @@ public class MechPeste {
 		}
 	}
 
+	private static void addToCurrentVesselsList(Vessel vessel) {
+		int currentVesselId = vessel.hashCode();
+		ActiveVessel activeVessel = new ActiveVessel(connection, vessel, currentVesselId);
+		currentVessels.put(currentVesselId, activeVessel);
+	}
+
 	public void startModule(Map<String, String> commands) {
+		if (vesselsToControl.size() != 0) {
+			vesselsToControl.forEach(v -> {
+				int vesselId = Integer.valueOf(v.split(" - ")[0]);
+				startModule(vesselId, commands);
+			});
+		}
 		startModule(-1, commands);
 	}
 
@@ -136,6 +159,52 @@ public class MechPeste {
 		} catch (IOException e) {
 			setStatus(Bundle.getString("status_error_connection"));
 			StatusJPanel.isBtnConnectVisible(true);
+		}
+	}
+	public static void setVesselsToControl(List<String> list) {
+		vesselsToControl = list;
+	}
+	public static ListModel<String> getActiveVessels() {
+		DefaultListModel<String> list = new DefaultListModel<>();
+		try {
+			List<Vessel> navesAoRedor = centroEspacial.getVessels();
+			Vessel naveAtual = centroEspacial.getActiveVessel();
+			navesAoRedor = navesAoRedor.stream().filter(v -> closerThan2Km(naveAtual, v)).collect(Collectors.toList());
+			list.addAll(navesAoRedor.stream().map(v -> {
+				try {
+					return new String(v.hashCode() + " - " + v.getName());
+				} catch (RPCException ignored) {
+				}
+				return null;
+			}).collect(Collectors.toList()));
+		} catch (RPCException ignored) {
+		}
+		return list;
+	}
+
+	private static boolean closerThan2Km(Vessel active, Vessel vessel) {
+		double TWO_KILOMETERS = 2000.0;
+		try {
+			if (vessel.getOrbit().getBody().getName().equals(active.getOrbit().getBody().getName())) {
+				final Vector activePos = new Vector(active.position(active.getSurfaceReferenceFrame()));
+				final Vector vesselPos = new Vector(vessel.position(active.getSurfaceReferenceFrame()));
+				final double distance = Vector.distance(activePos, vesselPos);
+				if (distance < TWO_KILOMETERS) {
+					addToCurrentVesselsList(vessel);
+					return true;
+				}				
+			}
+		} catch (RPCException ignored) {
+		}
+		return false;
+	}
+
+	public static void changeToVessel(int selectedIndex) {
+		try {
+			Vessel naveAtual = currentVessels.get(selectedIndex).getNaveAtual();
+			centroEspacial.setActiveVessel(naveAtual);
+		} catch (RPCException | NullPointerException e) {
+			System.out.println(Bundle.getString("status_couldnt_switch_vessel"));
 		}
 	}
 }
