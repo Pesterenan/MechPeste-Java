@@ -1,7 +1,6 @@
 package com.pesterenan.utils;
 
-import com.pesterenan.model.ActiveVessel;
-import krpc.client.Connection;
+import com.pesterenan.controllers.Controller;
 import krpc.client.RPCException;
 import krpc.client.services.Drawing;
 import krpc.client.services.SpaceCenter;
@@ -14,7 +13,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class PathFinding extends ActiveVessel {
+import static com.pesterenan.MechPeste.getConnection;
+import static com.pesterenan.MechPeste.getSpaceCenter;
+
+public class PathFinding extends Controller {
 
 	private static final float SEARCHING_DISTANCE = 4400000;
 	private WaypointManager waypointManager;
@@ -23,14 +25,14 @@ public class PathFinding extends ActiveVessel {
 	private List<Vector> pathToTarget;
 	private Drawing drawing;
 
-	public PathFinding(Connection con) {
+	public PathFinding() {
 		super();
 		initializeParameters();
 	}
 
 	private void initializeParameters() {
 		try {
-			waypointManager = centroEspacial.getWaypointManager();
+			waypointManager = getSpaceCenter().getWaypointManager();
 			waypointsToReach = new ArrayList<>();
 			pathToTarget = new ArrayList<>();
 			drawing = Drawing.newInstance(getConnection());
@@ -58,8 +60,9 @@ public class PathFinding extends ActiveVessel {
 		double currentDistance = SEARCHING_DISTANCE;
 		Waypoint currentWaypoint = null;
 		for (Waypoint waypoint : waypointsToReach) {
-			double waypointDistance =
-					Vector.distance(new Vector(naveAtual.position(pontoRefOrbital)), waypointPosOnSurface(waypoint));
+			double waypointDistance = Vector.distance(new Vector(getNaveAtual().position(pontoRefOrbital)),
+			                                          waypointPosOnSurface(waypoint)
+			                                         );
 			if (currentDistance > waypointDistance) {
 				currentDistance = waypointDistance;
 				currentWaypoint = waypoint;
@@ -111,7 +114,7 @@ public class PathFinding extends ActiveVessel {
 		// Get current rover Position on Orbital Ref, transform to Surf Ref and add 2 meters on height:
 		Vector roverHeight = new Vector(2.0, 0.0, 0.0);
 		Vector currentRoverPos =
-				transformSurfToOrb(new Vector(naveAtual.position(pontoRefSuperficie)).sum(roverHeight));
+				transformSurfToOrb(new Vector(getNaveAtual().position(pontoRefSuperficie)).sum(roverHeight));
 		// Calculate distance from rover to target on Orbital Ref:
 		double distanceToTarget = Vector.distance(currentRoverPos, targetPosition);
 		// Add rover pos as first point, on Orbital Ref
@@ -152,20 +155,21 @@ public class PathFinding extends ActiveVessel {
 	public double raycastDistance(Vector currentPoint, Vector targetDirection, SpaceCenter.ReferenceFrame reference,
 	                              double searchDistance) throws RPCException {
 		return Math.min(
-				centroEspacial.raycastDistance(currentPoint.toTriplet(), targetDirection.toTriplet(), reference),
+				getSpaceCenter().raycastDistance(currentPoint.toTriplet(), targetDirection.toTriplet(), reference),
 				searchDistance
 		               );
 	}
 
 	private Vector transformDirection(Vector vector, boolean toSurf) throws RPCException {
 		if (toSurf) {
-			return new Vector(centroEspacial.transformDirection(vector.toTriplet(), naveAtual.getReferenceFrame(),
-			                                                    pontoRefSuperficie
-			                                                   ));
+			return new Vector(
+					getSpaceCenter().transformDirection(vector.toTriplet(), getNaveAtual().getReferenceFrame(),
+					                                    pontoRefSuperficie
+					                                   ));
 		}
-		return new Vector(centroEspacial.transformDirection(vector.toTriplet(), pontoRefSuperficie,
-		                                                    naveAtual.getReferenceFrame()
-		                                                   ));
+		return new Vector(getSpaceCenter().transformDirection(vector.toTriplet(), pontoRefSuperficie,
+		                                                      getNaveAtual().getReferenceFrame()
+		                                                     ));
 	}
 
 	private Vector getPosOnSurface(Vector vector) throws RPCException {
@@ -177,10 +181,10 @@ public class PathFinding extends ActiveVessel {
 	}
 
 	private Vector transformSurfToOrb(Vector vector) throws IOException, RPCException {
-		return new Vector(centroEspacial.transformPosition(vector.toTriplet(), pontoRefSuperficie, pontoRefOrbital));
+		return new Vector(getSpaceCenter().transformPosition(vector.toTriplet(), pontoRefSuperficie, pontoRefOrbital));
 	}
 
 	private Vector transformOrbToSurf(Vector vector) throws IOException, RPCException {
-		return new Vector(centroEspacial.transformPosition(vector.toTriplet(), pontoRefOrbital, pontoRefSuperficie));
+		return new Vector(getSpaceCenter().transformPosition(vector.toTriplet(), pontoRefOrbital, pontoRefSuperficie));
 	}
 }

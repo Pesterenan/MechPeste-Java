@@ -14,6 +14,8 @@ import java.awt.event.ActionListener;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.pesterenan.views.MainGui.BTN_DIMENSION;
+
 public class LiftoffJPanel extends JPanel implements ActionListener {
 
 	private static final long serialVersionUID = 1L;
@@ -52,12 +54,12 @@ public class LiftoffJPanel extends JPanel implements ActionListener {
 		// -NLS-1$
 
 		btnLiftoff.addActionListener(this);
-		btnLiftoff.setSize(ParametersJPanel.BTN_DIMENSION);
+		btnLiftoff.setSize(BTN_DIMENSION);
 		btnLiftoff.setPreferredSize(btnLiftoff.getSize());
 		btnLiftoff.setMinimumSize(btnLiftoff.getSize());
 		btnLiftoff.setMaximumSize(btnLiftoff.getSize());
 		btnBack.addActionListener(this);
-		btnBack.setSize(ParametersJPanel.BTN_DIMENSION);
+		btnBack.setSize(BTN_DIMENSION);
 		btnBack.setPreferredSize(btnBack.getSize());
 		btnBack.setMinimumSize(btnBack.getSize());
 		btnBack.setMaximumSize(btnBack.getSize());
@@ -277,6 +279,7 @@ public class LiftoffJPanel extends JPanel implements ActionListener {
 		}
 		if (e.getSource() == btnLiftoff) {
 			handleBtnLiftoffActionPerformed(e);
+			MainGui.backToTelemetry();
 		}
 	}
 
@@ -290,7 +293,7 @@ public class LiftoffJPanel extends JPanel implements ActionListener {
 			commands.put(Modulos.INCLINACAO.get(), cbGravityCurveModel.getSelectedItem().toString());
 			commands.put(Modulos.USAR_ESTAGIOS.get(), String.valueOf(chkDecoupleStages.isSelected()));
 			commands.put(Modulos.ABRIR_PAINEIS.get(), String.valueOf(chkOpenPanels.isSelected()));
-			MechPeste.newInstance().startModule(-1, commands);
+			MechPeste.newInstance().startModule(commands);
 		}
 	}
 }

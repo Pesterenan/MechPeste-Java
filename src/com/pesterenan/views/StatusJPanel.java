@@ -80,9 +80,7 @@ public class StatusJPanel extends JPanel {
 	private static class BotConectarActionListener implements ActionListener {
 		public void actionPerformed(ActionEvent e) {
 			setStatus(Bundle.getString("status_connecting"));
-			MechPeste mp = MechPeste.newInstance();
-			mp.finalizarTarefa();
-			mp.connectToKSP();
+			MechPeste.newInstance().connectToKSP();
 		}
 	}
 }

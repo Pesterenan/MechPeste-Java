@@ -1,7 +1,6 @@
 package com.pesterenan.views;
 
 import com.pesterenan.MechPeste;
-import com.pesterenan.controllers.LandingController;
 import com.pesterenan.resources.Bundle;
 import com.pesterenan.utils.Modulos;
 
@@ -15,6 +14,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.HashMap;
 import java.util.Map;
+
+import static com.pesterenan.views.MainGui.BTN_DIMENSION;
 
 public class LandingJPanel extends JPanel implements ActionListener {
 	private static final long serialVersionUID = 1L;
@@ -43,34 +44,35 @@ public class LandingJPanel extends JPanel implements ActionListener {
 		txfHover.setColumns(10);
 
 		btnHover.addActionListener(this);
-		btnHover.setSize(ParametersJPanel.BTN_DIMENSION);
+		btnHover.setSize(BTN_DIMENSION);
 		btnHover.setPreferredSize(btnHover.getSize());
 		btnHover.setMinimumSize(btnHover.getSize());
 		btnHover.setMaximumSize(btnHover.getSize());
 
 		btnBack.addActionListener(this);
-		btnBack.setSize(ParametersJPanel.BTN_DIMENSION);
+		btnBack.setSize(BTN_DIMENSION);
 		btnBack.setPreferredSize(btnBack.getSize());
 		btnBack.setMinimumSize(btnBack.getSize());
 		btnBack.setMaximumSize(btnBack.getSize());
 
 		btnAutoLanding.addActionListener(this);
-		btnAutoLanding.setSize(ParametersJPanel.BTN_DIMENSION);
+		btnAutoLanding.setSize(BTN_DIMENSION);
 		btnAutoLanding.setPreferredSize(btnAutoLanding.getSize());
 		btnAutoLanding.setMinimumSize(btnAutoLanding.getSize());
 		btnAutoLanding.setMaximumSize(btnAutoLanding.getSize());
 
 		GroupLayout groupLayout = new GroupLayout(this);
 		groupLayout.setHorizontalGroup(groupLayout.createParallelGroup(Alignment.TRAILING)
-				.addGroup(groupLayout.createSequentialGroup().addContainerGap(10, Short.MAX_VALUE)
+				.addGroup(Alignment.LEADING, groupLayout.createSequentialGroup().addGap(10)
 						.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
-								.addGroup(groupLayout.createSequentialGroup().addComponent(lblAutolanding)
-										.addPreferredGap(ComponentPlacement.RELATED)
+								.addGroup(groupLayout.createSequentialGroup().addComponent(lblAutolanding).addGap(18)
 										.addComponent(btnAutoLanding, GroupLayout.PREFERRED_SIZE,
 												GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
-								.addGroup(groupLayout.createSequentialGroup().addGap(6).addComponent(pnlHover,
-										GroupLayout.PREFERRED_SIZE, 267, GroupLayout.PREFERRED_SIZE)))
-						.addGap(59)
+								.addGroup(groupLayout.createSequentialGroup()
+										.addPreferredGap(ComponentPlacement.RELATED).addComponent(pnlHover,
+												GroupLayout.PREFERRED_SIZE, 267, GroupLayout.PREFERRED_SIZE)))
+						.addContainerGap(175, Short.MAX_VALUE))
+				.addGroup(groupLayout.createSequentialGroup().addContainerGap(322, Short.MAX_VALUE)
 						.addComponent(btnBack, GroupLayout.PREFERRED_SIZE, 120, GroupLayout.PREFERRED_SIZE)));
 		groupLayout.setVerticalGroup(groupLayout.createParallelGroup(Alignment.LEADING).addGroup(groupLayout
 				.createSequentialGroup()
@@ -79,9 +81,9 @@ public class LandingJPanel extends JPanel implements ActionListener {
 						GroupLayout.PREFERRED_SIZE))
 				.addPreferredGap(ComponentPlacement.RELATED)
 				.addComponent(pnlHover, GroupLayout.PREFERRED_SIZE, 60, GroupLayout.PREFERRED_SIZE)
-				.addPreferredGap(ComponentPlacement.RELATED, 68, Short.MAX_VALUE)
+				.addPreferredGap(ComponentPlacement.RELATED, 46, Short.MAX_VALUE)
 				.addComponent(btnBack, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-				.addGap(10)));
+				.addContainerGap()));
 		setLayout(groupLayout);
 		pnlHover.setBorder(new TitledBorder(
 				new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)),
@@ -131,22 +133,15 @@ public class LandingJPanel extends JPanel implements ActionListener {
 	protected void handleBtnHoverActionPerformed(ActionEvent e) {
 		Map<String, String> commands = new HashMap<>();
 		commands.put(Modulos.MODULO.get(), Modulos.MODULO_POUSO_SOBREVOAR.get());
-		if (btnHover.getText().equals(Bundle.getString("pnl_land_land"))) {
-			commands.put(Modulos.POUSAR.get(), "true");
-			btnHover.setText(Bundle.getString("pnl_land_btn_hover"));
-		} else {
-			try {
-				if (txfHover.getText().equals("")) { //$NON-NLS-1$
-					StatusJPanel.setStatus(Bundle.getString("pnl_land_hover_alt")); //$NON-NLS-1$
-					return;
-				}
-				Integer.parseInt(txfHover.getText());
-			} catch (Exception e2) {
-				StatusJPanel.setStatus(Bundle.getString("pnl_land_hover_alt_err")); //$NON-NLS-1$
+		try {
+			if (txfHover.getText().equals("")) { //$NON-NLS-1$
+				StatusJPanel.setStatus(Bundle.getString("pnl_land_hover_alt")); //$NON-NLS-1$
 				return;
 			}
-
-			btnHover.setText(Bundle.getString("pnl_land_land")); //$NON-NLS-1$
+			Integer.parseInt(txfHover.getText());
+		} catch (Exception e2) {
+			StatusJPanel.setStatus(Bundle.getString("pnl_land_hover_alt_err")); //$NON-NLS-1$
+			return;
 		}
 		commands.put(Modulos.ALTITUDE_SOBREVOO.get(), txfHover.getText());
 		MechPeste.newInstance().startModule(commands);

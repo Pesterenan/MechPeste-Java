@@ -13,6 +13,8 @@ import java.awt.event.ActionListener;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.pesterenan.views.MainGui.BTN_DIMENSION;
+
 public class ManeuverJPanel extends JPanel implements ActionListener {
 	private static final long serialVersionUID = 1L;
 	private final JLabel lblExecute = new JLabel(Bundle.getString("pnl_mnv_lbl_exec_mnv"));
@@ -37,20 +39,20 @@ public class ManeuverJPanel extends JPanel implements ActionListener {
 	}
 
 	private void initComponents() {
-		setPreferredSize(ParametersJPanel.dmsParameters);
-		setSize(ParametersJPanel.dmsParameters);
+		setPreferredSize(MainGui.dmsPanels);
+		setSize(MainGui.dmsPanels);
 		setBorder(new TitledBorder(null, Bundle.getString("pnl_mnv_border"), TitledBorder.LEADING, TitledBorder.TOP,
 		                           //$NON-NLS-1$
 		                           null, null
 		));
 		btnExecute.addActionListener(this);
-		btnExecute.setSize(ParametersJPanel.BTN_DIMENSION);
+		btnExecute.setSize(BTN_DIMENSION);
 		btnExecute.setPreferredSize(btnExecute.getSize());
 		btnExecute.setMinimumSize(btnExecute.getSize());
 		btnExecute.setMaximumSize(btnExecute.getSize());
 		btnExecute.setActionCommand(Modulos.EXECUTAR.get());
 		btnAdjustInc.addActionListener(this);
-		btnAdjustInc.setSize(ParametersJPanel.BTN_DIMENSION);
+		btnAdjustInc.setSize(BTN_DIMENSION);
 		btnAdjustInc.setPreferredSize(btnAdjustInc.getSize());
 		btnAdjustInc.setMinimumSize(btnAdjustInc.getSize());
 		btnAdjustInc.setMaximumSize(btnAdjustInc.getSize());
@@ -58,7 +60,7 @@ public class ManeuverJPanel extends JPanel implements ActionListener {
 		btnAdjustInc.setEnabled(false);
 		btnBack.addActionListener(this);
 
-		btnBack.setSize(ParametersJPanel.BTN_DIMENSION);
+		btnBack.setSize(BTN_DIMENSION);
 		btnBack.setPreferredSize(btnBack.getSize());
 		btnBack.setMinimumSize(btnBack.getSize());
 		btnBack.setMaximumSize(btnBack.getSize());
@@ -167,13 +169,13 @@ public class ManeuverJPanel extends JPanel implements ActionListener {
 		                                                                          )
 		                                                             .addContainerGap()));
 		btnApoapsis.addActionListener(this);
-		btnApoapsis.setSize(ParametersJPanel.BTN_DIMENSION);
+		btnApoapsis.setSize(BTN_DIMENSION);
 		btnApoapsis.setPreferredSize(btnApoapsis.getSize());
 		btnApoapsis.setMinimumSize(btnApoapsis.getSize());
 		btnApoapsis.setMaximumSize(btnApoapsis.getSize());
 		btnApoapsis.setActionCommand(Modulos.APOASTRO.get());
 		btnPeriapsis.addActionListener(this);
-		btnPeriapsis.setSize(ParametersJPanel.BTN_DIMENSION);
+		btnPeriapsis.setSize(BTN_DIMENSION);
 		btnPeriapsis.setPreferredSize(btnPeriapsis.getSize());
 		btnPeriapsis.setMinimumSize(btnPeriapsis.getSize());
 		btnPeriapsis.setMaximumSize(btnPeriapsis.getSize());
@@ -236,6 +238,6 @@ public class ManeuverJPanel extends JPanel implements ActionListener {
 		commands.put(Modulos.MODULO.get(), Modulos.MODULO_MANOBRAS.get());
 		commands.put(Modulos.FUNCAO.get(), maneuverFunction);
 		commands.put(Modulos.AJUSTE_FINO.get(), String.valueOf(chkFineAdjusment.isSelected()));
-		MechPeste.newInstance().startModule(-1, commands);
+		MechPeste.newInstance().startModule(commands);
 	}
 }

@@ -10,16 +10,13 @@ import javax.swing.GroupLayout.Alignment;
 import javax.swing.LayoutStyle.ComponentPlacement;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.Map;
 
 import static com.pesterenan.views.MainGui.dmsPanels;
 
-public class FunctionsAndTelemetryJPanel extends JPanel implements ActionListener {
+public class FunctionsAndTelemetryJPanel extends JPanel {
 
 	private static final long serialVersionUID = 0L;
-	public static final int BUTTON_WIDTH = 135;
 	private JButton btnLiftoff;
 	private JButton btnLanding;
 	private JButton btnManeuver;
@@ -51,16 +48,20 @@ public class FunctionsAndTelemetryJPanel extends JPanel implements ActionListene
 				));
 
 		btnLiftoff = new JButton(Bundle.getString("btn_func_liftoff"));
-		btnLiftoff.addActionListener(this);
+		btnLiftoff.addActionListener(
+				e -> MainGui.getCardJPanels().firePropertyChange(Modulos.MODULO_DECOLAGEM.get(), false, true));
 
 		btnLanding = new JButton(Bundle.getString("btn_func_landing"));
-		btnLanding.addActionListener(this);
+		btnLanding.addActionListener(
+				e -> MainGui.getCardJPanels().firePropertyChange(Modulos.MODULO_POUSO.get(), false, true));
 
 		btnManeuver = new JButton(Bundle.getString("btn_func_maneuvers"));
-		btnManeuver.addActionListener(this);
+		btnManeuver.addActionListener(
+				e -> MainGui.getCardJPanels().firePropertyChange(Modulos.MODULO_MANOBRAS.get(), false, true));
 
 		btnRover = new JButton(Bundle.getString("btn_func_rover"));
-		btnRover.addActionListener(this);
+		btnRover.addActionListener(
+				e -> MainGui.getCardJPanels().firePropertyChange(Modulos.MODULO_ROVER.get(), false, true));
 
 		GroupLayout gl_pnlFunctions = new GroupLayout(this);
 		gl_pnlFunctions.setHorizontalGroup(gl_pnlFunctions.createParallelGroup(Alignment.LEADING)
@@ -155,22 +156,6 @@ public class FunctionsAndTelemetryJPanel extends JPanel implements ActionListene
 		setLayout(gl_pnlFunctions);
 	}
 
-	@Override
-	public void actionPerformed(ActionEvent e) {
-		if (e.getSource() == btnRover) {
-			handleBtnPilotarRoverActionPerformed(e);
-		}
-		if (e.getSource() == btnManeuver) {
-			handleBtnManobrasActionPerformed(e);
-		}
-		if (e.getSource() == btnLanding) {
-			handleBtnPousoAutomaticoActionPerformed(e);
-		}
-		if (e.getSource() == btnLiftoff) {
-			handleBtnDecolagemOrbitalActionPerformed(e);
-		}
-	}
-
 	public static void updateTelemetry(Map<Telemetry, Double> telemetryData) {
 		synchronized (telemetryData) {
 			for (Telemetry key : telemetryData.keySet()) {
@@ -197,21 +182,4 @@ public class FunctionsAndTelemetryJPanel extends JPanel implements ActionListene
 			}
 		}
 	}
-
-	protected void handleBtnDecolagemOrbitalActionPerformed(ActionEvent e) {
-		MainGui.getCardJPanels().firePropertyChange(Modulos.MODULO_DECOLAGEM.get(), false, true);
-	}
-
-	protected void handleBtnPousoAutomaticoActionPerformed(ActionEvent e) {
-		MainGui.getCardJPanels().firePropertyChange(Modulos.MODULO_POUSO.get(), false, true);
-	}
-
-	protected void handleBtnManobrasActionPerformed(ActionEvent e) {
-		MainGui.getCardJPanels().firePropertyChange(Modulos.MODULO_MANOBRAS.get(), false, true);
-	}
-
-	protected void handleBtnPilotarRoverActionPerformed(ActionEvent e) {
-		MainGui.getCardJPanels().firePropertyChange(Modulos.MODULO_ROVER.get(), false, true);
-	}
-
 }

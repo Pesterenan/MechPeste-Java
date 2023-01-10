@@ -13,7 +13,7 @@ import java.beans.PropertyChangeListener;
 public class MainGui extends JFrame implements ActionListener, PropertyChangeListener {
 	private static final long serialVersionUID = 1L;
 	public static final Dimension dmsPanels = new Dimension(464, 216);
-
+	public static final Dimension BTN_DIMENSION = new Dimension(110, 25);
 	private static MainGui mainGui = null;
 	private static StatusJPanel pnlStatus;
 	private static FunctionsAndTelemetryJPanel pnlFunctionsAndTelemetry;
@@ -26,7 +26,7 @@ public class MainGui extends JFrame implements ActionListener, PropertyChangeLis
 	private JMenu mnHelp;
 	private JMenuItem mntmInstallKrpc;
 	private JMenuItem mntmExit;
-	private JMenuItem mntmMultiControl;
+	private JMenuItem mntmChangeVessels;
 	private JMenuItem mntmAbout;
 	private LiftoffJPanel pnlLiftoff;
 
@@ -71,9 +71,9 @@ public class MainGui extends JFrame implements ActionListener, PropertyChangeLis
 		mntmInstallKrpc.addActionListener(this);
 		mnFile.add(mntmInstallKrpc);
 
-		mntmMultiControl = new JMenuItem(Bundle.getString("main_mntm_multi_control"));
-		mntmMultiControl.addActionListener(this);
-		mnOptions.add(mntmMultiControl);
+		mntmChangeVessels = new JMenuItem(Bundle.getString("main_mntm_change_vessels"));
+		mntmChangeVessels.addActionListener(this);
+		mnOptions.add(mntmChangeVessels);
 
 		mnFile.add(new JSeparator());
 		mntmExit = new JMenuItem(Bundle.getString("main_mntm_exit")); //$NON-NLS-1$
@@ -120,13 +120,13 @@ public class MainGui extends JFrame implements ActionListener, PropertyChangeLis
 		if (e.getSource() == mntmExit) {
 			handleMntmExitActionPerformed(e);
 		}
-		if (e.getSource() == mntmMultiControl) {
+		if (e.getSource() == mntmChangeVessels) {
 			handleMntmMultiControlActionPerformed(e);
 		}
 	}
 
 	private void handleMntmMultiControlActionPerformed(ActionEvent e) {
-		MultiControlDialog mc = new MultiControlDialog();
+		ChangeVesselDialog mc = new ChangeVesselDialog();
 	}
 
 	protected void handleMntmInstallKrpcActionPerformed(ActionEvent e) {

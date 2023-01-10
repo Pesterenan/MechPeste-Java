@@ -10,12 +10,10 @@ import com.pesterenan.resources.Bundle;
 import com.pesterenan.utils.Modulos;
 import com.pesterenan.utils.Telemetry;
 import com.pesterenan.utils.Vector;
-import krpc.client.Connection;
 import krpc.client.RPCException;
 import krpc.client.Stream;
 import krpc.client.StreamException;
 import krpc.client.services.KRPC.GameScene;
-import krpc.client.services.SpaceCenter;
 import krpc.client.services.SpaceCenter.AutoPilot;
 import krpc.client.services.SpaceCenter.CelestialBody;
 import krpc.client.services.SpaceCenter.Flight;
@@ -26,14 +24,12 @@ import krpc.client.services.SpaceCenter.VesselSituation;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.pesterenan.MechPeste.getConnection;
+import static com.pesterenan.MechPeste.getSpaceCenter;
 import static com.pesterenan.views.StatusJPanel.isBtnConnectVisible;
 
-public class ActiveVessel implements Runnable {
+public class ActiveVessel {
 
-	public final static float CONST_GRAV = 9.81f;
-
-	public static SpaceCenter centroEspacial;
-	private static Connection conexao;
 	protected Vessel naveAtual;
 	private final Map<Telemetry, Double> telemetryData = new HashMap<>();
 	public AutoPilot ap;
@@ -53,37 +49,22 @@ public class ActiveVessel implements Runnable {
 	public Stream<Double> velHorizontal;
 	public Map<String, String> commands;
 	protected int currentVesselId = 0;
-	protected Thread activeVesselThread;
 	protected Thread controllerThread = null;
 	protected Controller controller;
-	private long timer = 0;
+	protected long timer = 0;
 	private String currentStatus = Bundle.getString("status_ready");
 
 	public ActiveVessel() {
-	}
-
-	public ActiveVessel(Connection connection, Vessel currentVessel, int currentVesselId) {
-		setConnection(connection);
-		setNaveAtual(currentVessel);
-		this.currentVesselId = currentVesselId;
 		initializeParameters();
-		activeVesselThread = new Thread(this, "Vessel nº" + getNaveAtual().hashCode());
-		activeVesselThread.start();
-	}
-
-	public static Connection getConnection() {
-		return conexao;
-	}
-
-	private void setConnection(Connection con) {
-		conexao = con;
 	}
 
 	private void initializeParameters() {
 		try {
+			setNaveAtual(getSpaceCenter().getActiveVessel());
+			currentVesselId = getNaveAtual().hashCode();
 			ap = getNaveAtual().getAutoPilot();
-			centroEspacial = SpaceCenter.newInstance(getConnection());
 			currentBody = getNaveAtual().getOrbit().getBody();
+			gravityAcel = currentBody.getSurfaceGravity();
 			pontoRefOrbital = currentBody.getReferenceFrame();
 			pontoRefSuperficie = getNaveAtual().getSurfaceReferenceFrame();
 			parametrosDeVoo = getNaveAtual().flight(pontoRefOrbital);
@@ -94,13 +75,15 @@ public class ActiveVessel implements Runnable {
 			periastro = getConnection().addStream(getNaveAtual().getOrbit(), "getPeriapsisAltitude");
 			velVertical = getConnection().addStream(parametrosDeVoo, "getVerticalSpeed");
 			velHorizontal = getConnection().addStream(parametrosDeVoo, "getHorizontalSpeed");
-			timer = System.currentTimeMillis();
 		} catch (RPCException | StreamException e) {
 			checarConexao();
 		}
 	}
 
 	public String getCurrentStatus() {
+		if (controller != null) {
+			return controller.getCurrentStatus();
+		}
 		return currentStatus;
 	}
 
@@ -123,7 +106,7 @@ public class ActiveVessel implements Runnable {
 	public void checarConexao() {
 		try {
 			if (MechPeste.newInstance().getCurrentGameScene().equals(GameScene.FLIGHT)) {
-				setNaveAtual(centroEspacial.getActiveVessel());
+				setNaveAtual(getSpaceCenter().getActiveVessel());
 				setCurrentStatus(Bundle.getString("status_connected"));
 				isBtnConnectVisible(false);
 			} else {
@@ -144,7 +127,7 @@ public class ActiveVessel implements Runnable {
 	}
 
 	public void tuneAutoPilot() throws RPCException {
-		ap.setTimeToPeak(new Vector(5, 5, 5).toTriplet());
+		ap.setTimeToPeak(new Vector(2, 2, 2).toTriplet());
 		ap.setDecelerationTime(new Vector(5, 5, 5).toTriplet());
 	}
 
@@ -162,7 +145,7 @@ public class ActiveVessel implements Runnable {
 						timer = currentTime;
 					}
 				}
-				centroEspacial.setActiveVessel(naveAtual);
+				getSpaceCenter().setActiveVessel(naveAtual);
 				getNaveAtual().getControl().activateNextStage();
 			}
 			setCurrentStatus(Bundle.getString("status_liftoff"));
@@ -191,33 +174,27 @@ public class ActiveVessel implements Runnable {
 	}
 
 	public void startModule(Map<String, String> commands) {
-		this.commands = commands;
 		String currentFunction = commands.get(Modulos.MODULO.get());
 		System.out.println(Thread.activeCount() + " ANTES THREADS");
-		if (controllerThread == null) {
-			if (currentFunction.equals(Modulos.MODULO_DECOLAGEM.get())) {
-				controller = new LiftoffController(this);
-				controllerThread = new Thread(controller, activeVesselThread.getName() + "Liftoff");
-				controllerThread.start();
-			}
-			if (currentFunction.equals(Modulos.MODULO_POUSO_SOBREVOAR.get()) ||
-					currentFunction.equals(Modulos.MODULO_POUSO.get())) {
-				controller = new LandingController(this);
-				controllerThread = new Thread(controller, activeVesselThread.getName() + "Landing");
-				controllerThread.start();
-			}
-			if (currentFunction.equals(Modulos.MODULO_MANOBRAS.get())) {
-				controller = new ManeuverController(this);
-				controllerThread = new Thread(controller, activeVesselThread.getName() + "Maneuver");
-				controllerThread.start();
-			}
-			if (currentFunction.equals(Modulos.MODULO_ROVER.get())) {
-				controller = new RoverController(this);
-				controllerThread = new Thread(controller, activeVesselThread.getName() + "Rover");
-				controllerThread.start();
-			}			
-		} 
-		System.out.println(Thread.activeCount() + " DEPOIS THREADS");
+		if (controllerThread != null) {
+			System.out.println(controllerThread.getName());
+			controllerThread.interrupt();
+		}
+		if (currentFunction.equals(Modulos.MODULO_DECOLAGEM.get())) {
+			controller = new LiftoffController(commands);
+		}
+		if (currentFunction.equals(Modulos.MODULO_POUSO_SOBREVOAR.get()) ||
+				currentFunction.equals(Modulos.MODULO_POUSO.get())) {
+			controller = new LandingController(commands);
+		}
+		if (currentFunction.equals(Modulos.MODULO_MANOBRAS.get())) {
+			controller = new ManeuverController(commands);
+		}
+		if (currentFunction.equals(Modulos.MODULO_ROVER.get())) {
+			controller = new RoverController(commands);
+		}
+		controllerThread = new Thread(controller, currentVesselId + " - " + currentFunction);
+		controllerThread.start();
 	}
 
 	public void recordTelemetryData() {
@@ -236,19 +213,5 @@ public class ActiveVessel implements Runnable {
 
 	public Map<Telemetry, Double> getTelemetryData() {
 		return telemetryData;
-	}
-
-	@Override
-	public void run() {
-		try {
-			while (activeVesselThread.isAlive()) {
-				long currentTime = System.currentTimeMillis();
-				if (currentTime > timer + 100) {
-					recordTelemetryData();
-					timer = currentTime;
-				}
-			}
-		} catch (Exception ignored) {
-		}
 	}
 }

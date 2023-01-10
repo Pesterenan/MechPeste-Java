@@ -8,7 +8,6 @@ import javax.swing.GroupLayout.Alignment;
 import javax.swing.LayoutStyle.ComponentPlacement;
 import javax.swing.border.BevelBorder;
 import javax.swing.border.TitledBorder;
-import java.awt.*;
 
 public class InstallKrpcDialog extends JDialog {
 	private static final long serialVersionUID = 1L;

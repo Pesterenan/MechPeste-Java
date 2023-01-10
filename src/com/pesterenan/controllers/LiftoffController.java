@@ -1,6 +1,6 @@
 package com.pesterenan.controllers;
 
-import com.pesterenan.model.ActiveVessel;
+import com.pesterenan.MechPeste;
 import com.pesterenan.resources.Bundle;
 import com.pesterenan.utils.ControlePID;
 import com.pesterenan.utils.Modulos;
@@ -15,7 +15,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class LiftoffController extends Controller {
+public class LiftoffController extends Controller implements Runnable {
 
 	private static final float PITCH_UP = 90;
 	private final ControlePID thrControl = new ControlePID();
@@ -26,109 +26,113 @@ public class LiftoffController extends Controller {
 	private boolean willDecoupleStages, willDeployPanelsAndRadiators;
 	private String gravityCurveModel = Modulos.CIRCULAR.get();
 	private Navigation navigation;
-	private long timer;
 
-	public LiftoffController(ActiveVessel activeVessel) {
-		super(activeVessel);
-		this.navigation = new Navigation(activeVessel);
+	public LiftoffController(Map<String, String> commands) {
+		super();
+		this.commands = commands;
+		this.navigation = new Navigation(getNaveAtual());
 		initializeParameters();
 	}
 
 	private void initializeParameters() {
 		currentPitch = PITCH_UP;
-		setFinalApoapsisAlt(Float.parseFloat(activeVessel.commands.get(Modulos.APOASTRO.get())));
-		setHeading(Float.parseFloat(activeVessel.commands.get(Modulos.DIRECAO.get())));
-		setRoll(Float.parseFloat(activeVessel.commands.get(Modulos.ROLAGEM.get())));
-		setGravityCurveModel(activeVessel.commands.get(Modulos.INCLINACAO.get()));
-		willDeployPanelsAndRadiators = Boolean.parseBoolean(activeVessel.commands.get(Modulos.ABRIR_PAINEIS.get()));
-		willDecoupleStages = Boolean.parseBoolean(activeVessel.commands.get(Modulos.USAR_ESTAGIOS.get()));
+		setFinalApoapsisAlt(Float.parseFloat(commands.get(Modulos.APOASTRO.get())));
+		setHeading(Float.parseFloat(commands.get(Modulos.DIRECAO.get())));
+		setRoll(Float.parseFloat(commands.get(Modulos.ROLAGEM.get())));
+		setGravityCurveModel(commands.get(Modulos.INCLINACAO.get()));
+		willDeployPanelsAndRadiators = Boolean.parseBoolean(commands.get(Modulos.ABRIR_PAINEIS.get()));
+		willDecoupleStages = Boolean.parseBoolean(commands.get(Modulos.USAR_ESTAGIOS.get()));
 		thrControl.adjustOutput(0.0, 1.0);
 	}
 
 	@Override
 	public void run() {
 		try {
-			activeVessel.liftoff();
+			tuneAutoPilot();
+			liftoff();
 			gravityCurve();
 			finalizeCurve();
 			circularizeOrbitOnApoapsis();
-		} catch (RPCException | InterruptedException | StreamException e) {
-			activeVessel.disengageAfterException(Bundle.getString("status_liftoff_abort"));
+		} catch (RPCException | InterruptedException | StreamException ignored) {
 		}
 	}
 
 
-	private void gravityCurve() throws RPCException, StreamException {
-		activeVessel.ap.setReferenceFrame(activeVessel.pontoRefSuperficie);
-		activeVessel.ap.targetPitchAndHeading(currentPitch, getHeading());
-		activeVessel.ap.setTargetRoll(getRoll());
-		activeVessel.tuneAutoPilot();
-		activeVessel.ap.engage();
-		activeVessel.throttle(1f);
+	private void gravityCurve() throws RPCException, StreamException, InterruptedException {
+		ap.setReferenceFrame(pontoRefSuperficie);
+		ap.targetPitchAndHeading(currentPitch, getHeading());
+		ap.setTargetRoll(getRoll());
+		tuneAutoPilot();
+		ap.engage();
+		throttle(1f);
 
 		while (currentPitch > 1) {
 			long currentTime = System.currentTimeMillis();
 			if (currentTime > timer + 250) {
-				if (activeVessel.apoastro.get() > getFinalApoapsis()) {
-					activeVessel.throttle(0);
+				if (Thread.interrupted()) {
+					throw new InterruptedException();
+				}
+				if (apoastro.get() > getFinalApoapsis()) {
+					throttle(0);
 					break;
 				}
 				float startCurveAlt = 100;
 				double altitudeProgress =
-						Utilities.remap(startCurveAlt, getFinalApoapsis(), 1, 0.01, activeVessel.altitude.get(),
-						                false);
+						Utilities.remap(startCurveAlt, getFinalApoapsis(), 1, 0.01, altitude.get(), false);
 				currentPitch = (float) (calculateCurrentPitch(altitudeProgress));
-				activeVessel.ap.setTargetPitch(currentPitch);
-				activeVessel.throttle(
-						thrControl.calcPID(activeVessel.apoastro.get() / getFinalApoapsis() * 1000, 1000));
+				ap.setTargetPitch(currentPitch);
+				throttle(thrControl.calcPID(apoastro.get() / getFinalApoapsis() * 1000, 1000));
 				if (willDecoupleStages && isCurrentStageWithoutFuel()) {
 					decoupleStage();
 				}
-				activeVessel.setCurrentStatus(
-						String.format(Bundle.getString("status_liftoff_inclination") + " %.1f", currentPitch));
+				setCurrentStatus(String.format(Bundle.getString("status_liftoff_inclination") + " %.1f",
+				                               currentPitch));
 				timer = currentTime;
 			}
 		}
 	}
 
 	private void finalizeCurve() throws RPCException, StreamException, InterruptedException {
-		activeVessel.setCurrentStatus(Bundle.getString("status_maintaining_until_orbit"));
-		activeVessel.getNaveAtual().getControl().setRCS(true);
+		setCurrentStatus(Bundle.getString("status_maintaining_until_orbit"));
+		getNaveAtual().getControl().setRCS(true);
 
-		while (activeVessel.parametrosDeVoo.getDynamicPressure() > 10) {
+		while (parametrosDeVoo.getDynamicPressure() > 10) {
+			if (Thread.interrupted()) {
+				throw new InterruptedException();
+			}
 			navigation.aimAtPrograde();
-			activeVessel.throttle(thrControl.calcPID(activeVessel.apoastro.get() / getFinalApoapsis() * 1000, 1000));
+			throttle(thrControl.calcPID(apoastro.get() / getFinalApoapsis() * 1000, 1000));
 			Thread.sleep(100);
 		}
-		activeVessel.throttle(0.0f);
+		throttle(0.0f);
 		if (willDeployPanelsAndRadiators) {
 			deployPanelsAndRadiators();
 		}
 	}
 
 	private void circularizeOrbitOnApoapsis() {
-		activeVessel.setCurrentStatus(Bundle.getString("status_planning_orbit"));
+		setCurrentStatus(Bundle.getString("status_planning_orbit"));
 		Map<String, String> commands = new HashMap<>();
 		commands.put(Modulos.MODULO.get(), Modulos.MODULO_MANOBRAS.get());
 		commands.put(Modulos.FUNCAO.get(), Modulos.APOASTRO.get());
 		commands.put(Modulos.AJUSTE_FINO.get(), String.valueOf(false));
-		activeVessel.startModule(commands);
+		MechPeste.newInstance().startModule(commands);
 	}
 
 	private void decoupleStage() {
 		try {
-			activeVessel.setCurrentStatus(Bundle.getString("status_separating_stage"));
-			ActiveVessel.centroEspacial.setActiveVessel(activeVessel.getNaveAtual());
-			activeVessel.getNaveAtual().getControl().activateNextStage();
+			setCurrentStatus(Bundle.getString("status_separating_stage"));
+			MechPeste.getSpaceCenter().setActiveVessel(getNaveAtual());
+			getNaveAtual().getControl().activateNextStage();
 			Thread.sleep(1000);
 		} catch (RPCException | InterruptedException ignored) {
 		}
 	}
 
 	private void deployPanelsAndRadiators() throws RPCException, InterruptedException {
-		List<Fairing> fairings = activeVessel.getNaveAtual().getParts().getFairings();
+		List<Fairing> fairings = getNaveAtual().getParts().getFairings();
 		if (fairings.size() > 0) {
-			activeVessel.setCurrentStatus(Bundle.getString("status_jettisoning_shields"));
+			setCurrentStatus(Bundle.getString("status_jettisoning_shields"));
 			for (Fairing f : fairings) {
 				if (f.getJettisoned()) {
 					// Overly complicated way of getting the event from the button in the fairing
@@ -139,8 +143,8 @@ public class LiftoffController extends Controller {
 				}
 			}
 		}
-		activeVessel.getNaveAtual().getControl().setSolarPanels(true);
-		activeVessel.getNaveAtual().getControl().setRadiators(true);
+		getNaveAtual().getControl().setSolarPanels(true);
+		getNaveAtual().getControl().setRadiators(true);
 	}
 
 	private double calculateCurrentPitch(double currentAltitude) {
@@ -160,9 +164,8 @@ public class LiftoffController extends Controller {
 	}
 
 	private boolean isCurrentStageWithoutFuel() throws RPCException {
-		for (Engine engine : activeVessel.getNaveAtual().getParts().getEngines()) {
-			if (engine.getPart().getStage() == activeVessel.getNaveAtual().getControl().getCurrentStage() &&
-					!engine.getHasFuel()) {
+		for (Engine engine : getNaveAtual().getParts().getEngines()) {
+			if (engine.getPart().getStage() == getNaveAtual().getControl().getCurrentStage() && !engine.getHasFuel()) {
 				return true;
 			}
 		}

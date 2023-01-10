@@ -15,6 +15,8 @@ import java.awt.event.ActionListener;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.pesterenan.views.MainGui.BTN_DIMENSION;
+
 public class RoverJPanel extends JPanel implements ActionListener {
 	private static final long serialVersionUID = -3157549581689803329L;
 	private final JLabel lblWaypointName = new JLabel(Bundle.getString("pnl_rover_waypoint_name"));
@@ -34,8 +36,8 @@ public class RoverJPanel extends JPanel implements ActionListener {
 	}
 
 	private void initComponents() {
-		setPreferredSize(ParametersJPanel.dmsParameters);
-		setSize(ParametersJPanel.dmsParameters);
+		setPreferredSize(MainGui.dmsPanels);
+		setSize(MainGui.dmsPanels);
 		setBorder(new TitledBorder(null, Bundle.getString("pnl_rover_border"), TitledBorder.LEADING,
 		                           // $NON-NLS-1$
 		                           TitledBorder.TOP, null, null
@@ -43,14 +45,14 @@ public class RoverJPanel extends JPanel implements ActionListener {
 
 		btnBack.setText(Bundle.getString("pnl_rover_btn_back")); //$NON-NLS-1$
 		btnBack.addActionListener(this);
-		btnBack.setSize(ParametersJPanel.BTN_DIMENSION);
+		btnBack.setSize(BTN_DIMENSION);
 		btnBack.setPreferredSize(btnBack.getSize());
 		btnBack.setMinimumSize(btnBack.getSize());
 		btnBack.setMaximumSize(btnBack.getSize());
 
 		btnDrive.setText(Bundle.getString("pnl_rover_btn_drive")); //$NON-NLS-1$
 		btnDrive.addActionListener(this);
-		btnDrive.setSize(ParametersJPanel.BTN_DIMENSION);
+		btnDrive.setSize(BTN_DIMENSION);
 		btnDrive.setPreferredSize(btnDrive.getSize());
 		btnDrive.setMinimumSize(btnDrive.getSize());
 		btnDrive.setMaximumSize(btnDrive.getSize());
@@ -221,7 +223,7 @@ public class RoverJPanel extends JPanel implements ActionListener {
 			commands.put(Modulos.TIPO_ALVO_ROVER.get(), bgChoice.getSelection().getActionCommand());
 			commands.put(Modulos.NOME_MARCADOR.get(), txfWaypointName.getText());
 			commands.put(Modulos.VELOCIDADE_MAX.get(), txfMaxSpeed.getText());
-			MechPeste.newInstance().startModule(-1, commands);
+			MechPeste.newInstance().startModule(commands);
 		}
 	}
 
