@@ -30,7 +30,6 @@ public class LandingController extends Controller implements Runnable {
 	public LandingController(Map<String, String> commands) {
 		super();
 		this.commands = commands;
-		System.out.println(commands);
 		this.navigation = new Navigation(getNaveAtual());
 		this.initializeParameters();
 	}
@@ -55,27 +54,25 @@ public class LandingController extends Controller implements Runnable {
 	private void hoverArea() {
 		try {
 			ap.engage();
+			tuneAutoPilot();
 			while (hoveringMode) {
-				long currentTime = System.currentTimeMillis();
-				if (currentTime > timer + 50) {
-					if (Thread.interrupted()) {
-						throw new InterruptedException();
-					}
-					try {
-						altitudeErrorPercentage = altitudeSup.get() / hoverAltitude * HUNDRED_PERCENT;
-						// Select which mode depending on altitude error:
-						if (altitudeErrorPercentage > HUNDRED_PERCENT) {
-							currentMode = MODE.GOING_DOWN;
-						} else if (altitudeErrorPercentage < HUNDRED_PERCENT * 0.9) {
-							currentMode = MODE.GOING_UP;
-						} else {
-							currentMode = MODE.HOVERING;
-						}
-						changeControlMode();
-					} catch (RPCException | StreamException ignored) {
-					}
-					timer = currentTime;
+				if (Thread.interrupted()) {
+					throw new InterruptedException();
 				}
+				try {
+					altitudeErrorPercentage = altitudeSup.get() / hoverAltitude * HUNDRED_PERCENT;
+					// Select which mode depending on altitude error:
+					if (altitudeErrorPercentage > HUNDRED_PERCENT) {
+						currentMode = MODE.GOING_DOWN;
+					} else if (altitudeErrorPercentage < HUNDRED_PERCENT * 0.9) {
+						currentMode = MODE.GOING_UP;
+					} else {
+						currentMode = MODE.HOVERING;
+					}
+					changeControlMode();
+				} catch (RPCException | StreamException ignored) {
+				}
+				Thread.sleep(50);
 			}
 		} catch (InterruptedException | RPCException ignored) {
 //			disengageAfterException(Bundle.getString("status_liftoff_abort"));
@@ -158,7 +155,7 @@ public class LandingController extends Controller implements Runnable {
 		throttle(velocityCtrl.calcPID(velVertical.get(), velocityToMatch));
 	}
 
-	private void deOrbitShip() throws RPCException, StreamException {
+	private void deOrbitShip() throws RPCException, StreamException, InterruptedException {
 		throttle(0.0f);
 		if (getNaveAtual().getSituation().equals(VesselSituation.ORBITING) ||
 				getNaveAtual().getSituation().equals(VesselSituation.SUB_ORBITAL)) {
@@ -167,11 +164,14 @@ public class LandingController extends Controller implements Runnable {
 			while (ap.getError() > 5) {
 				navigation.aimForLanding();
 				setCurrentStatus(Bundle.getString("status_orienting_ship"));
+				ap.wait_();
+				Thread.sleep(100);
 			}
 			while (periastro.get() > -apoastro.get()) {
 				navigation.aimForLanding();
 				throttle(altitudeCtrl.calcPID(-apoastro.get(), periastro.get()));
 				setCurrentStatus(Bundle.getString("status_lowering_periapsis"));
+				Thread.sleep(100);
 			}
 			throttle(0.0f);
 		}
@@ -181,19 +181,17 @@ public class LandingController extends Controller implements Runnable {
 		try {
 			setCurrentStatus(Bundle.getString("status_starting_landing_at") + " " + currentBody.getName());
 			currentMode = MODE.DEORBITING;
-			changeControlMode();
 			ap.engage();
+			changeControlMode();
+			tuneAutoPilot();
 			setCurrentStatus(Bundle.getString("status_starting_landing"));
 			while (!hasTheVesselLanded()) {
-				long currentTime = System.currentTimeMillis();
-				if (currentTime > timer + 100) {
-					if (Thread.interrupted()) {
-						throw new InterruptedException();
-					}
-					getNaveAtual().getControl().setBrakes(true);
-					changeControlMode();
-					timer = currentTime;
+				if (Thread.interrupted()) {
+					throw new InterruptedException();
 				}
+				getNaveAtual().getControl().setBrakes(true);
+				changeControlMode();
+				Thread.sleep(100);
 			}
 		} catch (RPCException | StreamException | InterruptedException e) {
 		}

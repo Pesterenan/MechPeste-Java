@@ -54,41 +54,37 @@ public class LiftoffController extends Controller implements Runnable {
 			finalizeCurve();
 			circularizeOrbitOnApoapsis();
 		} catch (RPCException | InterruptedException | StreamException ignored) {
+			setCurrentStatus(Bundle.getString("status_ready"));
 		}
 	}
 
 
 	private void gravityCurve() throws RPCException, StreamException, InterruptedException {
-		ap.setReferenceFrame(pontoRefSuperficie);
+		ap.setReferenceFrame(surfaceReferenceFrame);
 		ap.targetPitchAndHeading(currentPitch, getHeading());
 		ap.setTargetRoll(getRoll());
-		tuneAutoPilot();
 		ap.engage();
 		throttle(1f);
 
 		while (currentPitch > 1) {
-			long currentTime = System.currentTimeMillis();
-			if (currentTime > timer + 250) {
-				if (Thread.interrupted()) {
-					throw new InterruptedException();
-				}
-				if (apoastro.get() > getFinalApoapsis()) {
-					throttle(0);
-					break;
-				}
-				float startCurveAlt = 100;
-				double altitudeProgress =
-						Utilities.remap(startCurveAlt, getFinalApoapsis(), 1, 0.01, altitude.get(), false);
-				currentPitch = (float) (calculateCurrentPitch(altitudeProgress));
-				ap.setTargetPitch(currentPitch);
-				throttle(thrControl.calcPID(apoastro.get() / getFinalApoapsis() * 1000, 1000));
-				if (willDecoupleStages && isCurrentStageWithoutFuel()) {
-					decoupleStage();
-				}
-				setCurrentStatus(String.format(Bundle.getString("status_liftoff_inclination") + " %.1f",
-				                               currentPitch));
-				timer = currentTime;
+			if (Thread.interrupted()) {
+				throw new InterruptedException();
 			}
+			if (apoastro.get() > getFinalApoapsis()) {
+				throttle(0);
+				break;
+			}
+			float startCurveAlt = 100;
+			double altitudeProgress =
+					Utilities.remap(startCurveAlt, getFinalApoapsis(), 1, 0.01, altitude.get(), false);
+			currentPitch = (float) (calculateCurrentPitch(altitudeProgress));
+			ap.setTargetPitch(currentPitch);
+			throttle(thrControl.calcPID(apoastro.get() / getFinalApoapsis() * 1000, 1000));
+			if (willDecoupleStages && isCurrentStageWithoutFuel()) {
+				decoupleStage();
+			}
+			setCurrentStatus(String.format(Bundle.getString("status_liftoff_inclination") + " %.1f", currentPitch));
+			Thread.sleep(250);
 		}
 	}
 
@@ -117,16 +113,6 @@ public class LiftoffController extends Controller implements Runnable {
 		commands.put(Modulos.FUNCAO.get(), Modulos.APOASTRO.get());
 		commands.put(Modulos.AJUSTE_FINO.get(), String.valueOf(false));
 		MechPeste.newInstance().startModule(commands);
-	}
-
-	private void decoupleStage() {
-		try {
-			setCurrentStatus(Bundle.getString("status_separating_stage"));
-			MechPeste.getSpaceCenter().setActiveVessel(getNaveAtual());
-			getNaveAtual().getControl().activateNextStage();
-			Thread.sleep(1000);
-		} catch (RPCException | InterruptedException ignored) {
-		}
 	}
 
 	private void deployPanelsAndRadiators() throws RPCException, InterruptedException {

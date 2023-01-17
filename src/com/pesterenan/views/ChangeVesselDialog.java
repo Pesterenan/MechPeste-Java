@@ -203,7 +203,7 @@ public class ChangeVesselDialog extends JDialog {
 		String selected = listActiveVessels.getSelectedValue();
 		if (selected != null) {
 			int vesselHashCode = Integer.parseInt(selected.split(" - ")[0]);
-			lblVesselStatus.setText(MechPeste.getVesselLocation(vesselHashCode));
+			lblVesselStatus.setText(MechPeste.getVesselInfo(vesselHashCode));
 			btnChangeToVessel.setEnabled(true);
 			return;
 		}

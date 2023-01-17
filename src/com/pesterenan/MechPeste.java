@@ -5,7 +5,6 @@ import com.pesterenan.resources.Bundle;
 import com.pesterenan.utils.Vector;
 import com.pesterenan.views.FunctionsAndTelemetryJPanel;
 import com.pesterenan.views.MainGui;
-import com.pesterenan.views.StatusJPanel;
 import krpc.client.Connection;
 import krpc.client.RPCException;
 import krpc.client.services.KRPC;
@@ -18,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static com.pesterenan.views.StatusJPanel.isBtnConnectVisible;
 import static com.pesterenan.views.StatusJPanel.setStatus;
 
 public class MechPeste {
@@ -99,14 +99,15 @@ public class MechPeste {
 		return false;
 	}
 
-	public static String getVesselLocation(int selectedIndex) {
+	public static String getVesselInfo(int selectedIndex) {
 		try {
 			Vessel naveAtual =
 					spaceCenter.getVessels().stream().filter(v -> v.hashCode() == selectedIndex).findFirst().get();
-			String name = naveAtual.getName().length() > 40 ? naveAtual.getName().substring(0, 40) + "..." : naveAtual.getName();
-			String vesselInfo = String.format("Nome: %s\t\t\t | Corpo: %s", name,
-			                     naveAtual.getOrbit().getBody().getName()
-			                    );
+			String name = naveAtual.getName().length() > 40
+			              ? naveAtual.getName().substring(0, 40) + "..."
+			              : naveAtual.getName();
+			String vesselInfo =
+					String.format("Nome: %s\t\t\t | Corpo: %s", name, naveAtual.getOrbit().getBody().getName());
 			return vesselInfo;
 		} catch (RPCException | NullPointerException ignored) {
 		}
@@ -131,37 +132,22 @@ public class MechPeste {
 		while (getConnection() != null) {
 			try {
 				if (!MechPeste.newInstance().getCurrentGameScene().equals(KRPC.GameScene.FLIGHT)) {
+					Thread.sleep(100);
 					return;
 				}
-
-				long currentTime = System.currentTimeMillis();
 				int activeVesselId = spaceCenter.getActiveVessel().hashCode();
-				if (currentTime > checkVesselTimer + CHECK_VESSEL_INTERVAL_IN_MS) {
-					// If the current active vessel changes, create a new connection
-					if (currentVesselId != activeVesselId) {
-						currentVessel = new ActiveVessel();
-						currentVesselId = currentVessel.getCurrentVesselId();
-					}
-					Thread.getAllStackTraces().keySet().forEach(t -> {
-						String name = t.getName();
-						if (name.contains(" - ")) {
-							Thread.State state = t.getState();
-							String type = t.isDaemon() ? "Daemon" : "Normal";
-							System.out.printf("%-12s \t %s \t %d \t %s\n", name, state, currentTime, type);
-						}
-					});
-					checkVesselTimer = currentTime;
+				// If the current active vessel changes, create a new connection
+				if (currentVesselId != activeVesselId) {
+					currentVessel = new ActiveVessel();
+					currentVesselId = currentVessel.getCurrentVesselId();
 				}
-				if (currentTime > checkStatusTimer + CHECK_STATUS_INTERVAL_IN_MS) {
-					if (currentVesselId != -1) {
-						currentVessel.recordTelemetryData();
-						setStatus(currentVessel.getCurrentStatus());
-						FunctionsAndTelemetryJPanel.updateTelemetry(currentVessel.getTelemetryData());
-					}
-					checkStatusTimer = currentTime;
+				if (currentVesselId != -1) {
+					currentVessel.recordTelemetryData();
+					setStatus(currentVessel.getCurrentStatus());
+					FunctionsAndTelemetryJPanel.updateTelemetry(currentVessel.getTelemetryData());
 				}
-
-			} catch (RPCException ignored) {
+				Thread.sleep(100);
+			} catch (RPCException | InterruptedException ignored) {
 			}
 		}
 	}
@@ -179,10 +165,27 @@ public class MechPeste {
 			checkVesselTimer = System.currentTimeMillis();
 			checkStatusTimer = System.currentTimeMillis();
 			setStatus(Bundle.getString("status_connected"));
-			StatusJPanel.isBtnConnectVisible(false);
+			isBtnConnectVisible(false);
 		} catch (IOException e) {
 			setStatus(Bundle.getString("status_error_connection"));
-			StatusJPanel.isBtnConnectVisible(true);
+			isBtnConnectVisible(true);
 		}
+	}
+
+	public void checkConnection() {
+		try {
+			if (!MechPeste.newInstance().getCurrentGameScene().equals(KRPC.GameScene.FLIGHT)) {
+				setStatus(Bundle.getString("status_ready"));
+				return;
+			}
+			getConnection().close();
+		} catch (RPCException | NullPointerException | IOException e) {
+			setStatus(Bundle.getString("status_error_connection"));
+			isBtnConnectVisible(true);
+		}
+	}
+
+	public void cancelControl() {
+		currentVessel.cancelControl();
 	}
 }

@@ -1,5 +1,6 @@
 package com.pesterenan.views;
 
+import com.pesterenan.MechPeste;
 import com.pesterenan.resources.Bundle;
 import com.pesterenan.utils.Modulos;
 import com.pesterenan.utils.Telemetry;
@@ -28,6 +29,8 @@ public class FunctionsAndTelemetryJPanel extends JPanel {
 	private static JLabel periastroValorLabel = new JLabel("");
 	private static JLabel velVValorLabel = new JLabel("");
 	private static JLabel velHValorLabel = new JLabel("");
+	private JLabel label;
+	private JButton btnCancel;
 
 	public FunctionsAndTelemetryJPanel() {
 		initComponents();
@@ -35,17 +38,11 @@ public class FunctionsAndTelemetryJPanel extends JPanel {
 
 	private void initComponents() {
 		setPreferredSize(dmsPanels);
-		setBorder(
-				new TitledBorder(null, Bundle.getString("pnl_func_title"), TitledBorder.LEADING, TitledBorder.TOP,
-				                 null,
-				                 null
-				));
+		setBorder(new TitledBorder(null, Bundle.getString("pnl_func_title"), TitledBorder.LEADING, TitledBorder.TOP,
+				null, null));
 		JPanel pnlTelemetry = new JPanel();
-		pnlTelemetry.setBorder(
-				new TitledBorder(null, Bundle.getString("pnl_tel_border"), TitledBorder.LEADING, TitledBorder.TOP,
-				                 null,
-				                 null
-				));
+		pnlTelemetry.setBorder(new TitledBorder(null, Bundle.getString("pnl_tel_border"), TitledBorder.LEADING,
+				TitledBorder.TOP, null, null));
 
 		btnLiftoff = new JButton(Bundle.getString("btn_func_liftoff"));
 		btnLiftoff.addActionListener(
@@ -65,70 +62,24 @@ public class FunctionsAndTelemetryJPanel extends JPanel {
 
 		GroupLayout gl_pnlFunctions = new GroupLayout(this);
 		gl_pnlFunctions.setHorizontalGroup(gl_pnlFunctions.createParallelGroup(Alignment.LEADING)
-		                                                  .addGroup(gl_pnlFunctions.createSequentialGroup()
-		                                                                           .addGroup(
-				                                                                           gl_pnlFunctions.createParallelGroup(
-						                                                                                          Alignment.LEADING)
-				                                                                                          .addComponent(
-						                                                                                          btnLiftoff,
-						                                                                                          GroupLayout.PREFERRED_SIZE,
-						                                                                                          135,
-						                                                                                          GroupLayout.PREFERRED_SIZE
-				                                                                                                       )
-				                                                                                          .addComponent(
-						                                                                                          btnLanding,
-						                                                                                          GroupLayout.PREFERRED_SIZE,
-						                                                                                          135,
-						                                                                                          GroupLayout.PREFERRED_SIZE
-				                                                                                                       )
-				                                                                                          .addComponent(
-						                                                                                          btnManeuver,
-						                                                                                          GroupLayout.PREFERRED_SIZE,
-						                                                                                          135,
-						                                                                                          GroupLayout.PREFERRED_SIZE
-				                                                                                                       )
-				                                                                                          .addComponent(
-						                                                                                          btnRover,
-						                                                                                          GroupLayout.PREFERRED_SIZE,
-						                                                                                          135,
-						                                                                                          GroupLayout.PREFERRED_SIZE
-				                                                                                                       ))
-		                                                                           .addPreferredGap(
-				                                                                           ComponentPlacement.RELATED)
-		                                                                           .addComponent(pnlTelemetry,
-		                                                                                         GroupLayout.DEFAULT_SIZE,
-		                                                                                         301, Short.MAX_VALUE
-		                                                                                        )
-		                                                                           .addGap(6)));
+				.addGroup(gl_pnlFunctions.createSequentialGroup()
+						.addGroup(gl_pnlFunctions.createParallelGroup(Alignment.LEADING)
+								.addComponent(btnLiftoff, GroupLayout.PREFERRED_SIZE, 135, GroupLayout.PREFERRED_SIZE)
+								.addComponent(btnLanding, GroupLayout.PREFERRED_SIZE, 135, GroupLayout.PREFERRED_SIZE)
+								.addComponent(btnManeuver, GroupLayout.PREFERRED_SIZE, 135, GroupLayout.PREFERRED_SIZE)
+								.addComponent(btnRover, GroupLayout.PREFERRED_SIZE, 135, GroupLayout.PREFERRED_SIZE))
+						.addPreferredGap(ComponentPlacement.RELATED)
+						.addComponent(pnlTelemetry, GroupLayout.DEFAULT_SIZE, 301, Short.MAX_VALUE).addGap(6)));
 		gl_pnlFunctions.setVerticalGroup(gl_pnlFunctions.createParallelGroup(Alignment.LEADING)
-		                                                .addGroup(gl_pnlFunctions.createSequentialGroup()
-		                                                                         .addGroup(
-				                                                                         gl_pnlFunctions.createParallelGroup(
-						                                                                                        Alignment.LEADING)
-				                                                                                        .addGroup(
-						                                                                                        gl_pnlFunctions.createSequentialGroup()
-						                                                                                                       .addComponent(
-								                                                                                                       btnLiftoff)
-						                                                                                                       .addPreferredGap(
-								                                                                                                       ComponentPlacement.RELATED)
-						                                                                                                       .addComponent(
-								                                                                                                       btnLanding)
-						                                                                                                       .addPreferredGap(
-								                                                                                                       ComponentPlacement.RELATED)
-						                                                                                                       .addComponent(
-								                                                                                                       btnManeuver)
-						                                                                                                       .addPreferredGap(
-								                                                                                                       ComponentPlacement.RELATED)
-						                                                                                                       .addComponent(
-								                                                                                                       btnRover))
-				                                                                                        .addComponent(
-						                                                                                        pnlTelemetry,
-						                                                                                        GroupLayout.DEFAULT_SIZE,
-						                                                                                        188,
-						                                                                                        Short.MAX_VALUE
-				                                                                                                     ))
-		                                                                         .addGap(6)));
-		pnlTelemetry.setLayout(new GridLayout(6, 2, 0, 0));
+				.addGroup(gl_pnlFunctions.createSequentialGroup()
+						.addGroup(gl_pnlFunctions.createParallelGroup(Alignment.LEADING)
+								.addGroup(gl_pnlFunctions.createSequentialGroup().addComponent(btnLiftoff)
+										.addPreferredGap(ComponentPlacement.RELATED).addComponent(btnLanding)
+										.addPreferredGap(ComponentPlacement.RELATED).addComponent(btnManeuver)
+										.addPreferredGap(ComponentPlacement.RELATED).addComponent(btnRover))
+								.addComponent(pnlTelemetry, GroupLayout.DEFAULT_SIZE, 188, Short.MAX_VALUE))
+						.addGap(6)));
+		pnlTelemetry.setLayout(new GridLayout(0, 2, 0, 0));
 		JLabel altitudeLabel = new JLabel(Bundle.getString("pnl_tel_lbl_alt"));
 		pnlTelemetry.add(altitudeLabel);
 		pnlTelemetry.add(altitudeValorLabel);
@@ -153,6 +104,13 @@ public class FunctionsAndTelemetryJPanel extends JPanel {
 		pnlTelemetry.add(velHLabel);
 		pnlTelemetry.add(velHValorLabel);
 
+		label = new JLabel("");
+		pnlTelemetry.add(label);
+
+		btnCancel = new JButton(Bundle.getString("pnl_tel_btn_cancel"));
+		btnCancel.addActionListener(e -> MechPeste.newInstance().cancelControl());
+		pnlTelemetry.add(btnCancel);
+
 		setLayout(gl_pnlFunctions);
 	}
 
@@ -160,24 +118,24 @@ public class FunctionsAndTelemetryJPanel extends JPanel {
 		synchronized (telemetryData) {
 			for (Telemetry key : telemetryData.keySet()) {
 				switch (key) {
-					case ALTITUDE:
-						altitudeValorLabel.setText(Utilities.convertToMetersMagnitudes(telemetryData.get(key)));
-						break;
-					case ALT_SURF:
-						altitudeSupValorLabel.setText(Utilities.convertToMetersMagnitudes(telemetryData.get(key)));
-						break;
-					case APOAPSIS:
-						apoastroValorLabel.setText(Utilities.convertToMetersMagnitudes(telemetryData.get(key)));
-						break;
-					case PERIAPSIS:
-						periastroValorLabel.setText(Utilities.convertToMetersMagnitudes(telemetryData.get(key)));
-						break;
-					case VERT_SPEED:
-						velVValorLabel.setText(Utilities.convertToMetersMagnitudes(telemetryData.get(key)) + "/s");
-						break;
-					case HORZ_SPEED:
-						velHValorLabel.setText(Utilities.convertToMetersMagnitudes(telemetryData.get(key)) + "/s");
-						break;
+				case ALTITUDE:
+					altitudeValorLabel.setText(Utilities.convertToMetersMagnitudes(telemetryData.get(key)));
+					break;
+				case ALT_SURF:
+					altitudeSupValorLabel.setText(Utilities.convertToMetersMagnitudes(telemetryData.get(key)));
+					break;
+				case APOAPSIS:
+					apoastroValorLabel.setText(Utilities.convertToMetersMagnitudes(telemetryData.get(key)));
+					break;
+				case PERIAPSIS:
+					periastroValorLabel.setText(Utilities.convertToMetersMagnitudes(telemetryData.get(key)));
+					break;
+				case VERT_SPEED:
+					velVValorLabel.setText(Utilities.convertToMetersMagnitudes(telemetryData.get(key)) + "/s");
+					break;
+				case HORZ_SPEED:
+					velHValorLabel.setText(Utilities.convertToMetersMagnitudes(telemetryData.get(key)) + "/s");
+					break;
 				}
 			}
 		}

@@ -13,7 +13,6 @@ import com.pesterenan.utils.Vector;
 import krpc.client.RPCException;
 import krpc.client.Stream;
 import krpc.client.StreamException;
-import krpc.client.services.KRPC.GameScene;
 import krpc.client.services.SpaceCenter.AutoPilot;
 import krpc.client.services.SpaceCenter.CelestialBody;
 import krpc.client.services.SpaceCenter.Flight;
@@ -26,7 +25,6 @@ import java.util.Map;
 
 import static com.pesterenan.MechPeste.getConnection;
 import static com.pesterenan.MechPeste.getSpaceCenter;
-import static com.pesterenan.views.StatusJPanel.isBtnConnectVisible;
 
 public class ActiveVessel {
 
@@ -34,9 +32,9 @@ public class ActiveVessel {
 	private final Map<Telemetry, Double> telemetryData = new HashMap<>();
 	public AutoPilot ap;
 	public Flight parametrosDeVoo;
-	public ReferenceFrame pontoRefOrbital;
+	public ReferenceFrame orbitalReferenceFrame;
 	protected Stream<Float> massaTotal;
-	public ReferenceFrame pontoRefSuperficie;
+	public ReferenceFrame surfaceReferenceFrame;
 	public float bateriaTotal;
 	public float gravityAcel;
 	public CelestialBody currentBody;
@@ -65,9 +63,9 @@ public class ActiveVessel {
 			ap = getNaveAtual().getAutoPilot();
 			currentBody = getNaveAtual().getOrbit().getBody();
 			gravityAcel = currentBody.getSurfaceGravity();
-			pontoRefOrbital = currentBody.getReferenceFrame();
-			pontoRefSuperficie = getNaveAtual().getSurfaceReferenceFrame();
-			parametrosDeVoo = getNaveAtual().flight(pontoRefOrbital);
+			orbitalReferenceFrame = currentBody.getReferenceFrame();
+			surfaceReferenceFrame = getNaveAtual().getSurfaceReferenceFrame();
+			parametrosDeVoo = getNaveAtual().flight(orbitalReferenceFrame);
 			massaTotal = getConnection().addStream(getNaveAtual(), "getMass");
 			altitude = getConnection().addStream(parametrosDeVoo, "getMeanAltitude");
 			altitudeSup = getConnection().addStream(parametrosDeVoo, "getSurfaceAltitude");
@@ -76,7 +74,7 @@ public class ActiveVessel {
 			velVertical = getConnection().addStream(parametrosDeVoo, "getVerticalSpeed");
 			velHorizontal = getConnection().addStream(parametrosDeVoo, "getHorizontalSpeed");
 		} catch (RPCException | StreamException e) {
-			checarConexao();
+			MechPeste.newInstance().checkConnection();
 		}
 	}
 
@@ -103,21 +101,6 @@ public class ActiveVessel {
 		naveAtual = currentVessel;
 	}
 
-	public void checarConexao() {
-		try {
-			if (MechPeste.newInstance().getCurrentGameScene().equals(GameScene.FLIGHT)) {
-				setNaveAtual(getSpaceCenter().getActiveVessel());
-				setCurrentStatus(Bundle.getString("status_connected"));
-				isBtnConnectVisible(false);
-			} else {
-				setCurrentStatus(Bundle.getString("status_ready"));
-			}
-		} catch (RPCException | NullPointerException e) {
-			setCurrentStatus(Bundle.getString("status_error_connection"));
-			isBtnConnectVisible(true);
-		}
-	}
-
 	public void throttle(float acel) throws RPCException {
 		getNaveAtual().getControl().setThrottle(acel);
 	}
@@ -136,20 +119,38 @@ public class ActiveVessel {
 			getNaveAtual().getControl().setSAS(true);
 			throttle(1f);
 			if (getNaveAtual().getSituation().equals(VesselSituation.PRE_LAUNCH)) {
-				double count = 5.0;
-				while (count > 0) {
-					long currentTime = System.currentTimeMillis();
-					if (currentTime > timer + 100) {
-						setCurrentStatus(String.format(Bundle.getString("status_launching_in"), count));
-						count -= 0.1;
-						timer = currentTime;
+				for (double count = 5.0; count >= 0; count -= 0.1) {
+					if (Thread.interrupted()) {
+						throw new InterruptedException();
 					}
+					setCurrentStatus(String.format(Bundle.getString("status_launching_in"), count));
+					Thread.sleep(100);
 				}
 				getSpaceCenter().setActiveVessel(naveAtual);
 				getNaveAtual().getControl().activateNextStage();
 			}
 			setCurrentStatus(Bundle.getString("status_liftoff"));
-		} catch (RPCException ignored) {
+		} catch (RPCException | InterruptedException ignored) {
+			setCurrentStatus(Bundle.getString("status_liftoff_abort"));
+		}
+	}
+
+	protected void decoupleStage() throws RPCException, InterruptedException {
+		setCurrentStatus(Bundle.getString("status_separating_stage"));
+		MechPeste.getSpaceCenter().setActiveVessel(getNaveAtual());
+		double currentThrottle = getNaveAtual().getControl().getThrottle();
+		throttle(0);
+		Thread.sleep(1000);
+		getNaveAtual().getControl().activateNextStage();
+		throttleUp(currentThrottle, 1);
+	}
+
+	protected void throttleUp(double throttleAmount, double seconds) throws RPCException, InterruptedException {
+		double secondsElapsed = 0;
+		while (secondsElapsed < seconds) {
+			throttle(secondsElapsed / seconds * throttleAmount);
+			secondsElapsed += 0.1;
+			Thread.sleep(100);
 		}
 	}
 
@@ -161,23 +162,9 @@ public class ActiveVessel {
 		return getTWR() * gravityAcel - gravityAcel;
 	}
 
-	public void disengageAfterException(String statusMessage) {
-		try {
-			setCurrentStatus(statusMessage);
-			ap.setReferenceFrame(pontoRefSuperficie);
-			ap.disengage();
-			throttle(0);
-			Thread.sleep(3000);
-			setCurrentStatus(Bundle.getString("status_ready"));
-		} catch (Exception ignored) {
-		}
-	}
-
 	public void startModule(Map<String, String> commands) {
 		String currentFunction = commands.get(Modulos.MODULO.get());
-		System.out.println(Thread.activeCount() + " ANTES THREADS");
 		if (controllerThread != null) {
-			System.out.println(controllerThread.getName());
 			controllerThread.interrupt();
 		}
 		if (currentFunction.equals(Modulos.MODULO_DECOLAGEM.get())) {
@@ -197,7 +184,10 @@ public class ActiveVessel {
 		controllerThread.start();
 	}
 
-	public void recordTelemetryData() {
+	public void recordTelemetryData() throws RPCException {
+		if (getNaveAtual().getOrbit().getBody() != currentBody) {
+			initializeParameters();
+		}
 		synchronized (telemetryData) {
 			try {
 				telemetryData.put(Telemetry.ALTITUDE, altitude.get() < 0 ? 0 : altitude.get());
@@ -213,5 +203,16 @@ public class ActiveVessel {
 
 	public Map<Telemetry, Double> getTelemetryData() {
 		return telemetryData;
+	}
+
+	public void cancelControl() {
+		try {
+			ap.disengage();
+			throttle(0);
+			if (controllerThread != null) {
+				controllerThread.interrupt();
+			}
+		} catch (RPCException ignored) {
+		}
 	}
 }

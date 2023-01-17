@@ -88,6 +88,9 @@ public class ManeuverController extends Controller implements Runnable {
 			System.out.println(targetOrbit.getApoapsis() + "-- APO");
 			Node maneuver = hohmannTransferToOrbit(targetOrbit, getNaveAtual().getOrbit().getTimeToPeriapsis());
 			while (true) {
+				if (Thread.interrupted()) {
+					throw new InterruptedException();
+				}
 				double currentDeltaApo = compareOrbitParameter(maneuver.getOrbit(), targetOrbit, Compare.AP);
 				String deltaApoFormatted = String.format("%.2f", currentDeltaApo);
 				System.out.println(deltaApoFormatted);
@@ -151,6 +154,9 @@ public class ManeuverController extends Controller implements Runnable {
 			boolean closestIsAN = incNodesUt[0] < incNodesUt[1];
 			double timeToExecute = 0;
 			while (timeToExecute < 5000) {
+				if (Thread.interrupted()) {
+					throw new InterruptedException();
+				}
 				double currentDeltaInc = compareOrbitParameter(maneuver.getOrbit(), targetOrbit, Compare.INC);
 				String deltaIncFormatted = String.format("%.2f", currentDeltaInc);
 				System.out.println(deltaIncFormatted);
@@ -260,11 +266,14 @@ public class ManeuverController extends Controller implements Runnable {
 		try {
 			setCurrentStatus(Bundle.getString("status_orienting_ship"));
 			ap.engage();
-			navigation.aimAtManeuver(maneuverNode);
-			while (ap.getError() > 5) {
-				ap.wait_();
+			while (ap.getHeadingError() > 3 || ap.getPitchError() > 3) {
+				if (Thread.interrupted()) {
+					throw new InterruptedException();
+				}
+				navigation.aimAtManeuver(maneuverNode);
+				Thread.sleep(100);
 			}
-		} catch (RPCException e) {
+		} catch (RPCException | InterruptedException e) {
 			setCurrentStatus(Bundle.getString("status_couldnt_orient"));
 		}
 	}
@@ -298,6 +307,9 @@ public class ManeuverController extends Controller implements Runnable {
 			// Mostrar tempo de ignição:
 			setCurrentStatus(String.format(Bundle.getString("status_maneuver_duration"), duracaoDaQueima));
 			while (inicioDaQueima > 0) {
+				if (Thread.interrupted()) {
+					throw new InterruptedException();
+				}
 				inicioDaQueima = Math.max(noDeManobra.getTimeTo() - (duracaoDaQueima / 2.0), 0.0);
 				navigation.aimAtManeuver(noDeManobra);
 				setCurrentStatus(String.format(Bundle.getString("status_maneuver_ignition_in"), inicioDaQueima));
@@ -309,29 +321,26 @@ public class ManeuverController extends Controller implements Runnable {
 			setCurrentStatus(Bundle.getString("status_maneuver_executing"));
 			double limiteParaDesacelerar =
 					noDeManobra.getDeltaV() > 1000 ? 0.025 : noDeManobra.getDeltaV() > 250 ? 0.10 : 0.25;
-			double remainingBurnTime = duracaoDaQueima + 1.0;
+			double remainingBurnTime = duracaoDaQueima + 0.5;
 			while (noDeManobra != null) {
-				long currentTime = System.currentTimeMillis();
-				if (currentTime > timer + 100) {
-					if (Thread.interrupted()) {
-						throw new InterruptedException();
-					}
-					if (remainingBurnTime < 0.0 || queimaRestante.get().getValue1() < (fineAdjustment ? 2 : 0.5)) {
-						break;
-					}
-					navigation.aimAtManeuver(noDeManobra);
-					throttle(ctrlManeuver.calcPID(
-							(noDeManobra.getDeltaV() - Math.floor(queimaRestante.get().getValue1())) /
-									noDeManobra.getDeltaV() * 1000, 1000));
-					remainingBurnTime -= 0.1;
-					timer = currentTime;
+				if (Thread.interrupted()) {
+					throw new InterruptedException();
 				}
+				if (remainingBurnTime < 0.0 || queimaRestante.get().getValue1() < (fineAdjustment ? 2 : 0.5)) {
+					throttle(0.0f);
+					break;
+				}
+				navigation.aimAtManeuver(noDeManobra);
+				throttle(ctrlManeuver.calcPID((noDeManobra.getDeltaV() - Math.floor(queimaRestante.get().getValue1())) /
+						                              noDeManobra.getDeltaV() * 1000, 1000));
+				remainingBurnTime -= 0.05;
+				Thread.sleep(50);
 			}
 			throttle(0.0f);
 			if (fineAdjustment) {
 				adjustManeuverWithRCS(queimaRestante);
 			}
-			ap.setReferenceFrame(pontoRefSuperficie);
+			ap.setReferenceFrame(surfaceReferenceFrame);
 			ap.disengage();
 			getNaveAtual().getControl().setSAS(true);
 			getNaveAtual().getControl().setRCS(false);
@@ -349,6 +358,9 @@ public class ManeuverController extends Controller implements Runnable {
 			StreamException, InterruptedException {
 		getNaveAtual().getControl().setRCS(true);
 		while (Math.floor(remainingDeltaV.get().getValue1()) > 0.2) {
+			if (Thread.interrupted()) {
+				throw new InterruptedException();
+			}
 			getNaveAtual().getControl().setForward((float) ctrlRCS.calcPID(-remainingDeltaV.get().getValue1() * 10,
 			                                                               0));
 			Thread.sleep(25);
