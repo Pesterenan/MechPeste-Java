@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 
 import static com.pesterenan.MechPeste.getSpaceCenter;
 
-public class RoverController extends Controller implements Runnable {
+public class RoverController extends Controller {
 	private final ControlePID sterringCtrl = new ControlePID();
 	private final ControlePID acelCtrl = new ControlePID();
 	float distanceFromTargetLimit = 50;
@@ -185,16 +185,6 @@ public class RoverController extends Controller implements Runnable {
 			getSpaceCenter().warpTo((getSpaceCenter().getUT() + chargeTime), 10000, 4);
 			getNaveAtual().getControl().setLights(true);
 		}
-	}
-
-	private boolean hasWorkingSolarPanels() throws RPCException {
-		List<SolarPanel> solarPanels = getNaveAtual().getParts()
-		                                             .getSolarPanels()
-		                                             .stream()
-		                                             .filter(this::isSolarPanelNotBroken)
-		                                             .collect(Collectors.toList());
-
-		return !solarPanels.isEmpty();
 	}
 
 	private void driveRover() throws RPCException, IOException, StreamException {

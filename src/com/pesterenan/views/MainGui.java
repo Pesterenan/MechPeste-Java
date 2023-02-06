@@ -126,11 +126,11 @@ public class MainGui extends JFrame implements ActionListener, PropertyChangeLis
 	}
 
 	private void handleMntmMultiControlActionPerformed(ActionEvent e) {
-		ChangeVesselDialog mc = new ChangeVesselDialog();
+		new ChangeVesselDialog();
 	}
 
 	protected void handleMntmInstallKrpcActionPerformed(ActionEvent e) {
-		InstallKrpcDialog ikd = new InstallKrpcDialog();
+		new InstallKrpcDialog();
 	}
 
 	protected void handleMntmExitActionPerformed(ActionEvent e) {
@@ -181,6 +181,6 @@ public class MainGui extends JFrame implements ActionListener, PropertyChangeLis
 	}
 
 	protected void handleMntmAboutActionPerformed(ActionEvent e) {
-		AboutJFrame about = new AboutJFrame();
+		new AboutJFrame();
 	}
 }

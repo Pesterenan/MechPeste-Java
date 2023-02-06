@@ -15,7 +15,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class LiftoffController extends Controller implements Runnable {
+public class LiftoffController extends Controller {
 
 	private static final float PITCH_UP = 90;
 	private final ControlePID thrControl = new ControlePID();

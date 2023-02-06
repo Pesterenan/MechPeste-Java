@@ -20,7 +20,6 @@ import static com.pesterenan.MechPeste.getSpaceCenter;
 
 public class PathFinding extends Controller {
 
-	private static final float SEARCHING_DISTANCE = 4400000;
 	private WaypointManager waypointManager;
 	private String waypointName;
 	private List<Waypoint> waypointsToReach;
@@ -59,8 +58,6 @@ public class PathFinding extends Controller {
 	}
 
 	public Vector findNearestWaypoint() throws RPCException, IOException, InterruptedException {
-		double currentDistance = SEARCHING_DISTANCE;
-		waypointsToReach.forEach(System.out::println);
 		waypointsToReach = waypointsToReach.stream().sorted((w1, w2) -> {
 			double w1Distance = 0;
 			double w2Distance = 0;
@@ -198,18 +195,6 @@ public class PathFinding extends Controller {
 				getSpaceCenter().raycastDistance(currentPoint.toTriplet(), targetDirection.toTriplet(), reference),
 				searchDistance
 		               );
-	}
-
-	private Vector transformDirection(Vector vector, boolean toSurf) throws RPCException {
-		if (toSurf) {
-			return new Vector(
-					getSpaceCenter().transformDirection(vector.toTriplet(), getNaveAtual().getReferenceFrame(),
-					                                    surfaceReferenceFrame
-					                                   ));
-		}
-		return new Vector(getSpaceCenter().transformDirection(vector.toTriplet(), surfaceReferenceFrame,
-		                                                      getNaveAtual().getReferenceFrame()
-		                                                     ));
 	}
 
 	private Vector getPosOnSurface(Vector vector) throws RPCException {

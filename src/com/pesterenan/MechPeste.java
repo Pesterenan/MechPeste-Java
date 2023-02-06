@@ -27,8 +27,6 @@ public class MechPeste {
 	private static MechPeste mechPeste;
 	private static SpaceCenter spaceCenter;
 	private static Connection connection;
-	private static long checkVesselTimer = 0;
-	private static long checkStatusTimer = 0;
 	private static int currentVesselId = -1;
 	private static ActiveVessel currentVessel = null;
 
@@ -162,8 +160,6 @@ public class MechPeste {
 			connection = Connection.newInstance("MechPeste - Pesterenan");
 			krpc = KRPC.newInstance(connection);
 			spaceCenter = SpaceCenter.newInstance(getConnection());
-			checkVesselTimer = System.currentTimeMillis();
-			checkStatusTimer = System.currentTimeMillis();
 			setStatus(Bundle.getString("status_connected"));
 			isBtnConnectVisible(false);
 		} catch (IOException e) {

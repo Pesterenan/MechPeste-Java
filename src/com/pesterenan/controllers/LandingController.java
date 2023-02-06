@@ -11,7 +11,7 @@ import krpc.client.services.SpaceCenter.VesselSituation;
 
 import java.util.Map;
 
-public class LandingController extends Controller implements Runnable {
+public class LandingController extends Controller {
 
 	public static final double MAX_VELOCITY = 5;
 	private static final double velP = 0.025;
@@ -25,7 +25,6 @@ public class LandingController extends Controller implements Runnable {
 	private boolean hoveringMode = false;
 	private MODE currentMode;
 	private double altitudeErrorPercentage;
-	private long timer = 0;
 
 	public LandingController(Map<String, String> commands) {
 		super();

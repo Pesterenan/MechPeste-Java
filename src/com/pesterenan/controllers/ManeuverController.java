@@ -20,7 +20,7 @@ import java.util.Map;
 import static com.pesterenan.MechPeste.getConnection;
 import static com.pesterenan.MechPeste.getSpaceCenter;
 
-public class ManeuverController extends Controller implements Runnable {
+public class ManeuverController extends Controller {
 
 	public final static float CONST_GRAV = 9.81f;
 	private final ControlePID ctrlRCS = new ControlePID();
@@ -179,16 +179,6 @@ public class ManeuverController extends Controller implements Runnable {
 		}
 	}
 
-	private double limitPIDOutput(double absDeltaInc) {
-		if (absDeltaInc < 0.05) {
-			return 0.1;
-		}
-		if (absDeltaInc < 0.5) {
-			return 5;
-		}
-		return 10;
-	}
-
 	private double compareOrbitParameter(Orbit maneuverOrbit, Orbit targetOrbit, Compare parameter) {
 		double maneuverParameter;
 		double targetParameter;
@@ -319,8 +309,6 @@ public class ManeuverController extends Controller implements Runnable {
 			Stream<Triplet<Double, Double, Double>> queimaRestante =
 					getConnection().addStream(noDeManobra, "remainingBurnVector", noDeManobra.getReferenceFrame());
 			setCurrentStatus(Bundle.getString("status_maneuver_executing"));
-			double limiteParaDesacelerar =
-					noDeManobra.getDeltaV() > 1000 ? 0.025 : noDeManobra.getDeltaV() > 250 ? 0.10 : 0.25;
 			double remainingBurnTime = duracaoDaQueima + 0.5;
 			while (noDeManobra != null) {
 				if (Thread.interrupted()) {
