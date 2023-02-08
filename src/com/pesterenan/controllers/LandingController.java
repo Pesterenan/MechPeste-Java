@@ -79,7 +79,8 @@ public class LandingController extends Controller {
 	}
 
 	private void changeControlMode() throws RPCException, StreamException, InterruptedException {
-		adjustPIDbyTWR();
+		float maxTWR = 5.0f;
+		adjustPIDbyTWR(maxTWR);
 		double velPID, altPID;
 		// Change vessel behavior depending on which mode is active
 		switch (currentMode) {
@@ -100,7 +101,7 @@ public class LandingController extends Controller {
 				velocityCtrl.adjustOutput(0, 1);
 				double currentVelocity = calculateCurrentVelocityMagnitude();
 				double zeroVelocity = calculateZeroVelocityMagnitude();
-				double landingDistanceThreshold = Math.max(100, getMaxAcel() * 3);
+				double landingDistanceThreshold = Math.max(100, getMaxAcel(maxTWR) * 3);
 				double threshold = Utilities.clamp(
 						((currentVelocity + zeroVelocity) - landingDistanceThreshold) / landingDistanceThreshold, 0,
 						1);
@@ -193,15 +194,18 @@ public class LandingController extends Controller {
 				Thread.sleep(100);
 			}
 		} catch (RPCException | StreamException | InterruptedException e) {
+			setCurrentStatus(Bundle.getString("status_ready"));
 		}
 	}
 
 	/**
 	 * Adjust altitude and velocity PID gains according to current ship TWR:
 	 */
-	private void adjustPIDbyTWR() throws RPCException, StreamException {
-		velocityCtrl.adjustPID(getTWR() * velP, velI, velD);
-		altitudeCtrl.adjustPID(getTWR() * velP, velI, velD);
+	private void adjustPIDbyTWR(float maxTWR) throws RPCException, StreamException {
+		double currentTWR = Math.min(getTWR(), maxTWR);
+		System.out.println(currentTWR);
+		velocityCtrl.adjustPID(currentTWR * velP, velI, velD);
+		altitudeCtrl.adjustPID(currentTWR * velP, velI, velD);
 	}
 
 	private double calculateCurrentVelocityMagnitude() throws RPCException, StreamException {
@@ -227,7 +231,7 @@ public class LandingController extends Controller {
 
 	private double calculateZeroVelocityMagnitude() throws RPCException, StreamException {
 		double zeroVelocityDistance = calculateEllipticTrajectory(velHorizontal.get(), velVertical.get());
-		double zeroVelocityBurnTime = zeroVelocityDistance / getMaxAcel();
+		double zeroVelocityBurnTime = zeroVelocityDistance / getMaxAcel(5.0f);
 		return zeroVelocityDistance * zeroVelocityBurnTime;
 	}
 

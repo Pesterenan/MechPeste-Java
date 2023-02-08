@@ -102,7 +102,7 @@ public class ActiveVessel {
 	}
 
 	public void throttle(float acel) throws RPCException {
-		getNaveAtual().getControl().setThrottle(acel);
+		getNaveAtual().getControl().setThrottle(Math.min(acel, 1.0f));
 	}
 
 	public void throttle(double acel) throws RPCException {
@@ -117,7 +117,7 @@ public class ActiveVessel {
 	public void liftoff() {
 		try {
 			getNaveAtual().getControl().setSAS(true);
-			throttle(1f);
+			throttleUp(getMaxThrottleForTWR(2.0), 1);
 			if (getNaveAtual().getSituation().equals(VesselSituation.PRE_LAUNCH)) {
 				for (double count = 5.0; count >= 0; count -= 0.1) {
 					if (Thread.interrupted()) {
@@ -130,7 +130,7 @@ public class ActiveVessel {
 				getNaveAtual().getControl().activateNextStage();
 			}
 			setCurrentStatus(Bundle.getString("status_liftoff"));
-		} catch (RPCException | InterruptedException ignored) {
+		} catch (RPCException | InterruptedException | StreamException ignored) {
 			setCurrentStatus(Bundle.getString("status_liftoff_abort"));
 		}
 	}
@@ -155,11 +155,15 @@ public class ActiveVessel {
 	}
 
 	public double getTWR() throws RPCException, StreamException {
-		return getNaveAtual().getAvailableThrust() / ((massaTotal.get() * gravityAcel));
+		return getNaveAtual().getAvailableThrust() / (massaTotal.get() * gravityAcel);
 	}
 
-	public double getMaxAcel() throws RPCException, StreamException {
-		return getTWR() * gravityAcel - gravityAcel;
+	public double getMaxThrottleForTWR(double targetTWR) throws RPCException, StreamException {
+		return targetTWR / getTWR();
+	}
+
+	public double getMaxAcel(float maxTWR) throws RPCException, StreamException {
+		return Math.min(maxTWR, getTWR()) * gravityAcel - gravityAcel;
 	}
 
 	public void startModule(Map<String, String> commands) {

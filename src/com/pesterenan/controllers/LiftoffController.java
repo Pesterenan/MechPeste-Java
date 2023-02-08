@@ -58,7 +58,6 @@ public class LiftoffController extends Controller {
 		}
 	}
 
-
 	private void gravityCurve() throws RPCException, StreamException, InterruptedException {
 		ap.setReferenceFrame(surfaceReferenceFrame);
 		ap.targetPitchAndHeading(currentPitch, getHeading());
@@ -75,11 +74,12 @@ public class LiftoffController extends Controller {
 				break;
 			}
 			float startCurveAlt = 100;
-			double altitudeProgress =
-					Utilities.remap(startCurveAlt, getFinalApoapsis(), 1, 0.01, altitude.get(), false);
+			double altitudeProgress = Utilities.remap(startCurveAlt, getFinalApoapsis(), 1, 0.01, altitude.get(),
+					false);
 			currentPitch = (float) (calculateCurrentPitch(altitudeProgress));
 			ap.setTargetPitch(currentPitch);
-			throttle(thrControl.calcPID(apoastro.get() / getFinalApoapsis() * 1000, 1000));
+			throttle(Math.min(thrControl.calcPID(apoastro.get() / getFinalApoapsis() * 1000, 1000),
+					getMaxThrottleForTWR(3.0)));
 			if (willDecoupleStages && isCurrentStageWithoutFuel()) {
 				decoupleStage();
 			}
