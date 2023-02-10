@@ -5,8 +5,6 @@ import com.pesterenan.resources.Bundle;
 import com.pesterenan.utils.Modulos;
 
 import javax.swing.*;
-import javax.swing.GroupLayout.Alignment;
-import javax.swing.LayoutStyle.ComponentPlacement;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -15,7 +13,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.pesterenan.views.MainGui.BTN_DIMENSION;
-import static com.pesterenan.views.MainGui.dmsPanels;
+import static com.pesterenan.views.MainGui.MARGIN_BORDER_10_PX_LR;
+import static com.pesterenan.views.MainGui.PNL_DIMENSION;
 
 public class LiftoffJPanel extends JPanel implements ActionListener {
 
@@ -39,60 +38,32 @@ public class LiftoffJPanel extends JPanel implements ActionListener {
 		lblFinalApoapsis = new JLabel(Bundle.getString("pnl_lift_lbl_final_apoapsis"));
 		lblHeading = new JLabel(Bundle.getString("pnl_lift_lbl_direction"));
 		lblRoll = new JLabel(Bundle.getString("pnl_lift_lbl_roll"));
+		lblRoll.setToolTipText(Bundle.getString("pnl_lift_lbl_roll_tooltip"));
 		lblCurveModel = new JLabel(Bundle.getString("pnl_lift_lbl_gravity_curve"));
 
 		// Textfields:
 		txfFinalApoapsis = new JTextField("80000");
+		txfFinalApoapsis.setToolTipText(Bundle.getString("pnl_lift_txf_final_apo_tooltip"));
 		txfHeading = new JTextField("90");
 
 		// Buttons:
 		btnLiftoff = new JButton(Bundle.getString("pnl_lift_btn_liftoff"));
 		btnBack = new JButton(Bundle.getString("pnl_lift_btn_back"));
 
+		// Checkboxes:
+		chkOpenPanels = new JCheckBox(Bundle.getString("pnl_lift_chk_open_panels"));
+		chkOpenPanels.setToolTipText(Bundle.getString("pnl_lift_chk_open_panels_tooltip"));
+		chkDecoupleStages = new JCheckBox(Bundle.getString("pnl_lift_chk_staging"));
+		chkDecoupleStages.setToolTipText(Bundle.getString("pnl_lift_chk_staging_tooltip"));
+
 		// Misc:
 		cbGravityCurveModel = new JComboBox<>();
-
-		lblFinalApoapsis.setLabelFor(txfFinalApoapsis);
-		txfFinalApoapsis.setMaximumSize(BTN_DIMENSION);
-		txfFinalApoapsis.setPreferredSize(BTN_DIMENSION);
-		txfFinalApoapsis.setHorizontalAlignment(JTextField.RIGHT);
-		txfFinalApoapsis.setText("80000");
-		txfFinalApoapsis.setToolTipText(Bundle.getString("pnl_lift_txf_final_apo_tooltip"));
-
-		btnLiftoff.addActionListener(this);
-		btnLiftoff.setSize(BTN_DIMENSION);
-		btnLiftoff.setPreferredSize(btnLiftoff.getSize());
-		btnLiftoff.setMinimumSize(btnLiftoff.getSize());
-		btnLiftoff.setMaximumSize(btnLiftoff.getSize());
-		btnBack.addActionListener(this);
-		btnBack.setSize(BTN_DIMENSION);
-		btnBack.setPreferredSize(btnBack.getSize());
-		btnBack.setMinimumSize(btnBack.getSize());
-		btnBack.setMaximumSize(btnBack.getSize());
-
 		cbGravityCurveModel.setToolTipText(Bundle.getString("pnl_lift_cb_gravity_curve_tooltip"));
-
 		cbGravityCurveModel.setModel(new DefaultComboBoxModel<>(
 				new String[] { Modulos.SINUSOIDAL.get(), Modulos.QUADRATICA.get(), Modulos.CUBICA.get(),
 						Modulos.CIRCULAR.get(), Modulos.EXPONENCIAL.get() }));
-		cbGravityCurveModel.setSelectedIndex(3);
-
-		lblRoll.setToolTipText(Bundle.getString("pnl_lift_lbl_roll_tooltip"));
 
 		sldRoll = new JSlider();
-		sldRoll.setPaintLabels(true);
-		sldRoll.setMajorTickSpacing(90);
-		sldRoll.setMaximum(270);
-		sldRoll.setSnapToTicks(true);
-		sldRoll.setValue(90);
-
-		chkOpenPanels = new JCheckBox(Bundle.getString("pnl_lift_chk_open_panels"));
-		chkOpenPanels.setToolTipText(Bundle.getString("pnl_lift_chk_open_panels_tooltip"));
-
-		chkDecoupleStages = new JCheckBox(Bundle.getString("pnl_lift_chk_staging"));
-		chkDecoupleStages.setSelected(true);
-		chkDecoupleStages.setToolTipText(Bundle.getString("pnl_lift_chk_staging_tooltip"));
-
 	}
 
 	private void setupComponents() {
@@ -101,34 +72,71 @@ public class LiftoffJPanel extends JPanel implements ActionListener {
 				TitledBorder.TOP, null, null));
 
 		// Setting-up components:
+		lblFinalApoapsis.setLabelFor(txfFinalApoapsis);
+		txfFinalApoapsis.setMaximumSize(BTN_DIMENSION);
+		txfFinalApoapsis.setPreferredSize(BTN_DIMENSION);
+		txfFinalApoapsis.setHorizontalAlignment(JTextField.RIGHT);
 
+		lblHeading.setLabelFor(txfHeading);
+		txfHeading.setMaximumSize(BTN_DIMENSION);
+		txfHeading.setPreferredSize(BTN_DIMENSION);
+		txfHeading.setHorizontalAlignment(JTextField.RIGHT);
+
+		cbGravityCurveModel.setSelectedIndex(3);
+		cbGravityCurveModel.setPreferredSize(BTN_DIMENSION);
+		cbGravityCurveModel.setMaximumSize(BTN_DIMENSION);
+
+		sldRoll.setPaintLabels(true);
+		sldRoll.setMajorTickSpacing(90);
+		sldRoll.setMaximum(270);
+		sldRoll.setSnapToTicks(true);
+		sldRoll.setValue(90);
+		sldRoll.setPreferredSize(new Dimension(110, 40));
+		sldRoll.setMaximumSize(new Dimension(110, 40));
+
+		chkDecoupleStages.setSelected(true);
+
+		btnLiftoff.addActionListener(this);
+		btnLiftoff.setPreferredSize(BTN_DIMENSION);
+		btnLiftoff.setMaximumSize(BTN_DIMENSION);
+		btnBack.addActionListener(this);
+		btnBack.setPreferredSize(BTN_DIMENSION);
+		btnBack.setMaximumSize(BTN_DIMENSION);
 	}
 
 	private void layoutComponents() {
 		// Main Panel layout:
-		setPreferredSize(dmsPanels);
-		setSize(dmsPanels);
+		setPreferredSize(PNL_DIMENSION);
+		setSize(PNL_DIMENSION);
 		setLayout(new BorderLayout());
 
 		// Laying out components:
 		JPanel pnlFinalApoapsis = new JPanel();
 		pnlFinalApoapsis.setLayout(new BoxLayout(pnlFinalApoapsis, BoxLayout.X_AXIS));
+		pnlFinalApoapsis.setBorder(MARGIN_BORDER_10_PX_LR);
 		pnlFinalApoapsis.add(lblFinalApoapsis);
+		pnlFinalApoapsis.add(Box.createHorizontalGlue());
 		pnlFinalApoapsis.add(txfFinalApoapsis);
 
 		JPanel pnlHeading = new JPanel();
 		pnlHeading.setLayout(new BoxLayout(pnlHeading, BoxLayout.X_AXIS));
+		pnlHeading.setBorder(MARGIN_BORDER_10_PX_LR);
 		pnlHeading.add(lblHeading);
+		pnlHeading.add(Box.createHorizontalGlue());
 		pnlHeading.add(txfHeading);
 
 		JPanel pnlRoll = new JPanel();
 		pnlRoll.setLayout(new BoxLayout(pnlRoll, BoxLayout.X_AXIS));
+		pnlRoll.setBorder(MARGIN_BORDER_10_PX_LR);
 		pnlRoll.add(lblRoll);
+		pnlRoll.add(Box.createHorizontalGlue());
 		pnlRoll.add(sldRoll);
 
 		JPanel pnlCurveModel = new JPanel();
 		pnlCurveModel.setLayout(new BoxLayout(pnlCurveModel, BoxLayout.X_AXIS));
+		pnlCurveModel.setBorder(MARGIN_BORDER_10_PX_LR);
 		pnlCurveModel.add(lblCurveModel);
+		pnlCurveModel.add(Box.createHorizontalGlue());
 		pnlCurveModel.add(cbGravityCurveModel);
 
 		JPanel pnlButtons = new JPanel();
@@ -137,12 +145,25 @@ public class LiftoffJPanel extends JPanel implements ActionListener {
 		pnlButtons.add(Box.createHorizontalGlue());
 		pnlButtons.add(btnBack);
 
+		JPanel pnlSetup = new JPanel();
+		pnlSetup.setLayout(new BoxLayout(pnlSetup, BoxLayout.Y_AXIS));
+		pnlSetup.add(pnlFinalApoapsis);
+		pnlSetup.add(pnlHeading);
+		pnlSetup.add(pnlRoll);
+		pnlSetup.add(pnlCurveModel);
+
+		JPanel pnlCheckBoxes = new JPanel();
+		pnlCheckBoxes.setLayout(new BoxLayout(pnlCheckBoxes, BoxLayout.Y_AXIS));
+		pnlCheckBoxes.setBorder(new TitledBorder(Bundle.getString("pnl_lift_chk_options")));
+		pnlCheckBoxes.add(chkDecoupleStages);
+		pnlCheckBoxes.add(chkOpenPanels);
+
 		JPanel pnlMain = new JPanel();
-		pnlMain.setLayout(new BoxLayout(pnlMain, BoxLayout.Y_AXIS));
-		pnlMain.add(pnlFinalApoapsis);
-		pnlMain.add(pnlHeading);
-		pnlMain.add(pnlRoll);
-		pnlMain.add(pnlCurveModel);
+		pnlMain.setLayout(new BoxLayout(pnlMain, BoxLayout.X_AXIS));
+		pnlMain.add(pnlSetup);
+		pnlSetup.setAlignmentY(Component.TOP_ALIGNMENT);
+		pnlMain.add(pnlCheckBoxes);
+		pnlCheckBoxes.setAlignmentY(Component.TOP_ALIGNMENT);
 
 		add(pnlMain, BorderLayout.CENTER);
 		add(pnlButtons, BorderLayout.SOUTH);

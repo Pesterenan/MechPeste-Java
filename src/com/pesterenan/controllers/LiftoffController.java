@@ -101,6 +101,9 @@ public class LiftoffController extends Controller {
 			Thread.sleep(100);
 		}
 		throttle(0.0f);
+		if (willDecoupleStages) {
+			jettisonFairings();
+		}
 		if (willDeployPanelsAndRadiators) {
 			deployPanelsAndRadiators();
 		}
@@ -115,7 +118,7 @@ public class LiftoffController extends Controller {
 		MechPeste.newInstance().startModule(commands);
 	}
 
-	private void deployPanelsAndRadiators() throws RPCException, InterruptedException {
+	private void jettisonFairings() throws RPCException, InterruptedException {
 		List<Fairing> fairings = getNaveAtual().getParts().getFairings();
 		if (fairings.size() > 0) {
 			setCurrentStatus(Bundle.getString("status_jettisoning_shields"));
@@ -129,6 +132,9 @@ public class LiftoffController extends Controller {
 				}
 			}
 		}
+	}
+
+	private void deployPanelsAndRadiators() throws RPCException, InterruptedException {
 		getNaveAtual().getControl().setSolarPanels(true);
 		getNaveAtual().getControl().setRadiators(true);
 	}

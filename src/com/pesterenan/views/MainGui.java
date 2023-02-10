@@ -4,6 +4,8 @@ import com.pesterenan.resources.Bundle;
 import com.pesterenan.utils.Modulos;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -12,12 +14,13 @@ import java.beans.PropertyChangeListener;
 
 public class MainGui extends JFrame implements ActionListener, PropertyChangeListener {
 	private static final long serialVersionUID = 1L;
-	public static final Dimension dmsPanels = new Dimension(464, 216);
+	private final Dimension APP_DIMENSION = new Dimension(480, 300);
+	public static final Dimension PNL_DIMENSION = new Dimension(464, 216);
 	public static final Dimension BTN_DIMENSION = new Dimension(110, 25);
+	public static final EmptyBorder MARGIN_BORDER_10_PX_LR = new EmptyBorder(0,10,0,10);
 	private static MainGui mainGui = null;
 	private static StatusJPanel pnlStatus;
 	private static FunctionsAndTelemetryJPanel pnlFunctionsAndTelemetry;
-	private final Dimension dmsMainGui = new Dimension(480, 300);
 	private final JPanel ctpMainGui = new JPanel();
 	private final static JPanel cardJPanels = new JPanel();
 	private JMenuBar menuBar;
@@ -56,7 +59,7 @@ public class MainGui extends JFrame implements ActionListener, PropertyChangeLis
 		setVisible(true);
 		setResizable(false);
 		setLocation(100, 100);
-		setSize(dmsMainGui);
+		setSize(APP_DIMENSION);
 
 		menuBar = new JMenuBar();
 		setJMenuBar(menuBar);
@@ -97,7 +100,7 @@ public class MainGui extends JFrame implements ActionListener, PropertyChangeLis
 		pnlStatus = new StatusJPanel();
 
 		cardJPanels.setLayout(cardLayout);
-		cardJPanels.setSize(dmsPanels);
+		cardJPanels.setSize(PNL_DIMENSION);
 		cardJPanels.add(pnlFunctionsAndTelemetry, Modulos.MODULO_TELEMETRIA.get());
 		cardJPanels.add(pnlLiftoff, Modulos.MODULO_DECOLAGEM.get());
 		cardJPanels.add(pnlLanding, Modulos.MODULO_POUSO.get());
@@ -182,5 +185,10 @@ public class MainGui extends JFrame implements ActionListener, PropertyChangeLis
 
 	protected void handleMntmAboutActionPerformed(ActionEvent e) {
 		new AboutJFrame();
+	}
+
+	public static Component createMarginComponent(int width, int height) {
+		Component marginComp = Box.createRigidArea(new Dimension(width,height));
+		return marginComp;
 	}
 }

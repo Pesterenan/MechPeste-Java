@@ -36,8 +36,8 @@ public class RoverJPanel extends JPanel implements ActionListener {
 	}
 
 	private void initComponents() {
-		setPreferredSize(MainGui.dmsPanels);
-		setSize(MainGui.dmsPanels);
+		setPreferredSize(MainGui.PNL_DIMENSION);
+		setSize(MainGui.PNL_DIMENSION);
 		setBorder(new TitledBorder(null, Bundle.getString("pnl_rover_border"), TitledBorder.LEADING,
 		                           // $NON-NLS-1$
 		                           TitledBorder.TOP, null, null

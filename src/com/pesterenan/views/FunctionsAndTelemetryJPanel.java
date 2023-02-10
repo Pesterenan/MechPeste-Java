@@ -13,7 +13,7 @@ import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.util.Map;
 
-import static com.pesterenan.views.MainGui.dmsPanels;
+import static com.pesterenan.views.MainGui.PNL_DIMENSION;
 
 public class FunctionsAndTelemetryJPanel extends JPanel {
 
@@ -37,7 +37,7 @@ public class FunctionsAndTelemetryJPanel extends JPanel {
 	}
 
 	private void initComponents() {
-		setPreferredSize(dmsPanels);
+		setPreferredSize(PNL_DIMENSION);
 		setBorder(new TitledBorder(null, Bundle.getString("pnl_func_title"), TitledBorder.LEADING, TitledBorder.TOP,
 				null, null));
 		JPanel pnlTelemetry = new JPanel();

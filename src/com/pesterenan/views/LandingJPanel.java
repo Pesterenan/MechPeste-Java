@@ -5,8 +5,6 @@ import com.pesterenan.resources.Bundle;
 import com.pesterenan.utils.Modulos;
 
 import javax.swing.*;
-import javax.swing.GroupLayout.Alignment;
-import javax.swing.LayoutStyle.ComponentPlacement;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.EtchedBorder;
@@ -18,6 +16,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.pesterenan.views.MainGui.BTN_DIMENSION;
+import static com.pesterenan.views.MainGui.MARGIN_BORDER_10_PX_LR;
 
 public class LandingJPanel extends JPanel implements ActionListener {
 	private static final long serialVersionUID = 1L;
@@ -35,8 +34,8 @@ public class LandingJPanel extends JPanel implements ActionListener {
 	}
 
 	private void initComponents() {
-		setPreferredSize(MainGui.dmsPanels);
-		setSize(MainGui.dmsPanels);
+		setPreferredSize(MainGui.PNL_DIMENSION);
+		setSize(MainGui.PNL_DIMENSION);
 		setBorder(new TitledBorder(null, Bundle.getString("pnl_land_border"), TitledBorder.LEADING,
 				TitledBorder.TOP, null, null));
 
@@ -73,8 +72,7 @@ public class LandingJPanel extends JPanel implements ActionListener {
 				new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)),
 				Bundle.getString("pnl_land_pnl_hover_border"), TitledBorder.LEADING, TitledBorder.TOP, null,
 				new Color(0, 0, 0));
-		Border margin = new EmptyBorder(0, 10, 0, 10);
-		Border combined = BorderFactory.createCompoundBorder(titledEtched, margin);
+		Border combined = BorderFactory.createCompoundBorder(titledEtched, MARGIN_BORDER_10_PX_LR);
 		pnlHoverControls.setBorder(combined);
 		lblHoverAltitude = new JLabel(Bundle.getString("pnl_land_lbl_alt"));
 		pnlHoverControls.add(lblHoverAltitude);

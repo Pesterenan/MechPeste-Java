@@ -39,8 +39,8 @@ public class ManeuverJPanel extends JPanel implements ActionListener {
 	}
 
 	private void initComponents() {
-		setPreferredSize(MainGui.dmsPanels);
-		setSize(MainGui.dmsPanels);
+		setPreferredSize(MainGui.PNL_DIMENSION);
+		setSize(MainGui.PNL_DIMENSION);
 		setBorder(new TitledBorder(null, Bundle.getString("pnl_mnv_border"), TitledBorder.LEADING, TitledBorder.TOP,
 		                           //$NON-NLS-1$
 		                           null, null
