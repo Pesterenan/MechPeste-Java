@@ -31,7 +31,8 @@ public enum Modulos {
 	MARCADOR_MAPA("Marcador no mapa"),
 	NOME_MARCADOR("Nome do marcador"),
 	VELOCIDADE_MAX("Velocidade Máxima"),
-	POUSAR("Pousar nave");
+	POUSAR("Pousar nave"), 
+	MAX_TWR("Max_TWR");
 
 	final String t;
 

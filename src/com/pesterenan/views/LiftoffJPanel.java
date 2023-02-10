@@ -15,43 +15,49 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.pesterenan.views.MainGui.BTN_DIMENSION;
+import static com.pesterenan.views.MainGui.dmsPanels;
 
 public class LiftoffJPanel extends JPanel implements ActionListener {
 
 	private static final long serialVersionUID = 1L;
-	private final JLabel lblFinalApoapsis = new JLabel(Bundle.getString("pnl_lift_lbl_final_apoapsis"));
-	// $NON-NLS-1$
-	private final JLabel lblHeading = new JLabel(Bundle.getString("pnl_lift_lbl_direction"));
-	// $NON-NLS-1$
-	private final JLabel lblRoll = new JLabel(Bundle.getString("pnl_lift_lbl_roll")); //$NON-NLS-1$
-	private final JLabel lblCurveModel = new JLabel(Bundle.getString("pnl_lift_lbl_gravity_curve"));
-	// $NON-NLS-1$
-	private final JTextField txfFinalApoapsis = new JTextField("80000"); //$NON-NLS-1$
-	private final JTextField txfHeading = new JTextField("90"); //$NON-NLS-1$
-	private final JButton btnLiftoff = new JButton(Bundle.getString("pnl_lift_btn_liftoff"));
-	// $NON-NLS-1$
-	private final JButton btnBack = new JButton(Bundle.getString("pnl_lift_btn_back")); //$NON-NLS-1$
-	private final JComboBox<String> cbGravityCurveModel = new JComboBox<>();
+
+	private JLabel lblFinalApoapsis, lblHeading, lblRoll, lblCurveModel;
+	private JTextField txfFinalApoapsis, txfHeading;
+	private JButton btnLiftoff, btnBack;
+	private JComboBox<String> cbGravityCurveModel;
 	private JSlider sldRoll;
-	private JCheckBox chkOpenPanels;
-	private JCheckBox chkDecoupleStages;
+	private JCheckBox chkOpenPanels, chkDecoupleStages;
 
 	public LiftoffJPanel() {
 		initComponents();
+		setupComponents();
+		layoutComponents();
 	}
 
 	private void initComponents() {
-		setPreferredSize(new Dimension(464, 216));
-		setSize(new Dimension(464, 216));
-		setBorder(new TitledBorder(null, Bundle.getString("pnl_lift_pnl_title"), TitledBorder.LEADING,
-		                           TitledBorder.TOP,
-		                           // $NON-NLS-1$
-		                           null, null
-		));
+		// Labels:
+		lblFinalApoapsis = new JLabel(Bundle.getString("pnl_lift_lbl_final_apoapsis"));
+		lblHeading = new JLabel(Bundle.getString("pnl_lift_lbl_direction"));
+		lblRoll = new JLabel(Bundle.getString("pnl_lift_lbl_roll"));
+		lblCurveModel = new JLabel(Bundle.getString("pnl_lift_lbl_gravity_curve"));
+
+		// Textfields:
+		txfFinalApoapsis = new JTextField("80000");
+		txfHeading = new JTextField("90");
+
+		// Buttons:
+		btnLiftoff = new JButton(Bundle.getString("pnl_lift_btn_liftoff"));
+		btnBack = new JButton(Bundle.getString("pnl_lift_btn_back"));
+
+		// Misc:
+		cbGravityCurveModel = new JComboBox<>();
+
 		lblFinalApoapsis.setLabelFor(txfFinalApoapsis);
-		txfFinalApoapsis.setText("80000"); //$NON-NLS-1$
-		txfFinalApoapsis.setToolTipText(Bundle.getString("pnl_lift_txf_final_apo_tooltip")); // $NON
-		// -NLS-1$
+		txfFinalApoapsis.setMaximumSize(BTN_DIMENSION);
+		txfFinalApoapsis.setPreferredSize(BTN_DIMENSION);
+		txfFinalApoapsis.setHorizontalAlignment(JTextField.RIGHT);
+		txfFinalApoapsis.setText("80000");
+		txfFinalApoapsis.setToolTipText(Bundle.getString("pnl_lift_txf_final_apo_tooltip"));
 
 		btnLiftoff.addActionListener(this);
 		btnLiftoff.setSize(BTN_DIMENSION);
@@ -65,13 +71,13 @@ public class LiftoffJPanel extends JPanel implements ActionListener {
 		btnBack.setMaximumSize(btnBack.getSize());
 
 		cbGravityCurveModel.setToolTipText(Bundle.getString("pnl_lift_cb_gravity_curve_tooltip"));
-		// $NON-NLS-1$
+
 		cbGravityCurveModel.setModel(new DefaultComboBoxModel<>(
-				new String[]{ Modulos.SINUSOIDAL.get(), Modulos.QUADRATICA.get(), Modulos.CUBICA.get(),
+				new String[] { Modulos.SINUSOIDAL.get(), Modulos.QUADRATICA.get(), Modulos.CUBICA.get(),
 						Modulos.CIRCULAR.get(), Modulos.EXPONENCIAL.get() }));
 		cbGravityCurveModel.setSelectedIndex(3);
 
-		lblRoll.setToolTipText(Bundle.getString("pnl_lift_lbl_roll_tooltip")); //$NON-NLS-1$
+		lblRoll.setToolTipText(Bundle.getString("pnl_lift_lbl_roll_tooltip"));
 
 		sldRoll = new JSlider();
 		sldRoll.setPaintLabels(true);
@@ -80,186 +86,66 @@ public class LiftoffJPanel extends JPanel implements ActionListener {
 		sldRoll.setSnapToTicks(true);
 		sldRoll.setValue(90);
 
-		chkOpenPanels = new JCheckBox(Bundle.getString("pnl_lift_chk_open_panels")); //$NON-NLS-1$
-		chkOpenPanels.setToolTipText(Bundle.getString("pnl_lift_chk_open_panels_tooltip")); //$NON-NLS-1$
+		chkOpenPanels = new JCheckBox(Bundle.getString("pnl_lift_chk_open_panels"));
+		chkOpenPanels.setToolTipText(Bundle.getString("pnl_lift_chk_open_panels_tooltip"));
 
-		chkDecoupleStages = new JCheckBox(Bundle.getString("pnl_lift_chk_staging")); //$NON-NLS-1$
+		chkDecoupleStages = new JCheckBox(Bundle.getString("pnl_lift_chk_staging"));
 		chkDecoupleStages.setSelected(true);
-		chkDecoupleStages.setToolTipText(Bundle.getString("pnl_lift_chk_staging_tooltip")); //$NON-NLS-1$
+		chkDecoupleStages.setToolTipText(Bundle.getString("pnl_lift_chk_staging_tooltip"));
 
-		GroupLayout groupLayout = new GroupLayout(this);
-		groupLayout.setHorizontalGroup(groupLayout.createParallelGroup(Alignment.TRAILING)
-		                                          .addGroup(groupLayout.createSequentialGroup()
-		                                                               .addGroup(groupLayout.createParallelGroup(
-				                                                                                    Alignment.LEADING)
-		                                                                                    .addGroup(
-				                                                                                    groupLayout.createSequentialGroup()
-				                                                                                               .addGroup(
-						                                                                                               groupLayout.createParallelGroup(
-								                                                                                                          Alignment.LEADING)
-						                                                                                                          .addGroup(
-								                                                                                                          groupLayout.createSequentialGroup()
-								                                                                                                                     .addGroup(
-										                                                                                                                     groupLayout.createParallelGroup(
-												                                                                                                                                Alignment.LEADING)
-										                                                                                                                                .addGroup(
-												                                                                                                                                groupLayout.createSequentialGroup()
-												                                                                                                                                           .addContainerGap()
-												                                                                                                                                           .addGroup(
-														                                                                                                                                           groupLayout.createParallelGroup(
-																                                                                                                                                                      Alignment.TRAILING,
-																                                                                                                                                                      false
-														                                                                                                                                                                          )
-														                                                                                                                                                      .addComponent(
-																                                                                                                                                                      lblHeading,
-																                                                                                                                                                      Alignment.LEADING
-														                                                                                                                                                                   )
-														                                                                                                                                                      .addComponent(
-																                                                                                                                                                      lblFinalApoapsis,
-																                                                                                                                                                      Alignment.LEADING,
-																                                                                                                                                                      GroupLayout.DEFAULT_SIZE,
-																                                                                                                                                                      GroupLayout.DEFAULT_SIZE,
-																                                                                                                                                                      Short.MAX_VALUE
-														                                                                                                                                                                   )))
-										                                                                                                                                .addComponent(
-												                                                                                                                                btnLiftoff,
-												                                                                                                                                GroupLayout.PREFERRED_SIZE,
-												                                                                                                                                GroupLayout.DEFAULT_SIZE,
-												                                                                                                                                GroupLayout.PREFERRED_SIZE
-										                                                                                                                                             ))
-								                                                                                                                     .addGap(72))
-						                                                                                                          .addGroup(
-								                                                                                                          groupLayout.createSequentialGroup()
-								                                                                                                                     .addContainerGap()
-								                                                                                                                     .addComponent(
-										                                                                                                                     lblRoll,
-										                                                                                                                     GroupLayout.DEFAULT_SIZE,
-										                                                                                                                     168,
-										                                                                                                                     Short.MAX_VALUE
-								                                                                                                                                  )
-								                                                                                                                     .addPreferredGap(
-										                                                                                                                     ComponentPlacement.RELATED)))
-				                                                                                               .addGroup(
-						                                                                                               groupLayout.createParallelGroup(
-								                                                                                                          Alignment.LEADING)
-						                                                                                                          .addGroup(
-								                                                                                                          groupLayout.createParallelGroup(
-										                                                                                                                     Alignment.LEADING,
-										                                                                                                                     false
-								                                                                                                                                         )
-								                                                                                                                     .addComponent(
-										                                                                                                                     txfHeading,
-										                                                                                                                     Alignment.TRAILING
-								                                                                                                                                  )
-								                                                                                                                     .addComponent(
-										                                                                                                                     txfFinalApoapsis,
-										                                                                                                                     Alignment.TRAILING,
-										                                                                                                                     GroupLayout.DEFAULT_SIZE,
-										                                                                                                                     100,
-										                                                                                                                     Short.MAX_VALUE
-								                                                                                                                                  ))
-						                                                                                                          .addComponent(
-								                                                                                                          btnBack,
-								                                                                                                          GroupLayout.PREFERRED_SIZE,
-								                                                                                                          GroupLayout.DEFAULT_SIZE,
-								                                                                                                          GroupLayout.PREFERRED_SIZE
-						                                                                                                                       )
-						                                                                                                          .addComponent(
-								                                                                                                          sldRoll,
-								                                                                                                          GroupLayout.PREFERRED_SIZE,
-								                                                                                                          100,
-								                                                                                                          GroupLayout.PREFERRED_SIZE
-						                                                                                                                       )))
-		                                                                                    .addGroup(
-				                                                                                    groupLayout.createSequentialGroup()
-				                                                                                               .addContainerGap()
-				                                                                                               .addComponent(
-						                                                                                               lblCurveModel)
-				                                                                                               .addGap(22)
-				                                                                                               .addComponent(
-						                                                                                               cbGravityCurveModel,
-						                                                                                               GroupLayout.PREFERRED_SIZE,
-						                                                                                               100,
-						                                                                                               GroupLayout.PREFERRED_SIZE
-				                                                                                                            )
-				                                                                                               .addGap(0,
-				                                                                                                       0,
-				                                                                                                       Short.MAX_VALUE
-				                                                                                                      ))
-		                                                                                    .addGroup(
-				                                                                                    groupLayout.createSequentialGroup()
-				                                                                                               .addContainerGap()
-				                                                                                               .addComponent(
-						                                                                                               chkOpenPanels))
-		                                                                                    .addGroup(
-				                                                                                    groupLayout.createSequentialGroup()
-				                                                                                               .addContainerGap()
-				                                                                                               .addComponent(
-						                                                                                               chkDecoupleStages,
-						                                                                                               GroupLayout.PREFERRED_SIZE,
-						                                                                                               247,
-						                                                                                               GroupLayout.PREFERRED_SIZE
-				                                                                                                            )))
-		                                                               .addContainerGap()));
-		groupLayout.setVerticalGroup(groupLayout.createParallelGroup(Alignment.LEADING)
-		                                        .addGroup(groupLayout.createSequentialGroup()
-		                                                             .addGroup(groupLayout.createParallelGroup(
-				                                                                                  Alignment.BASELINE)
-		                                                                                  .addComponent(
-				                                                                                  txfFinalApoapsis,
-				                                                                                  GroupLayout.PREFERRED_SIZE,
-				                                                                                  GroupLayout.DEFAULT_SIZE,
-				                                                                                  GroupLayout.PREFERRED_SIZE
-		                                                                                               )
-		                                                                                  .addComponent(
-				                                                                                  lblFinalApoapsis))
-		                                                             .addGap(3)
-		                                                             .addGroup(groupLayout.createParallelGroup(
-				                                                                                  Alignment.BASELINE)
-		                                                                                  .addComponent(lblHeading)
-		                                                                                  .addComponent(txfHeading,
-		                                                                                                GroupLayout.PREFERRED_SIZE,
-		                                                                                                GroupLayout.DEFAULT_SIZE,
-		                                                                                                GroupLayout.PREFERRED_SIZE
-		                                                                                               ))
-		                                                             .addPreferredGap(ComponentPlacement.RELATED)
-		                                                             .addGroup(groupLayout.createParallelGroup(
-				                                                                                  Alignment.LEADING)
-		                                                                                  .addComponent(lblRoll)
-		                                                                                  .addComponent(sldRoll,
-		                                                                                                GroupLayout.PREFERRED_SIZE,
-		                                                                                                30,
-		                                                                                                GroupLayout.PREFERRED_SIZE
-		                                                                                               ))
-		                                                             .addPreferredGap(ComponentPlacement.RELATED)
-		                                                             .addGroup(groupLayout.createParallelGroup(
-				                                                                                  Alignment.BASELINE)
-		                                                                                  .addComponent(
-				                                                                                  cbGravityCurveModel,
-				                                                                                  GroupLayout.PREFERRED_SIZE,
-				                                                                                  GroupLayout.DEFAULT_SIZE,
-				                                                                                  GroupLayout.PREFERRED_SIZE
-		                                                                                               )
-		                                                                                  .addComponent(lblCurveModel))
-		                                                             .addPreferredGap(ComponentPlacement.UNRELATED)
-		                                                             .addComponent(chkOpenPanels)
-		                                                             .addPreferredGap(ComponentPlacement.RELATED)
-		                                                             .addComponent(chkDecoupleStages)
-		                                                             .addGap(6)
-		                                                             .addGroup(groupLayout.createParallelGroup(
-				                                                                                  Alignment.BASELINE)
-		                                                                                  .addComponent(btnBack,
-		                                                                                                GroupLayout.PREFERRED_SIZE,
-		                                                                                                GroupLayout.DEFAULT_SIZE,
-		                                                                                                GroupLayout.PREFERRED_SIZE
-		                                                                                               )
-		                                                                                  .addComponent(btnLiftoff,
-		                                                                                                GroupLayout.PREFERRED_SIZE,
-		                                                                                                GroupLayout.DEFAULT_SIZE,
-		                                                                                                GroupLayout.PREFERRED_SIZE
-		                                                                                               ))
-		                                                             .addGap(37)));
-		setLayout(groupLayout);
+	}
+
+	private void setupComponents() {
+		// Main Panel setup:
+		setBorder(new TitledBorder(null, Bundle.getString("pnl_lift_pnl_title"), TitledBorder.LEADING,
+				TitledBorder.TOP, null, null));
+
+		// Setting-up components:
+
+	}
+
+	private void layoutComponents() {
+		// Main Panel layout:
+		setPreferredSize(dmsPanels);
+		setSize(dmsPanels);
+		setLayout(new BorderLayout());
+
+		// Laying out components:
+		JPanel pnlFinalApoapsis = new JPanel();
+		pnlFinalApoapsis.setLayout(new BoxLayout(pnlFinalApoapsis, BoxLayout.X_AXIS));
+		pnlFinalApoapsis.add(lblFinalApoapsis);
+		pnlFinalApoapsis.add(txfFinalApoapsis);
+
+		JPanel pnlHeading = new JPanel();
+		pnlHeading.setLayout(new BoxLayout(pnlHeading, BoxLayout.X_AXIS));
+		pnlHeading.add(lblHeading);
+		pnlHeading.add(txfHeading);
+
+		JPanel pnlRoll = new JPanel();
+		pnlRoll.setLayout(new BoxLayout(pnlRoll, BoxLayout.X_AXIS));
+		pnlRoll.add(lblRoll);
+		pnlRoll.add(sldRoll);
+
+		JPanel pnlCurveModel = new JPanel();
+		pnlCurveModel.setLayout(new BoxLayout(pnlCurveModel, BoxLayout.X_AXIS));
+		pnlCurveModel.add(lblCurveModel);
+		pnlCurveModel.add(cbGravityCurveModel);
+
+		JPanel pnlButtons = new JPanel();
+		pnlButtons.setLayout(new BoxLayout(pnlButtons, BoxLayout.X_AXIS));
+		pnlButtons.add(btnLiftoff);
+		pnlButtons.add(Box.createHorizontalGlue());
+		pnlButtons.add(btnBack);
+
+		JPanel pnlMain = new JPanel();
+		pnlMain.setLayout(new BoxLayout(pnlMain, BoxLayout.Y_AXIS));
+		pnlMain.add(pnlFinalApoapsis);
+		pnlMain.add(pnlHeading);
+		pnlMain.add(pnlRoll);
+		pnlMain.add(pnlCurveModel);
+
+		add(pnlMain, BorderLayout.CENTER);
+		add(pnlButtons, BorderLayout.SOUTH);
 	}
 
 	private boolean validateTextFields() {
@@ -267,7 +153,7 @@ public class LiftoffJPanel extends JPanel implements ActionListener {
 			Float.parseFloat(txfFinalApoapsis.getText());
 			Float.parseFloat(txfHeading.getText());
 		} catch (NumberFormatException e) {
-			StatusJPanel.setStatus(Bundle.getString("pnl_lift_stat_only_numbers")); //$NON-NLS-1$
+			StatusJPanel.setStatus(Bundle.getString("pnl_lift_stat_only_numbers"));
 			return false;
 		}
 		return true;

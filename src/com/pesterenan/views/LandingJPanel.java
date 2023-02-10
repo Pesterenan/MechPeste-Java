@@ -7,6 +7,8 @@ import com.pesterenan.utils.Modulos;
 import javax.swing.*;
 import javax.swing.GroupLayout.Alignment;
 import javax.swing.LayoutStyle.ComponentPlacement;
+import javax.swing.border.Border;
+import javax.swing.border.EmptyBorder;
 import javax.swing.border.EtchedBorder;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
@@ -19,14 +21,13 @@ import static com.pesterenan.views.MainGui.BTN_DIMENSION;
 
 public class LandingJPanel extends JPanel implements ActionListener {
 	private static final long serialVersionUID = 1L;
-	private final JTextField txfHover = new JTextField("50"); //$NON-NLS-1$
-	private final JButton btnHover = new JButton(Bundle.getString("pnl_land_btn_hover")); //$NON-NLS-1$
-	private final JButton btnAutoLanding = new JButton(Bundle.getString("pnl_land_btn_land")); //$NON-NLS-1$
-	private final JButton btnBack = new JButton(Bundle.getString("pnl_land_btn_back")); //$NON-NLS-1$
-	private final JPanel pnlHover = new JPanel();
-	private JLabel lblAlt;
+	private final JTextField txfHover = new JTextField("50");
+	private final JTextField txfMaxTWR = new JTextField("5");
+	private final JButton btnHover = new JButton(Bundle.getString("pnl_land_btn_hover"));
+	private final JButton btnAutoLanding = new JButton(Bundle.getString("pnl_land_btn_land"));
+	private final JButton btnBack = new JButton(Bundle.getString("pnl_land_btn_back"));
+	private JLabel lblHoverAltitude;
 	private final JLabel lblAutolanding = new JLabel(Bundle.getString("pnl_land_lbl_land"));
-//$NON-NLS-1$
 
 	public LandingJPanel() {
 
@@ -37,79 +38,66 @@ public class LandingJPanel extends JPanel implements ActionListener {
 		setPreferredSize(MainGui.dmsPanels);
 		setSize(MainGui.dmsPanels);
 		setBorder(new TitledBorder(null, Bundle.getString("pnl_land_border"), TitledBorder.LEADING,
-				// $NON-NLS-1$
 				TitledBorder.TOP, null, null));
 
-		txfHover.setHorizontalAlignment(SwingConstants.CENTER);
-		txfHover.setColumns(10);
-
 		btnHover.addActionListener(this);
-		btnHover.setSize(BTN_DIMENSION);
-		btnHover.setPreferredSize(btnHover.getSize());
-		btnHover.setMinimumSize(btnHover.getSize());
-		btnHover.setMaximumSize(btnHover.getSize());
+		btnHover.setPreferredSize(BTN_DIMENSION);
 
 		btnBack.addActionListener(this);
-		btnBack.setSize(BTN_DIMENSION);
-		btnBack.setPreferredSize(btnBack.getSize());
-		btnBack.setMinimumSize(btnBack.getSize());
-		btnBack.setMaximumSize(btnBack.getSize());
+		btnBack.setPreferredSize(BTN_DIMENSION);
 
 		btnAutoLanding.addActionListener(this);
-		btnAutoLanding.setSize(BTN_DIMENSION);
-		btnAutoLanding.setPreferredSize(btnAutoLanding.getSize());
-		btnAutoLanding.setMinimumSize(btnAutoLanding.getSize());
-		btnAutoLanding.setMaximumSize(btnAutoLanding.getSize());
+		btnAutoLanding.setPreferredSize(BTN_DIMENSION);
 
-		GroupLayout groupLayout = new GroupLayout(this);
-		groupLayout.setHorizontalGroup(groupLayout.createParallelGroup(Alignment.TRAILING)
-				.addGroup(Alignment.LEADING, groupLayout.createSequentialGroup().addGap(10)
-						.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
-								.addGroup(groupLayout.createSequentialGroup().addComponent(lblAutolanding).addGap(18)
-										.addComponent(btnAutoLanding, GroupLayout.PREFERRED_SIZE,
-												GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
-								.addGroup(groupLayout.createSequentialGroup()
-										.addPreferredGap(ComponentPlacement.RELATED).addComponent(pnlHover,
-												GroupLayout.PREFERRED_SIZE, 267, GroupLayout.PREFERRED_SIZE)))
-						.addContainerGap(175, Short.MAX_VALUE))
-				.addGroup(groupLayout.createSequentialGroup().addContainerGap(322, Short.MAX_VALUE)
-						.addComponent(btnBack, GroupLayout.PREFERRED_SIZE, 120, GroupLayout.PREFERRED_SIZE)));
-		groupLayout.setVerticalGroup(groupLayout.createParallelGroup(Alignment.LEADING).addGroup(groupLayout
-				.createSequentialGroup()
-				.addGroup(groupLayout.createParallelGroup(Alignment.BASELINE).addComponent(lblAutolanding).addComponent(
-						btnAutoLanding, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
-						GroupLayout.PREFERRED_SIZE))
-				.addPreferredGap(ComponentPlacement.RELATED)
-				.addComponent(pnlHover, GroupLayout.PREFERRED_SIZE, 60, GroupLayout.PREFERRED_SIZE)
-				.addPreferredGap(ComponentPlacement.RELATED, 46, Short.MAX_VALUE)
-				.addComponent(btnBack, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-				.addContainerGap()));
-		setLayout(groupLayout);
-		pnlHover.setBorder(new TitledBorder(
+		setLayout(new BorderLayout());
+
+		JPanel pnlLandingControls = new JPanel();
+		pnlLandingControls.setBorder(new EmptyBorder(0, 10, 0, 10));
+		pnlLandingControls.setLayout(new BoxLayout(pnlLandingControls, BoxLayout.X_AXIS));
+		pnlLandingControls.add(lblAutolanding);
+		pnlLandingControls.add(Box.createHorizontalGlue());
+		pnlLandingControls.add(btnAutoLanding);
+
+		JPanel pnlTWRLimitControls = new JPanel();
+		pnlTWRLimitControls.setBorder(new EmptyBorder(0, 10, 0, 10));
+		pnlTWRLimitControls.setLayout(new BoxLayout(pnlTWRLimitControls, BoxLayout.X_AXIS));
+		pnlTWRLimitControls.add(new JLabel("TWR Limit:"));
+		txfMaxTWR.setPreferredSize(BTN_DIMENSION);
+		txfMaxTWR.setMaximumSize(BTN_DIMENSION);
+		pnlTWRLimitControls.add(Box.createHorizontalGlue());
+		pnlTWRLimitControls.add(txfMaxTWR);
+
+		JPanel pnlHoverControls = new JPanel();
+		pnlHoverControls.setLayout(new BoxLayout(pnlHoverControls, BoxLayout.X_AXIS));
+		Border titledEtched = new TitledBorder(
 				new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)),
 				Bundle.getString("pnl_land_pnl_hover_border"), TitledBorder.LEADING, TitledBorder.TOP, null,
-				// $NON-NLS-1$
-				new Color(0, 0, 0)));
+				new Color(0, 0, 0));
+		Border margin = new EmptyBorder(0, 10, 0, 10);
+		Border combined = BorderFactory.createCompoundBorder(titledEtched, margin);
+		pnlHoverControls.setBorder(combined);
+		lblHoverAltitude = new JLabel(Bundle.getString("pnl_land_lbl_alt"));
+		pnlHoverControls.add(lblHoverAltitude);
+		txfHover.setPreferredSize(BTN_DIMENSION);
+		txfHover.setMaximumSize(BTN_DIMENSION);
+		pnlHoverControls.add(Box.createRigidArea(new Dimension(10,0)));
+		pnlHoverControls.add(txfHover);
+		pnlHoverControls.add(Box.createHorizontalGlue());
+		pnlHoverControls.add(btnHover);
 
-		lblAlt = new JLabel(Bundle.getString("pnl_land_lbl_alt")); //$NON-NLS-1$
-		GroupLayout glPnlHover = new GroupLayout(pnlHover);
-		glPnlHover.setHorizontalGroup(glPnlHover.createParallelGroup(Alignment.TRAILING).addGroup(Alignment.LEADING,
-				glPnlHover.createSequentialGroup().addContainerGap().addComponent(lblAlt)
-						.addPreferredGap(ComponentPlacement.RELATED)
-						.addComponent(txfHover, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
-								GroupLayout.PREFERRED_SIZE)
-						.addGap(26).addComponent(btnHover, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
-								GroupLayout.PREFERRED_SIZE)
-						.addContainerGap(175, Short.MAX_VALUE)));
-		glPnlHover.setVerticalGroup(glPnlHover.createParallelGroup(Alignment.LEADING)
-				.addGroup(glPnlHover.createSequentialGroup().addGap(5)
-						.addGroup(glPnlHover.createParallelGroup(Alignment.BASELINE).addComponent(lblAlt)
-								.addComponent(txfHover, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
-										GroupLayout.PREFERRED_SIZE)
-								.addComponent(btnHover, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
-										GroupLayout.PREFERRED_SIZE))
-						.addContainerGap(18, Short.MAX_VALUE)));
-		pnlHover.setLayout(glPnlHover);
+		JPanel pnlMainControls = new JPanel();
+		pnlMainControls.setLayout(new BoxLayout(pnlMainControls, BoxLayout.Y_AXIS));
+		pnlMainControls.add(pnlLandingControls);
+		pnlMainControls.add(pnlTWRLimitControls);
+		pnlMainControls.add(pnlHoverControls);
+
+		JPanel pnlBackbtn = new JPanel();
+		pnlBackbtn.setLayout(new BoxLayout(pnlBackbtn,BoxLayout.X_AXIS));
+		pnlBackbtn.add(Box.createHorizontalGlue());
+		pnlBackbtn.add(btnBack);
+
+		add(pnlMainControls, BorderLayout.CENTER);
+		add(pnlBackbtn, BorderLayout.SOUTH);
 	}
 
 	public void actionPerformed(ActionEvent e) {
@@ -127,6 +115,7 @@ public class LandingJPanel extends JPanel implements ActionListener {
 	protected void handleBtnAutoLandingActionPerformed(ActionEvent e) {
 		Map<String, String> commands = new HashMap<>();
 		commands.put(Modulos.MODULO.get(), Modulos.MODULO_POUSO.get());
+		commands.put(Modulos.MAX_TWR.get(), txfMaxTWR.getText());
 		MechPeste.newInstance().startModule(commands);
 	}
 
@@ -134,13 +123,13 @@ public class LandingJPanel extends JPanel implements ActionListener {
 		Map<String, String> commands = new HashMap<>();
 		commands.put(Modulos.MODULO.get(), Modulos.MODULO_POUSO_SOBREVOAR.get());
 		try {
-			if (txfHover.getText().equals("")) { //$NON-NLS-1$
-				StatusJPanel.setStatus(Bundle.getString("pnl_land_hover_alt")); //$NON-NLS-1$
+			if (txfHover.getText().equals("")) {
+				StatusJPanel.setStatus(Bundle.getString("pnl_land_hover_alt"));
 				return;
 			}
 			Integer.parseInt(txfHover.getText());
 		} catch (Exception e2) {
-			StatusJPanel.setStatus(Bundle.getString("pnl_land_hover_alt_err")); //$NON-NLS-1$
+			StatusJPanel.setStatus(Bundle.getString("pnl_land_hover_alt_err"));
 			return;
 		}
 		commands.put(Modulos.ALTITUDE_SOBREVOO.get(), txfHover.getText());

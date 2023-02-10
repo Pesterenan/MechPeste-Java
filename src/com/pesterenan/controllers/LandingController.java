@@ -25,6 +25,7 @@ public class LandingController extends Controller {
 	private boolean hoveringMode = false;
 	private MODE currentMode;
 	private double altitudeErrorPercentage;
+	private float maxTWR;
 
 	public LandingController(Map<String, String> commands) {
 		super();
@@ -46,6 +47,7 @@ public class LandingController extends Controller {
 			hoverArea();
 		}
 		if (commands.get(Modulos.MODULO.get()).equals(Modulos.MODULO_POUSO.get())) {
+			maxTWR = Float.parseFloat(commands.get(Modulos.MAX_TWR.get()));
 			autoLanding();
 		}
 	}
@@ -79,8 +81,7 @@ public class LandingController extends Controller {
 	}
 
 	private void changeControlMode() throws RPCException, StreamException, InterruptedException {
-		float maxTWR = 5.0f;
-		adjustPIDbyTWR(maxTWR);
+		adjustPIDbyTWR();
 		double velPID, altPID;
 		// Change vessel behavior depending on which mode is active
 		switch (currentMode) {
@@ -201,9 +202,8 @@ public class LandingController extends Controller {
 	/**
 	 * Adjust altitude and velocity PID gains according to current ship TWR:
 	 */
-	private void adjustPIDbyTWR(float maxTWR) throws RPCException, StreamException {
+	private void adjustPIDbyTWR() throws RPCException, StreamException {
 		double currentTWR = Math.min(getTWR(), maxTWR);
-		System.out.println(currentTWR);
 		velocityCtrl.adjustPID(currentTWR * velP, velI, velD);
 		altitudeCtrl.adjustPID(currentTWR * velP, velI, velD);
 	}
@@ -231,7 +231,7 @@ public class LandingController extends Controller {
 
 	private double calculateZeroVelocityMagnitude() throws RPCException, StreamException {
 		double zeroVelocityDistance = calculateEllipticTrajectory(velHorizontal.get(), velVertical.get());
-		double zeroVelocityBurnTime = zeroVelocityDistance / getMaxAcel(5.0f);
+		double zeroVelocityBurnTime = zeroVelocityDistance / getMaxAcel(maxTWR);
 		return zeroVelocityDistance * zeroVelocityBurnTime;
 	}
 
