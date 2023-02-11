@@ -20,9 +20,11 @@ public class LiftoffController extends Controller {
 	private static final float PITCH_UP = 90;
 	private final ControlePID thrControl = new ControlePID();
 	private float currentPitch;
-	private float finalApoapsisAlt = 80000;
-	private float heading = 90;
-	private float roll = 90;
+	private float finalApoapsisAlt;
+	private float heading;
+	private float roll;
+	private float maxTWR;
+
 	private boolean willDecoupleStages, willDeployPanelsAndRadiators;
 	private String gravityCurveModel = Modulos.CIRCULAR.get();
 	private Navigation navigation;
@@ -39,6 +41,7 @@ public class LiftoffController extends Controller {
 		setFinalApoapsisAlt(Float.parseFloat(commands.get(Modulos.APOASTRO.get())));
 		setHeading(Float.parseFloat(commands.get(Modulos.DIRECAO.get())));
 		setRoll(Float.parseFloat(commands.get(Modulos.ROLAGEM.get())));
+		maxTWR = (float) Utilities.clamp(Float.parseFloat(commands.get(Modulos.MAX_TWR.get())), 1.2, 5.0);
 		setGravityCurveModel(commands.get(Modulos.INCLINACAO.get()));
 		willDeployPanelsAndRadiators = Boolean.parseBoolean(commands.get(Modulos.ABRIR_PAINEIS.get()));
 		willDecoupleStages = Boolean.parseBoolean(commands.get(Modulos.USAR_ESTAGIOS.get()));
@@ -63,29 +66,40 @@ public class LiftoffController extends Controller {
 		ap.targetPitchAndHeading(currentPitch, getHeading());
 		ap.setTargetRoll(getRoll());
 		ap.engage();
-		throttle(1f);
+		throttle(getMaxThrottleForTWR(maxTWR));
+		double startCurveAlt = altitude.get();
 
 		while (currentPitch > 1) {
-			if (Thread.interrupted()) {
-				throw new InterruptedException();
-			}
 			if (apoastro.get() > getFinalApoapsis()) {
 				throttle(0);
 				break;
 			}
-			float startCurveAlt = 100;
 			double altitudeProgress = Utilities.remap(startCurveAlt, getFinalApoapsis(), 1, 0.01, altitude.get(),
 					false);
 			currentPitch = (float) (calculateCurrentPitch(altitudeProgress));
+			double currentMaxTWR = calculateTWRBasedOnPressure(currentPitch);
 			ap.setTargetPitch(currentPitch);
 			throttle(Math.min(thrControl.calcPID(apoastro.get() / getFinalApoapsis() * 1000, 1000),
-					getMaxThrottleForTWR(3.0)));
+					getMaxThrottleForTWR(currentMaxTWR)));
+
 			if (willDecoupleStages && isCurrentStageWithoutFuel()) {
 				decoupleStage();
 			}
 			setCurrentStatus(String.format(Bundle.getString("status_liftoff_inclination") + " %.1f", currentPitch));
+
 			Thread.sleep(250);
+			if (Thread.interrupted()) {
+				throw new InterruptedException();
+			}
 		}
+	}
+
+	private double calculateTWRBasedOnPressure(float currentPitch) throws RPCException {
+		float currentPressure = parametrosDeVoo.getDynamicPressure();
+		if (currentPressure <= 10) {
+			return Utilities.remap(90.0, 0.0, maxTWR, 5.0, currentPitch, true);
+		}
+		return Utilities.remap(22000.0, 10.0, maxTWR, 5.0, currentPressure, true);
 	}
 
 	private void finalizeCurve() throws RPCException, StreamException, InterruptedException {

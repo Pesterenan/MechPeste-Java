@@ -20,8 +20,8 @@ public class LiftoffJPanel extends JPanel implements ActionListener {
 
 	private static final long serialVersionUID = 1L;
 
-	private JLabel lblFinalApoapsis, lblHeading, lblRoll, lblCurveModel;
-	private JTextField txfFinalApoapsis, txfHeading;
+	private JLabel lblFinalApoapsis, lblHeading, lblRoll, lblCurveModel, lblLimitTWR;
+	private JTextField txfFinalApoapsis, txfHeading, txfLimitTWR;
 	private JButton btnLiftoff, btnBack;
 	private JComboBox<String> cbGravityCurveModel;
 	private JSlider sldRoll;
@@ -40,11 +40,13 @@ public class LiftoffJPanel extends JPanel implements ActionListener {
 		lblRoll = new JLabel(Bundle.getString("pnl_lift_lbl_roll"));
 		lblRoll.setToolTipText(Bundle.getString("pnl_lift_lbl_roll_tooltip"));
 		lblCurveModel = new JLabel(Bundle.getString("pnl_lift_lbl_gravity_curve"));
+		lblLimitTWR = new JLabel(Bundle.getString("pnl_lift_lbl_limit_twr"));
 
 		// Textfields:
 		txfFinalApoapsis = new JTextField("80000");
 		txfFinalApoapsis.setToolTipText(Bundle.getString("pnl_lift_txf_final_apo_tooltip"));
 		txfHeading = new JTextField("90");
+		txfLimitTWR = new JTextField("1.5");
 
 		// Buttons:
 		btnLiftoff = new JButton(Bundle.getString("pnl_lift_btn_liftoff"));
@@ -76,12 +78,15 @@ public class LiftoffJPanel extends JPanel implements ActionListener {
 		txfFinalApoapsis.setMaximumSize(BTN_DIMENSION);
 		txfFinalApoapsis.setPreferredSize(BTN_DIMENSION);
 		txfFinalApoapsis.setHorizontalAlignment(JTextField.RIGHT);
-
 		lblHeading.setLabelFor(txfHeading);
 		txfHeading.setMaximumSize(BTN_DIMENSION);
 		txfHeading.setPreferredSize(BTN_DIMENSION);
 		txfHeading.setHorizontalAlignment(JTextField.RIGHT);
-
+		lblLimitTWR.setLabelFor(txfLimitTWR);
+		txfLimitTWR.setMaximumSize(BTN_DIMENSION);
+		txfLimitTWR.setPreferredSize(BTN_DIMENSION);
+		txfLimitTWR.setHorizontalAlignment(JTextField.RIGHT);
+		
 		cbGravityCurveModel.setSelectedIndex(3);
 		cbGravityCurveModel.setPreferredSize(BTN_DIMENSION);
 		cbGravityCurveModel.setMaximumSize(BTN_DIMENSION);
@@ -132,6 +137,13 @@ public class LiftoffJPanel extends JPanel implements ActionListener {
 		pnlRoll.add(Box.createHorizontalGlue());
 		pnlRoll.add(sldRoll);
 
+		JPanel pnlLimitTWR = new JPanel();
+		pnlLimitTWR.setLayout(new BoxLayout(pnlLimitTWR, BoxLayout.X_AXIS));
+		pnlLimitTWR.setBorder(MARGIN_BORDER_10_PX_LR);
+		pnlLimitTWR.add(lblLimitTWR);
+		pnlLimitTWR.add(Box.createHorizontalGlue());
+		pnlLimitTWR.add(txfLimitTWR);
+
 		JPanel pnlCurveModel = new JPanel();
 		pnlCurveModel.setLayout(new BoxLayout(pnlCurveModel, BoxLayout.X_AXIS));
 		pnlCurveModel.setBorder(MARGIN_BORDER_10_PX_LR);
@@ -150,20 +162,21 @@ public class LiftoffJPanel extends JPanel implements ActionListener {
 		pnlSetup.add(pnlFinalApoapsis);
 		pnlSetup.add(pnlHeading);
 		pnlSetup.add(pnlRoll);
+		pnlSetup.add(pnlLimitTWR);
 		pnlSetup.add(pnlCurveModel);
 
-		JPanel pnlCheckBoxes = new JPanel();
-		pnlCheckBoxes.setLayout(new BoxLayout(pnlCheckBoxes, BoxLayout.Y_AXIS));
-		pnlCheckBoxes.setBorder(new TitledBorder(Bundle.getString("pnl_lift_chk_options")));
-		pnlCheckBoxes.add(chkDecoupleStages);
-		pnlCheckBoxes.add(chkOpenPanels);
+		JPanel pnlOptions = new JPanel();
+		pnlOptions.setLayout(new BoxLayout(pnlOptions, BoxLayout.Y_AXIS));
+		pnlOptions.setBorder(new TitledBorder(Bundle.getString("pnl_lift_chk_options")));
+		pnlOptions.add(chkDecoupleStages);
+		pnlOptions.add(chkOpenPanels);
 
 		JPanel pnlMain = new JPanel();
 		pnlMain.setLayout(new BoxLayout(pnlMain, BoxLayout.X_AXIS));
 		pnlMain.add(pnlSetup);
 		pnlSetup.setAlignmentY(Component.TOP_ALIGNMENT);
-		pnlMain.add(pnlCheckBoxes);
-		pnlCheckBoxes.setAlignmentY(Component.TOP_ALIGNMENT);
+		pnlMain.add(pnlOptions);
+		pnlOptions.setAlignmentY(Component.TOP_ALIGNMENT);
 
 		add(pnlMain, BorderLayout.CENTER);
 		add(pnlButtons, BorderLayout.SOUTH);
@@ -173,6 +186,7 @@ public class LiftoffJPanel extends JPanel implements ActionListener {
 		try {
 			Float.parseFloat(txfFinalApoapsis.getText());
 			Float.parseFloat(txfHeading.getText());
+			Float.parseFloat(txfLimitTWR.getText());
 		} catch (NumberFormatException e) {
 			StatusJPanel.setStatus(Bundle.getString("pnl_lift_stat_only_numbers"));
 			return false;
@@ -196,6 +210,7 @@ public class LiftoffJPanel extends JPanel implements ActionListener {
 			commands.put(Modulos.MODULO.get(), Modulos.MODULO_DECOLAGEM.get());
 			commands.put(Modulos.APOASTRO.get(), txfFinalApoapsis.getText());
 			commands.put(Modulos.DIRECAO.get(), txfHeading.getText());
+			commands.put(Modulos.MAX_TWR.get(), txfLimitTWR.getText());
 			commands.put(Modulos.ROLAGEM.get(), String.valueOf(sldRoll.getValue()));
 			commands.put(Modulos.INCLINACAO.get(), cbGravityCurveModel.getSelectedItem().toString());
 			commands.put(Modulos.USAR_ESTAGIOS.get(), String.valueOf(chkDecoupleStages.isSelected()));

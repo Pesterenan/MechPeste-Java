@@ -78,7 +78,7 @@ public class LandingJPanel extends JPanel implements ActionListener {
 		pnlHoverControls.add(lblHoverAltitude);
 		txfHover.setPreferredSize(BTN_DIMENSION);
 		txfHover.setMaximumSize(BTN_DIMENSION);
-		pnlHoverControls.add(Box.createRigidArea(new Dimension(10,0)));
+		pnlHoverControls.add(Box.createRigidArea(new Dimension(10, 0)));
 		pnlHoverControls.add(txfHover);
 		pnlHoverControls.add(Box.createHorizontalGlue());
 		pnlHoverControls.add(btnHover);
@@ -90,7 +90,7 @@ public class LandingJPanel extends JPanel implements ActionListener {
 		pnlMainControls.add(pnlHoverControls);
 
 		JPanel pnlBackbtn = new JPanel();
-		pnlBackbtn.setLayout(new BoxLayout(pnlBackbtn,BoxLayout.X_AXIS));
+		pnlBackbtn.setLayout(new BoxLayout(pnlBackbtn, BoxLayout.X_AXIS));
 		pnlBackbtn.add(Box.createHorizontalGlue());
 		pnlBackbtn.add(btnBack);
 

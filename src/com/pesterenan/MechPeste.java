@@ -21,8 +21,6 @@ import static com.pesterenan.views.StatusJPanel.isBtnConnectVisible;
 import static com.pesterenan.views.StatusJPanel.setStatus;
 
 public class MechPeste {
-	public static final int CHECK_VESSEL_INTERVAL_IN_MS = 1000;
-	public static final int CHECK_STATUS_INTERVAL_IN_MS = 100;
 	private static KRPC krpc;
 	private static MechPeste mechPeste;
 	private static SpaceCenter spaceCenter;

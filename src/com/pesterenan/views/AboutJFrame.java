@@ -2,74 +2,80 @@ package com.pesterenan.views;
 
 import java.awt.Font;
 
-import javax.swing.GroupLayout;
-import javax.swing.GroupLayout.Alignment;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
-import javax.swing.LayoutStyle.ComponentPlacement;
-import javax.swing.SwingConstants;
-import java.awt.event.ActionListener;
-import java.awt.event.ActionEvent;
+import javax.swing.JPanel;
 
-public class AboutJFrame extends JDialog implements ActionListener {
+import static com.pesterenan.views.MainGui.BTN_DIMENSION;
+import static com.pesterenan.views.MainGui.centerDialogOnScreen;
+import static com.pesterenan.views.MainGui.createMarginComponent;
+
+public class AboutJFrame extends JDialog implements JPanelDesignPattern {
 
 	private static final long serialVersionUID = 0L;
-	private JLabel lblMechpeste;
-	private JLabel lblAboutInfo;
+	private JLabel lblMechpeste, lblAboutInfo;
 	private JButton btnOk;
 
 	public AboutJFrame() {
 		initComponents();
+		setupComponents();
+		layoutComponents();
 	}
 
-	private void initComponents() {
-		setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
-		setResizable(false);
-		setBounds(MainGui.centerDialogOnScreen());
-		setAlwaysOnTop(true);
-		setModalityType(ModalityType.APPLICATION_MODAL);
-		setTitle("MechPeste - por Pesterenan"); //$NON-NLS-1$
+	@Override
+	public void initComponents() {
+		// Labels:
 		lblMechpeste = new JLabel("MechPeste - v.0.6");
-		lblMechpeste.setFont(new Font("Trajan Pro", Font.BOLD, 18));
-		lblMechpeste.setHorizontalAlignment(SwingConstants.CENTER);
 		lblAboutInfo = new JLabel(
 				"<html>Esse app foi desenvolvido com o intuito de auxiliar o controle de naves<br>no game Kerbal Space Program.<br><br>"
 						+ "Não há garantias sobre o controle exato do app, portanto fique atento <br>"
 						+ "para retomar o controle quando necessário.<br><br>" + "Feito por: Renan Torres<br>"
-						+ "Visite meu canal no Youtube! - https://www.youtube.com/@Pesterenan");
-		lblAboutInfo.setVerticalAlignment(SwingConstants.TOP);
+						+ "Visite meu canal no Youtube! - https://www.youtube.com/@Pesterenan</html>");
 
+		// Buttons:
 		btnOk = new JButton("OK");
-		btnOk.addActionListener(this);
+	}
 
-		GroupLayout groupLayout = new GroupLayout(getContentPane());
-		groupLayout.setHorizontalGroup(groupLayout.createParallelGroup(Alignment.LEADING)
-				.addGroup(groupLayout.createSequentialGroup()
-						.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
-								.addGroup(groupLayout.createSequentialGroup().addGap(67).addComponent(lblMechpeste,
-										GroupLayout.PREFERRED_SIZE, 250, GroupLayout.PREFERRED_SIZE))
-								.addGroup(groupLayout.createSequentialGroup().addContainerGap()
-										.addComponent(lblAboutInfo, GroupLayout.PREFERRED_SIZE, 364, Short.MAX_VALUE))
-								.addGroup(groupLayout.createSequentialGroup().addGap(125).addComponent(btnOk,
-										GroupLayout.PREFERRED_SIZE, 135, GroupLayout.PREFERRED_SIZE)))
-						.addContainerGap()));
-		groupLayout.setVerticalGroup(groupLayout.createParallelGroup(Alignment.LEADING)
-				.addGroup(groupLayout.createSequentialGroup().addGap(15).addComponent(lblMechpeste)
-						.addPreferredGap(ComponentPlacement.RELATED).addComponent(lblAboutInfo).addGap(11)
-						.addComponent(btnOk).addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)));
+	@Override
+	public void setupComponents() {
+		// Main Panel setup:
+		setTitle("MechPeste - por Pesterenan");
+		setBounds(centerDialogOnScreen());
+		setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+		setResizable(false);
+		setAlwaysOnTop(true);
+		setModalityType(ModalityType.APPLICATION_MODAL);
 
-		getContentPane().setLayout(groupLayout);
+		// Setting-up components:
+		lblMechpeste.setFont(new Font("Trajan Pro", Font.BOLD, 18));
+		lblMechpeste.setAlignmentX(CENTER_ALIGNMENT);
+		lblAboutInfo.setAlignmentX(CENTER_ALIGNMENT);
+
+		btnOk.addActionListener(e -> {
+			this.dispose();
+		});
+		btnOk.setPreferredSize(BTN_DIMENSION);
+		btnOk.setMaximumSize(BTN_DIMENSION);
+		btnOk.setAlignmentX(CENTER_ALIGNMENT);
+	}
+
+	@Override
+	public void layoutComponents() {
+		JPanel pnlMain = new JPanel();
+		pnlMain.setLayout(new BoxLayout(pnlMain, BoxLayout.Y_AXIS));
+		pnlMain.setBorder(MainGui.MARGIN_BORDER_10_PX_LR);
+		pnlMain.add(createMarginComponent(10, 10));
+		pnlMain.add(lblMechpeste);
+		pnlMain.add(createMarginComponent(10, 10));
+		pnlMain.add(lblAboutInfo);
+		pnlMain.add(Box.createVerticalGlue());
+		pnlMain.add(btnOk);
+		pnlMain.add(createMarginComponent(10, 10));
+
+		getContentPane().add(pnlMain);
 		setVisible(true);
-	}
-
-	public void actionPerformed(ActionEvent e) {
-		if (e.getSource() == btnOk) {
-			handleBtnOkActionPerformed(e);
-		}
-	}
-
-	protected void handleBtnOkActionPerformed(ActionEvent e) {
-		this.dispose();
 	}
 }
