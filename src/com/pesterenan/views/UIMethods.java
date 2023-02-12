@@ -1,6 +1,6 @@
 package com.pesterenan.views;
 
-public interface JPanelDesignPattern {
+public interface UIMethods {
 
     public void initComponents();
 

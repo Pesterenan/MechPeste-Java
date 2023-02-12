@@ -27,6 +27,7 @@ public class ManeuverController extends Controller {
 	private final ControlePID ctrlManeuver = new ControlePID();
 	private Navigation navigation;
 	private boolean fineAdjustment;
+	private double lowOrbitAltitude;
 
 	public ManeuverController(Map<String, String> commands) {
 		super();
@@ -38,6 +39,8 @@ public class ManeuverController extends Controller {
 	private void initializeParameters() {
 		ctrlRCS.adjustOutput(0.5, 1.0);
 		fineAdjustment = canFineAdjust(commands.get(Modulos.AJUSTE_FINO.get()));
+		lowOrbitAltitude = calculateSafeLowOrbitAltitude();
+		System.out.println(lowOrbitAltitude);
 	}
 
 	@Override
@@ -46,9 +49,26 @@ public class ManeuverController extends Controller {
 		executeNextManeuver();
 	}
 
+	private double calculateSafeLowOrbitAltitude() {
+		final double safeAltitude = 20000;
+		double bodyRadius = 0, atmosphereDepth = 0;
+		try {
+			bodyRadius = currentBody.getEquatorialRadius();
+			System.out.println(bodyRadius);
+			atmosphereDepth = currentBody.getAtmosphereDepth();
+			System.out.println(atmosphereDepth);
+			System.out.println(altitude.get());
+			System.out.println(altitudeSup.get());
+			System.out.println(apoastro.get());
+		} catch (RPCException | StreamException ignored) {
+		}
+		return bodyRadius + (atmosphereDepth > 0 ? atmosphereDepth + safeAltitude : safeAltitude);
+	}
+
 	public void calculateManeuver() {
 		try {
 			tuneAutoPilot();
+			System.out.println(commands);
 			if (commands.get(Modulos.FUNCAO.get()).equals(Modulos.EXECUTAR.get())) {
 				return;
 			}
@@ -58,6 +78,11 @@ public class ManeuverController extends Controller {
 			}
 			if (commands.get(Modulos.FUNCAO.get()).equals(Modulos.AJUSTAR.get())) {
 				this.alignPlanes();
+				return;
+			}
+			if (commands.get(Modulos.FUNCAO.get()).equals(Modulos.ORBITA_BAIXA.get())) {
+				hohmannTransferToOrbit(lowOrbitAltitude, getNaveAtual().getOrbit().getTimeToPeriapsis());
+				hohmannTransferToOrbit(lowOrbitAltitude, getNaveAtual().getOrbit().getTimeToPeriapsis());
 				return;
 			}
 			double gravParameter = currentBody.getGravitationalParameter();
@@ -86,7 +111,8 @@ public class ManeuverController extends Controller {
 		try {
 			Orbit targetOrbit = getTargetOrbit();
 			System.out.println(targetOrbit.getApoapsis() + "-- APO");
-			Node maneuver = hohmannTransferToOrbit(targetOrbit, getNaveAtual().getOrbit().getTimeToPeriapsis());
+			Node maneuver = hohmannTransferToOrbit(targetOrbit.getApoapsis(),
+					getNaveAtual().getOrbit().getTimeToPeriapsis());
 			while (true) {
 				if (Thread.interrupted()) {
 					throw new InterruptedException();
@@ -108,22 +134,23 @@ public class ManeuverController extends Controller {
 		}
 	}
 
-	private Node hohmannTransferToOrbit(Orbit targetOrbit, double timeToStart) {
+	private Node hohmannTransferToOrbit(double targetAltitude, double timeToStart) {
 		double[] totalDv = { 0, 0, 0 };
 		try {
-			double startingRadius = getNaveAtual().getOrbit().getPeriapsis();
-			double finalRadius = targetOrbit.getApoapsis();
-			System.out.println(startingRadius + " --- " + finalRadius);
-			double gravitationalParameter = currentBody.getGravitationalParameter();
-			// DeltaV used to get to the second Node
-			double firstNodeDv = Math.sqrt(gravitationalParameter * ((2.0 / startingRadius) -
-					(1.0 / getNaveAtual().getOrbit().getSemiMajorAxis())));
-			// DeltaV used to orbit in the second Node
-			double secondNodeDv = Math.sqrt(gravitationalParameter * ((2.0 / startingRadius) - (1.0 / finalRadius)));
-			// Time taken between the two points
-			totalDv[0] = secondNodeDv - firstNodeDv;
+			double startingRadius = Math.max(getNaveAtual().getOrbit().getApoapsis(),
+					getNaveAtual().getOrbit().getPeriapsis());
+			System.out.println(startingRadius + " --- " + targetAltitude);
+			double gravParameter = currentBody.getGravitationalParameter();
+			// Delta-v required to leave the current orbit
+			double deltaV1 = Math.sqrt(2 * gravParameter / startingRadius) - Math.sqrt(gravParameter / startingRadius);
+			// Delta-v required to enter the target orbit
+			double deltaV2 = Math.sqrt(gravParameter / targetAltitude) - Math.sqrt(2 * gravParameter / targetAltitude);
+			System.out.println(deltaV1);
+			System.out.println(deltaV2);
+
+			// Dv taken between the two points
+			totalDv[0] = deltaV2 + deltaV1;
 		} catch (RPCException e) {
-			e.printStackTrace();
 		}
 		return createManeuver(timeToStart, totalDv);
 	}
@@ -143,7 +170,7 @@ public class ManeuverController extends Controller {
 		Orbit vesselOrbit = getNaveAtual().getOrbit();
 		double ascendingNode = vesselOrbit.trueAnomalyAtAN(targetOrbit);
 		double descendingNode = vesselOrbit.trueAnomalyAtDN(targetOrbit);
-		return new double[]{ vesselOrbit.uTAtTrueAnomaly(ascendingNode), vesselOrbit.uTAtTrueAnomaly(descendingNode) };
+		return new double[] { vesselOrbit.uTAtTrueAnomaly(ascendingNode), vesselOrbit.uTAtTrueAnomaly(descendingNode) };
 	}
 
 	public void alignPlanes() {
@@ -226,9 +253,8 @@ public class ManeuverController extends Controller {
 		Node maneuverNode = null;
 		try {
 			getNaveAtual().getControl()
-			              .addNode(getSpaceCenter().getUT() + laterTime, (float) deltaV[0], (float) deltaV[1],
-			                       (float) deltaV[2]
-			                      );
+					.addNode(getSpaceCenter().getUT() + laterTime, (float) deltaV[0], (float) deltaV[1],
+							(float) deltaV[2]);
 			List<Node> currentNodes = getNaveAtual().getControl().getNodes();
 			maneuverNode = currentNodes.get(currentNodes.size() - 1);
 		} catch (UnsupportedOperationException | RPCException e) {
@@ -249,23 +275,22 @@ public class ManeuverController extends Controller {
 			setCurrentStatus(Bundle.getString("status_maneuver_unavailable"));
 		} catch (RPCException e) {
 			setCurrentStatus(Bundle.getString("status_data_unavailable"));
+		} catch (InterruptedException e) {
+			setCurrentStatus(Bundle.getString("status_couldnt_orient"));
 		}
 	}
 
-	public void orientToManeuverNode(Node maneuverNode) {
-		try {
-			setCurrentStatus(Bundle.getString("status_orienting_ship"));
-			ap.engage();
-			while (ap.getHeadingError() > 3 || ap.getPitchError() > 3) {
-				if (Thread.interrupted()) {
-					throw new InterruptedException();
-				}
-				navigation.aimAtManeuver(maneuverNode);
-				Thread.sleep(100);
+	public void orientToManeuverNode(Node maneuverNode) throws InterruptedException, RPCException {
+		setCurrentStatus(Bundle.getString("status_orienting_ship"));
+		ap.engage();
+		while (ap.getHeadingError() > 3 || ap.getPitchError() > 3) {
+			if (Thread.interrupted()) {
+				throw new InterruptedException();
 			}
-		} catch (RPCException | InterruptedException e) {
-			setCurrentStatus(Bundle.getString("status_couldnt_orient"));
+			navigation.aimAtManeuver(maneuverNode);
+			Thread.sleep(100);
 		}
+
 	}
 
 	public double calculateBurnTime(Node noDeManobra) throws RPCException {
@@ -306,8 +331,8 @@ public class ManeuverController extends Controller {
 				Thread.sleep(100);
 			}
 			// Executar a manobra:
-			Stream<Triplet<Double, Double, Double>> queimaRestante =
-					getConnection().addStream(noDeManobra, "remainingBurnVector", noDeManobra.getReferenceFrame());
+			Stream<Triplet<Double, Double, Double>> queimaRestante = getConnection().addStream(noDeManobra,
+					"remainingBurnVector", noDeManobra.getReferenceFrame());
 			setCurrentStatus(Bundle.getString("status_maneuver_executing"));
 			double remainingBurnTime = duracaoDaQueima + 0.5;
 			while (noDeManobra != null) {
@@ -320,7 +345,7 @@ public class ManeuverController extends Controller {
 				}
 				navigation.aimAtManeuver(noDeManobra);
 				throttle(ctrlManeuver.calcPID((noDeManobra.getDeltaV() - Math.floor(queimaRestante.get().getValue1())) /
-						                              noDeManobra.getDeltaV() * 1000, 1000));
+						noDeManobra.getDeltaV() * 1000, 1000));
 				remainingBurnTime -= 0.05;
 				Thread.sleep(50);
 			}
@@ -350,7 +375,7 @@ public class ManeuverController extends Controller {
 				throw new InterruptedException();
 			}
 			getNaveAtual().getControl().setForward((float) ctrlRCS.calcPID(-remainingDeltaV.get().getValue1() * 10,
-			                                                               0));
+					0));
 			Thread.sleep(25);
 		}
 		getNaveAtual().getControl().setForward(0);

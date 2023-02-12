@@ -9,7 +9,7 @@ import java.awt.event.ActionEvent;
 
 import static com.pesterenan.views.MainGui.BTN_DIMENSION;
 
-public class ChangeVesselDialog extends JDialog implements JPanelDesignPattern {
+public class ChangeVesselDialog extends JDialog implements UIMethods {
 
 	private static final long serialVersionUID = 1L;
 	private JLabel lblPanelInfo, lblVesselStatus;

@@ -32,7 +32,8 @@ public enum Modulos {
 	NOME_MARCADOR("Nome do marcador"),
 	VELOCIDADE_MAX("Velocidade Máxima"),
 	POUSAR("Pousar nave"), 
-	MAX_TWR("Max_TWR");
+	MAX_TWR("Max_TWR"),
+	ORBITA_BAIXA("ÓRBITA BAIXA");
 
 	final String t;
 

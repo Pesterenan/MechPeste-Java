@@ -209,7 +209,7 @@ public class RoverJPanel extends JPanel implements ActionListener {
 
 	public void actionPerformed(ActionEvent e) {
 		if (e.getSource() == btnBack) {
-			MainGui.backToTelemetry();
+			MainGui.backToTelemetry(e);
 		}
 		if (e.getSource() == btnDrive) {
 			handleBtnDriveActionPerformed(e);
@@ -236,10 +236,10 @@ public class RoverJPanel extends JPanel implements ActionListener {
 				throw new IllegalArgumentException();
 			}
 		} catch (NumberFormatException e) {
-			StatusJPanel.setStatus(Bundle.getString("pnl_rover_max_speed_above_3")); //$NON-NLS-1$
+			StatusJPanel.setStatusMessage(Bundle.getString("pnl_rover_max_speed_above_3")); //$NON-NLS-1$
 			return false;
 		} catch (IllegalArgumentException e) {
-			StatusJPanel.setStatus(Bundle.getString("pnl_rover_waypoint_name_not_empty")); //$NON-NLS-1$
+			StatusJPanel.setStatusMessage(Bundle.getString("pnl_rover_waypoint_name_not_empty")); //$NON-NLS-1$
 			return false;
 		}
 		return true;

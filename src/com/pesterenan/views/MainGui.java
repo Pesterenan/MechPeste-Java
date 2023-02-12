@@ -179,7 +179,7 @@ public class MainGui extends JFrame implements ActionListener, PropertyChangeLis
 		return cardJPanels;
 	}
 
-	public static void backToTelemetry() {
+	public static void backToTelemetry(ActionEvent e) {
 		cardJPanels.firePropertyChange(Modulos.MODULO_TELEMETRIA.get(), false, true);
 	}
 

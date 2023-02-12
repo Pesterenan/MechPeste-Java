@@ -12,13 +12,14 @@ import krpc.client.services.SpaceCenter;
 import krpc.client.services.SpaceCenter.Vessel;
 
 import javax.swing.*;
+import java.awt.event.ActionEvent;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 import static com.pesterenan.views.StatusJPanel.isBtnConnectVisible;
-import static com.pesterenan.views.StatusJPanel.setStatus;
+import static com.pesterenan.views.StatusJPanel.setStatusMessage;
 
 public class MechPeste {
 	private static KRPC krpc;
@@ -139,7 +140,7 @@ public class MechPeste {
 				}
 				if (currentVesselId != -1) {
 					currentVessel.recordTelemetryData();
-					setStatus(currentVessel.getCurrentStatus());
+					setStatusMessage(currentVessel.getCurrentStatus());
 					FunctionsAndTelemetryJPanel.updateTelemetry(currentVessel.getTelemetryData());
 				}
 				Thread.sleep(100);
@@ -153,15 +154,15 @@ public class MechPeste {
 	}
 
 	public void connectToKSP() {
-		setStatus(Bundle.getString("status_connecting"));
+		setStatusMessage(Bundle.getString("status_connecting"));
 		try {
 			connection = Connection.newInstance("MechPeste - Pesterenan");
 			krpc = KRPC.newInstance(connection);
 			spaceCenter = SpaceCenter.newInstance(getConnection());
-			setStatus(Bundle.getString("status_connected"));
+			setStatusMessage(Bundle.getString("status_connected"));
 			isBtnConnectVisible(false);
 		} catch (IOException e) {
-			setStatus(Bundle.getString("status_error_connection"));
+			setStatusMessage(Bundle.getString("status_error_connection"));
 			isBtnConnectVisible(true);
 		}
 	}
@@ -169,17 +170,17 @@ public class MechPeste {
 	public void checkConnection() {
 		try {
 			if (!MechPeste.newInstance().getCurrentGameScene().equals(KRPC.GameScene.FLIGHT)) {
-				setStatus(Bundle.getString("status_ready"));
+				setStatusMessage(Bundle.getString("status_ready"));
 				return;
 			}
 			getConnection().close();
 		} catch (RPCException | NullPointerException | IOException e) {
-			setStatus(Bundle.getString("status_error_connection"));
+			setStatusMessage(Bundle.getString("status_error_connection"));
 			isBtnConnectVisible(true);
 		}
 	}
 
-	public void cancelControl() {
+	public static void cancelControl(ActionEvent e) {
 		currentVessel.cancelControl();
 	}
 }

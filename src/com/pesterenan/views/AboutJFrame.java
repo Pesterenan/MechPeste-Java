@@ -13,7 +13,7 @@ import static com.pesterenan.views.MainGui.BTN_DIMENSION;
 import static com.pesterenan.views.MainGui.centerDialogOnScreen;
 import static com.pesterenan.views.MainGui.createMarginComponent;
 
-public class AboutJFrame extends JDialog implements JPanelDesignPattern {
+public class AboutJFrame extends JDialog implements UIMethods {
 
 	private static final long serialVersionUID = 0L;
 	private JLabel lblMechpeste, lblAboutInfo;

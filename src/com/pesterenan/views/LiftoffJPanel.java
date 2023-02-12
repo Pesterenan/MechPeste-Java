@@ -16,7 +16,7 @@ import static com.pesterenan.views.MainGui.BTN_DIMENSION;
 import static com.pesterenan.views.MainGui.MARGIN_BORDER_10_PX_LR;
 import static com.pesterenan.views.MainGui.PNL_DIMENSION;
 
-public class LiftoffJPanel extends JPanel implements ActionListener {
+public class LiftoffJPanel extends JPanel implements UIMethods {
 
 	private static final long serialVersionUID = 1L;
 
@@ -33,14 +33,15 @@ public class LiftoffJPanel extends JPanel implements ActionListener {
 		layoutComponents();
 	}
 
-	private void initComponents() {
+	@Override
+	public void initComponents() {
 		// Labels:
 		lblFinalApoapsis = new JLabel(Bundle.getString("pnl_lift_lbl_final_apoapsis"));
 		lblHeading = new JLabel(Bundle.getString("pnl_lift_lbl_direction"));
 		lblRoll = new JLabel(Bundle.getString("pnl_lift_lbl_roll"));
 		lblRoll.setToolTipText(Bundle.getString("pnl_lift_lbl_roll_tooltip"));
 		lblCurveModel = new JLabel(Bundle.getString("pnl_lift_lbl_gravity_curve"));
-		lblLimitTWR = new JLabel(Bundle.getString("pnl_lift_lbl_limit_twr"));
+		lblLimitTWR = new JLabel(Bundle.getString("pnl_common_lbl_limit_twr"));
 
 		// Textfields:
 		txfFinalApoapsis = new JTextField("80000");
@@ -61,14 +62,12 @@ public class LiftoffJPanel extends JPanel implements ActionListener {
 		// Misc:
 		cbGravityCurveModel = new JComboBox<>();
 		cbGravityCurveModel.setToolTipText(Bundle.getString("pnl_lift_cb_gravity_curve_tooltip"));
-		cbGravityCurveModel.setModel(new DefaultComboBoxModel<>(
-				new String[] { Modulos.SINUSOIDAL.get(), Modulos.QUADRATICA.get(), Modulos.CUBICA.get(),
-						Modulos.CIRCULAR.get(), Modulos.EXPONENCIAL.get() }));
 
 		sldRoll = new JSlider();
 	}
 
-	private void setupComponents() {
+	@Override
+	public void setupComponents() {
 		// Main Panel setup:
 		setBorder(new TitledBorder(null, Bundle.getString("pnl_lift_pnl_title"), TitledBorder.LEADING,
 				TitledBorder.TOP, null, null));
@@ -86,7 +85,10 @@ public class LiftoffJPanel extends JPanel implements ActionListener {
 		txfLimitTWR.setMaximumSize(BTN_DIMENSION);
 		txfLimitTWR.setPreferredSize(BTN_DIMENSION);
 		txfLimitTWR.setHorizontalAlignment(JTextField.RIGHT);
-		
+
+		cbGravityCurveModel.setModel(new DefaultComboBoxModel<>(
+				new String[] { Modulos.SINUSOIDAL.get(), Modulos.QUADRATICA.get(), Modulos.CUBICA.get(),
+						Modulos.CIRCULAR.get(), Modulos.EXPONENCIAL.get() }));
 		cbGravityCurveModel.setSelectedIndex(3);
 		cbGravityCurveModel.setPreferredSize(BTN_DIMENSION);
 		cbGravityCurveModel.setMaximumSize(BTN_DIMENSION);
@@ -101,15 +103,16 @@ public class LiftoffJPanel extends JPanel implements ActionListener {
 
 		chkDecoupleStages.setSelected(true);
 
-		btnLiftoff.addActionListener(this);
+		btnLiftoff.addActionListener(this::handleLiftoff);
 		btnLiftoff.setPreferredSize(BTN_DIMENSION);
 		btnLiftoff.setMaximumSize(BTN_DIMENSION);
-		btnBack.addActionListener(this);
+		btnBack.addActionListener(MainGui::backToTelemetry);
 		btnBack.setPreferredSize(BTN_DIMENSION);
 		btnBack.setMaximumSize(BTN_DIMENSION);
 	}
 
-	private void layoutComponents() {
+	@Override
+	public void layoutComponents() {
 		// Main Panel layout:
 		setPreferredSize(PNL_DIMENSION);
 		setSize(PNL_DIMENSION);
@@ -188,23 +191,13 @@ public class LiftoffJPanel extends JPanel implements ActionListener {
 			Float.parseFloat(txfHeading.getText());
 			Float.parseFloat(txfLimitTWR.getText());
 		} catch (NumberFormatException e) {
-			StatusJPanel.setStatus(Bundle.getString("pnl_lift_stat_only_numbers"));
+			StatusJPanel.setStatusMessage(Bundle.getString("pnl_lift_stat_only_numbers"));
 			return false;
 		}
 		return true;
 	}
 
-	public void actionPerformed(ActionEvent e) {
-		if (e.getSource() == btnBack) {
-			MainGui.backToTelemetry();
-		}
-		if (e.getSource() == btnLiftoff) {
-			handleBtnLiftoffActionPerformed(e);
-			MainGui.backToTelemetry();
-		}
-	}
-
-	protected void handleBtnLiftoffActionPerformed(ActionEvent e) {
+	private void handleLiftoff(ActionEvent e) {
 		if (validateTextFields()) {
 			Map<String, String> commands = new HashMap<>();
 			commands.put(Modulos.MODULO.get(), Modulos.MODULO_DECOLAGEM.get());

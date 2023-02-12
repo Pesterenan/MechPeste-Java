@@ -4,83 +4,73 @@ import com.pesterenan.MechPeste;
 import com.pesterenan.resources.Bundle;
 
 import javax.swing.*;
-import javax.swing.GroupLayout.Alignment;
-import javax.swing.LayoutStyle.ComponentPlacement;
-import javax.swing.border.BevelBorder;
+
+import static com.pesterenan.views.MainGui.BTN_DIMENSION;
+import static com.pesterenan.views.MainGui.MARGIN_BORDER_10_PX_LR;
+
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 
-public class StatusJPanel extends JPanel {
+public class StatusJPanel extends JPanel implements UIMethods {
 	private static final long serialVersionUID = 1L;
 
-	private static final JLabel lblStatus = new JLabel(Bundle.getString("lbl_stat_ready")); //$NON-NLS-1$
-	private static final JButton btnConectar = new JButton(Bundle.getString("btn_stat_connect"));
-	//$NON-NLS-1$
-	private final Dimension dmsStatus = new Dimension(464, 25);
+	private static JLabel lblStatus;
+	private static JButton btnConnect;
+	private Dimension pnlDimension = new Dimension(464, 30);
 
 	public StatusJPanel() {
 		initComponents();
+		setupComponents();
+		layoutComponents();
 	}
 
-	public static void setStatus(String newStatus) {
+	@Override
+	public void initComponents() {
+		// Labels:
+		lblStatus = new JLabel(Bundle.getString("lbl_stat_ready"));
+
+		// Buttons:
+		btnConnect = new JButton(Bundle.getString("btn_stat_connect"));
+	}
+
+	@Override
+	public void setupComponents() {
+		// Main Panel setup:
+		setBorder(MARGIN_BORDER_10_PX_LR);
+		setPreferredSize(pnlDimension);
+
+		// Setting-up components:
+		btnConnect.addActionListener(this::handleConnect);
+		btnConnect.setPreferredSize(BTN_DIMENSION);
+		btnConnect.setMaximumSize(BTN_DIMENSION);
+		btnConnect.setVisible(false);
+	}
+
+	@Override
+	public void layoutComponents() {
+		// Main Panel layout:
+		setLayout(new BorderLayout());
+
+		// Laying out components:
+		JPanel pnlMain = new JPanel();
+		pnlMain.setLayout(new BoxLayout(pnlMain, BoxLayout.X_AXIS));
+		pnlMain.add(lblStatus);
+		pnlMain.add(Box.createHorizontalGlue());
+		pnlMain.add(btnConnect);
+
+		add(pnlMain, BorderLayout.CENTER);
+	}
+
+	public static void setStatusMessage(String newStatus) {
 		lblStatus.setText(newStatus);
 	}
 
 	public static void isBtnConnectVisible(boolean visible) {
-		btnConectar.setVisible(visible);
+		btnConnect.setVisible(visible);
 	}
 
-	private void initComponents() {
-		setMinimumSize(new Dimension(0, 0));
-		setPreferredSize(dmsStatus);
-
-		btnConectar.addActionListener(new BotConectarActionListener());
-		btnConectar.setPreferredSize(new Dimension(100, 18));
-		btnConectar.setVisible(false);
-
-		setBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null));
-		GroupLayout groupLayout = new GroupLayout(this);
-		groupLayout.setHorizontalGroup(groupLayout.createParallelGroup(Alignment.TRAILING)
-		                                          .addGroup(groupLayout.createSequentialGroup()
-		                                                               .addGap(10)
-		                                                               .addComponent(lblStatus)
-		                                                               .addPreferredGap(ComponentPlacement.RELATED,
-		                                                                                225,
-		                                                                                Short.MAX_VALUE
-		                                                                               )
-		                                                               .addComponent(btnConectar,
-		                                                                             GroupLayout.PREFERRED_SIZE,
-		                                                                             GroupLayout.DEFAULT_SIZE,
-		                                                                             GroupLayout.PREFERRED_SIZE
-		                                                                            )
-		                                                               .addGap(10)));
-		groupLayout.setVerticalGroup(groupLayout.createParallelGroup(Alignment.LEADING)
-		                                        .addGroup(groupLayout.createSequentialGroup()
-		                                                             .addGroup(groupLayout.createParallelGroup(
-				                                                                                  Alignment.BASELINE)
-		                                                                                  .addComponent(btnConectar,
-		                                                                                                GroupLayout.PREFERRED_SIZE,
-		                                                                                                18,
-		                                                                                                Short.MAX_VALUE
-		                                                                                               )
-		                                                                                  .addGroup(
-				                                                                                  groupLayout.createSequentialGroup()
-				                                                                                             .addGap(2)
-				                                                                                             .addComponent(
-						                                                                                             lblStatus,
-						                                                                                             GroupLayout.DEFAULT_SIZE,
-						                                                                                             GroupLayout.DEFAULT_SIZE,
-						                                                                                             Short.MAX_VALUE
-				                                                                                                          )))
-		                                                             .addGap(3)));
-		setLayout(groupLayout);
-	}
-
-	private static class BotConectarActionListener implements ActionListener {
-		public void actionPerformed(ActionEvent e) {
-			setStatus(Bundle.getString("status_connecting"));
-			MechPeste.newInstance().connectToKSP();
-		}
+	private void handleConnect(ActionEvent e) {
+		setStatusMessage(Bundle.getString("status_connecting"));
+		MechPeste.newInstance().connectToKSP();
 	}
 }

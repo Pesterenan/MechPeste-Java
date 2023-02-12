@@ -162,6 +162,7 @@ public class LandingController extends Controller {
 				getNaveAtual().getSituation().equals(VesselSituation.SUB_ORBITAL)) {
 			setCurrentStatus(Bundle.getString("status_going_suborbital"));
 			ap.engage();
+			getNaveAtual().getControl().setRCS(true);
 			while (ap.getError() > 5) {
 				navigation.aimForLanding();
 				setCurrentStatus(Bundle.getString("status_orienting_ship"));
@@ -170,10 +171,11 @@ public class LandingController extends Controller {
 			}
 			while (periastro.get() > -apoastro.get()) {
 				navigation.aimForLanding();
-				throttle(altitudeCtrl.calcPID(-apoastro.get(), periastro.get()));
+				throttle(altitudeCtrl.calcPID(-currentBody.getEquatorialRadius()/2, periastro.get()));
 				setCurrentStatus(Bundle.getString("status_lowering_periapsis"));
 				Thread.sleep(100);
 			}
+			getNaveAtual().getControl().setRCS(false);
 			throttle(0.0f);
 		}
 	}
