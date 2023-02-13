@@ -139,7 +139,7 @@ public class LandingController extends Controller {
 				velPID = velocityCtrl.calcPID(velVertical.get(), -Utilities.clamp(altitudeSup.get() * 0.1, 1, 10));
 				throttle(Utilities.linearInterpolation(velPID, altPID, threshold));
 				navigation.aimForLanding();
-				if (threshold < 0.25) {
+				if (threshold < 0.25 || altitudeSup.get() < landingDistanceThreshold) {
 					hoverAltitude = landingDistanceThreshold;
 					getNaveAtual().getControl().setGear(true);
 					if (hoverAfterApproximation) {

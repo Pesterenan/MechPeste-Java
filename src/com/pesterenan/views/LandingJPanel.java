@@ -148,6 +148,8 @@ public class LandingJPanel extends JPanel implements UIMethods {
 			commands.put(Modulos.MAX_TWR.get(), txfMaxTWR.getText());
 			commands.put(Modulos.SOBREVOO_POS_POUSO.get(), String.valueOf(chkHoverAfterLanding.isSelected()));
 			MechPeste.newInstance().startModule(commands);
+			MainGui.backToTelemetry(e);
+			chkHoverAfterLanding.setSelected(false);
 		} catch (NumberFormatException nfe) {
 			StatusJPanel.setStatusMessage(Bundle.getString("pnl_land_hover_alt_err"));
 		} catch (NullPointerException npe) {

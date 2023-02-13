@@ -90,6 +90,7 @@ public class FunctionsAndTelemetryJPanel extends JPanel implements UIMethods {
 
 		JPanel pnlFunctionControls = new JPanel();
 		pnlFunctionControls.setLayout(new BoxLayout(pnlFunctionControls, BoxLayout.Y_AXIS));
+		pnlFunctionControls.add(MainGui.createMarginComponent(0, 4));
 		pnlFunctionControls.add(btnLiftoff);
 		pnlFunctionControls.add(btnLanding);
 		pnlFunctionControls.add(btnManeuver);
@@ -100,10 +101,15 @@ public class FunctionsAndTelemetryJPanel extends JPanel implements UIMethods {
 		pnlLeftPanel.setBorder(MainGui.MARGIN_BORDER_10_PX_LR);
 		pnlLeftPanel.setLayout(new BoxLayout(pnlLeftPanel, BoxLayout.Y_AXIS));
 		pnlLeftPanel.add(lblAltitude);
+		pnlLeftPanel.add(Box.createVerticalStrut(5));
 		pnlLeftPanel.add(lblSurfaceAlt);
+		pnlLeftPanel.add(Box.createVerticalStrut(5));
 		pnlLeftPanel.add(lblApoapsis);
+		pnlLeftPanel.add(Box.createVerticalStrut(5));
 		pnlLeftPanel.add(lblPeriapsis);
+		pnlLeftPanel.add(Box.createVerticalStrut(5));
 		pnlLeftPanel.add(lblHorzSpeed);
+		pnlLeftPanel.add(Box.createVerticalStrut(5));
 		pnlLeftPanel.add(lblVertSpeed);
 		pnlLeftPanel.add(Box.createGlue());
 
@@ -117,10 +123,15 @@ public class FunctionsAndTelemetryJPanel extends JPanel implements UIMethods {
 		lblHorzSpeedValue.setAlignmentX(RIGHT_ALIGNMENT);
 		lblVertSpeedValue.setAlignmentX(RIGHT_ALIGNMENT);
 		pnlRightPanel.add(lblAltitudeValue);
+		pnlRightPanel.add(Box.createVerticalStrut(5));
 		pnlRightPanel.add(lblSurfaceAltValue);
+		pnlRightPanel.add(Box.createVerticalStrut(5));
 		pnlRightPanel.add(lblApoapsisValue);
+		pnlRightPanel.add(Box.createVerticalStrut(5));
 		pnlRightPanel.add(lblPeriapsisValue);
+		pnlRightPanel.add(Box.createVerticalStrut(5));
 		pnlRightPanel.add(lblHorzSpeedValue);
+		pnlRightPanel.add(Box.createVerticalStrut(5));
 		pnlRightPanel.add(lblVertSpeedValue);
 		pnlRightPanel.add(Box.createGlue());
 
@@ -131,8 +142,7 @@ public class FunctionsAndTelemetryJPanel extends JPanel implements UIMethods {
 
 		JPanel pnlTelemetry = new JPanel();
 		pnlTelemetry.setLayout(new BoxLayout(pnlTelemetry, BoxLayout.Y_AXIS));
-		pnlTelemetry.setBorder(new TitledBorder(null, Bundle.getString("pnl_tel_border"), TitledBorder.LEADING,
-				TitledBorder.TOP, null, null));
+		pnlTelemetry.setBorder(new TitledBorder(null, Bundle.getString("pnl_tel_border")));
 		pnlTelemetry.add(pnlLeftRightContainer);
 		pnlTelemetry.add(Box.createGlue());
 		btnCancel.setAlignmentX(CENTER_ALIGNMENT);
