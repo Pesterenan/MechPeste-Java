@@ -52,7 +52,7 @@ isso, ficará calculando a distância até o último momento para começar a des
 Durante o pouso, o foguete se orientará automaticamente pra cima, e pousará em baixa velocidade.
 
 Para sobrevoar a área, digite a altitude que o MechPeste tentará manter, e clique em "Sobrevoar",
-após isso, para descer, clique em "Descer".
+após isso, para descer, clique em "Pousar".
 
 ### *Manobras*
 

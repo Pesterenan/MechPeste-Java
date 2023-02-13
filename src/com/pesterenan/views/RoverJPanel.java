@@ -5,223 +5,150 @@ import com.pesterenan.resources.Bundle;
 import com.pesterenan.utils.Modulos;
 
 import javax.swing.*;
-import javax.swing.GroupLayout.Alignment;
-import javax.swing.LayoutStyle.ComponentPlacement;
 import javax.swing.border.EtchedBorder;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.HashMap;
 import java.util.Map;
 
-public class RoverJPanel extends JPanel implements ActionListener {
-	private static final long serialVersionUID = -3157549581689803329L;
-	private final JLabel lblWaypointName = new JLabel(Bundle.getString("pnl_rover_waypoint_name"));
-	//$NON-NLS-1$
-	private final JTextField txfWaypointName = new JTextField(Bundle.getString("pnl_rover_default_name"));
-	private final JButton btnBack = new JButton();
-	private final JButton btnDrive = new JButton();
-	private final JPanel pnlTargetChoice = new JPanel();
-	private final ButtonGroup bgChoice = new ButtonGroup();
-	private JRadioButton rbTargetVessel;
-	private JRadioButton rbWaypointOnMap;
-	private JLabel lblMaxSpeed;
-	private JTextField txfMaxSpeed;
+import static com.pesterenan.views.MainGui.BTN_DIMENSION;
+import static com.pesterenan.views.MainGui.MARGIN_BORDER_10_PX_LR;
+import static com.pesterenan.views.MainGui.PNL_DIMENSION;
+
+public class RoverJPanel extends JPanel implements UIMethods {
+
+	private static final long serialVersionUID = 0L;
+
+	private JLabel lblWaypointName, lblMaxSpeed;
+	private JTextField txfWaypointName, txfMaxSpeed;
+	private JButton btnBack, btnDrive;
+	private ButtonGroup bgTargetChoice;
+	private JRadioButton rbTargetVessel, rbWaypointOnMap;
 
 	public RoverJPanel() {
 		initComponents();
+		setupComponents();
+		layoutComponents();
 	}
 
-	private void initComponents() {
-		setPreferredSize(ParametersJPanel.dmsParameters);
-		setSize(ParametersJPanel.dmsParameters);
-		setBorder(new TitledBorder(null, Bundle.getString("pnl_rover_border"), TitledBorder.LEADING,
-		                           // $NON-NLS-1$
-		                           TitledBorder.TOP, null, null
-		));
-
-		btnBack.setText(Bundle.getString("pnl_rover_btn_back")); //$NON-NLS-1$
-		btnBack.addActionListener(this);
-		btnBack.setSize(ParametersJPanel.BTN_DIMENSION);
-		btnBack.setPreferredSize(btnBack.getSize());
-		btnBack.setMinimumSize(btnBack.getSize());
-		btnBack.setMaximumSize(btnBack.getSize());
-
-		btnDrive.setText(Bundle.getString("pnl_rover_btn_drive")); //$NON-NLS-1$
-		btnDrive.addActionListener(this);
-		btnDrive.setSize(ParametersJPanel.BTN_DIMENSION);
-		btnDrive.setPreferredSize(btnDrive.getSize());
-		btnDrive.setMinimumSize(btnDrive.getSize());
-		btnDrive.setMaximumSize(btnDrive.getSize());
-
-		txfWaypointName.setHorizontalAlignment(SwingConstants.CENTER);
-		txfWaypointName.setColumns(10);
-
+	@Override
+	public void initComponents() {
+		// Labels:
 		lblMaxSpeed = new JLabel(Bundle.getString("pnl_rover_lbl_max_speed"));
+		lblWaypointName = new JLabel(Bundle.getString("pnl_rover_waypoint_name"));
 
-		txfMaxSpeed = new JTextField();
-		txfMaxSpeed.setText("10"); //$NON-NLS-1$
-		txfMaxSpeed.setColumns(10);
+		// Textfields:
+		txfMaxSpeed = new JTextField("10");
+		txfWaypointName = new JTextField(Bundle.getString("pnl_rover_default_name"));
 
-		GroupLayout groupLayout = new GroupLayout(this);
-		groupLayout.setHorizontalGroup(groupLayout.createParallelGroup(Alignment.TRAILING)
-		                                          .addGroup(groupLayout.createSequentialGroup()
-		                                                               .addContainerGap()
-		                                                               .addGroup(groupLayout.createParallelGroup(
-				                                                                                    Alignment.LEADING)
-		                                                                                    .addComponent(
-				                                                                                    pnlTargetChoice,
-				                                                                                    GroupLayout.DEFAULT_SIZE,
-				                                                                                    286,
-				                                                                                    Short.MAX_VALUE
-		                                                                                                 )
-		                                                                                    .addGroup(
-				                                                                                    groupLayout.createSequentialGroup()
-				                                                                                               .addComponent(
-						                                                                                               btnDrive,
-						                                                                                               GroupLayout.PREFERRED_SIZE,
-						                                                                                               GroupLayout.DEFAULT_SIZE,
-						                                                                                               GroupLayout.PREFERRED_SIZE
-				                                                                                                            )
-				                                                                                               .addGap(66)
-				                                                                                               .addComponent(
-						                                                                                               btnBack,
-						                                                                                               GroupLayout.PREFERRED_SIZE,
-						                                                                                               GroupLayout.DEFAULT_SIZE,
-						                                                                                               GroupLayout.PREFERRED_SIZE
-				                                                                                                            ))
-		                                                                                    .addGroup(
-				                                                                                    groupLayout.createSequentialGroup()
-				                                                                                               .addGroup(
-						                                                                                               groupLayout.createParallelGroup(
-								                                                                                                          Alignment.LEADING)
-						                                                                                                          .addComponent(
-								                                                                                                          lblWaypointName)
-						                                                                                                          .addComponent(
-								                                                                                                          lblMaxSpeed,
-								                                                                                                          GroupLayout.PREFERRED_SIZE,
-								                                                                                                          94,
-								                                                                                                          GroupLayout.PREFERRED_SIZE
-						                                                                                                                       ))
-				                                                                                               .addPreferredGap(
-						                                                                                               ComponentPlacement.UNRELATED)
-				                                                                                               .addGroup(
-						                                                                                               groupLayout.createParallelGroup(
-								                                                                                                          Alignment.LEADING)
-						                                                                                                          .addComponent(
-								                                                                                                          txfMaxSpeed,
-								                                                                                                          GroupLayout.PREFERRED_SIZE,
-								                                                                                                          46,
-								                                                                                                          GroupLayout.PREFERRED_SIZE
-						                                                                                                                       )
-						                                                                                                          .addComponent(
-								                                                                                                          txfWaypointName,
-								                                                                                                          GroupLayout.DEFAULT_SIZE,
-								                                                                                                          197,
-								                                                                                                          Short.MAX_VALUE
-						                                                                                                                       ))))
-		                                                               .addGap(6)));
-		groupLayout.setVerticalGroup(groupLayout.createParallelGroup(Alignment.LEADING)
-		                                        .addGroup(groupLayout.createSequentialGroup()
-		                                                             .addComponent(pnlTargetChoice,
-		                                                                           GroupLayout.PREFERRED_SIZE, 60,
-		                                                                           GroupLayout.PREFERRED_SIZE
-		                                                                          )
-		                                                             .addPreferredGap(ComponentPlacement.RELATED)
-		                                                             .addGroup(groupLayout.createParallelGroup(
-				                                                                                  Alignment.BASELINE)
-		                                                                                  .addComponent(lblWaypointName)
-		                                                                                  .addComponent(txfWaypointName,
-		                                                                                                GroupLayout.PREFERRED_SIZE,
-		                                                                                                GroupLayout.DEFAULT_SIZE,
-		                                                                                                GroupLayout.PREFERRED_SIZE
-		                                                                                               ))
-		                                                             .addPreferredGap(ComponentPlacement.RELATED)
-		                                                             .addGroup(groupLayout.createParallelGroup(
-				                                                                                  Alignment.BASELINE)
-		                                                                                  .addComponent(lblMaxSpeed)
-		                                                                                  .addComponent(txfMaxSpeed,
-		                                                                                                GroupLayout.PREFERRED_SIZE,
-		                                                                                                GroupLayout.DEFAULT_SIZE,
-		                                                                                                GroupLayout.PREFERRED_SIZE
-		                                                                                               ))
-		                                                             .addPreferredGap(ComponentPlacement.RELATED, 52,
-		                                                                              Short.MAX_VALUE
-		                                                                             )
-		                                                             .addGroup(groupLayout.createParallelGroup(
-				                                                                                  Alignment.TRAILING)
-		                                                                                  .addComponent(btnBack,
-		                                                                                                GroupLayout.PREFERRED_SIZE,
-		                                                                                                GroupLayout.DEFAULT_SIZE,
-		                                                                                                GroupLayout.PREFERRED_SIZE
-		                                                                                               )
-		                                                                                  .addComponent(btnDrive,
-		                                                                                                GroupLayout.PREFERRED_SIZE,
-		                                                                                                GroupLayout.DEFAULT_SIZE,
-		                                                                                                GroupLayout.PREFERRED_SIZE
-		                                                                                               ))
-		                                                             .addContainerGap()));
-		setLayout(groupLayout);
-		pnlTargetChoice.setBorder(new TitledBorder(
-				new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)),
-				Bundle.getString("pnl_rover_target_choice"), TitledBorder.LEADING, TitledBorder.TOP, null,
-				new Color(0, 0, 0)
-		));
+		// Buttons:
+		btnBack = new JButton(Bundle.getString("pnl_rover_btn_back"));
+		btnDrive = new JButton(Bundle.getString("pnl_rover_btn_drive"));
 
-		rbTargetVessel = new JRadioButton(Bundle.getString("pnl_rover_target_vessel")); //$NON-NLS-1$
-		rbTargetVessel.setActionCommand(Modulos.NAVE_ALVO.get());
-		rbWaypointOnMap = new JRadioButton(Bundle.getString("pnl_rover_waypoint_on_map")); //$NON-NLS-1$
-		rbWaypointOnMap.setActionCommand(Modulos.MARCADOR_MAPA.get());
+		// Misc:
+		rbTargetVessel = new JRadioButton(Bundle.getString("pnl_rover_target_vessel"));
+		rbWaypointOnMap = new JRadioButton(Bundle.getString("pnl_rover_waypoint_on_map"));
+	}
+
+	@Override
+	public void setupComponents() {
+		// Main Panel setup:
+		setBorder(new TitledBorder(null, Bundle.getString("pnl_rover_border")));
+
+		// Setting-up components:
+		txfWaypointName.setEnabled(false);
+		txfWaypointName.setHorizontalAlignment(SwingConstants.CENTER);
+		txfWaypointName.setMaximumSize(BTN_DIMENSION);
+		txfWaypointName.setPreferredSize(BTN_DIMENSION);
+		txfMaxSpeed.setHorizontalAlignment(SwingConstants.RIGHT);
+		txfMaxSpeed.setMaximumSize(BTN_DIMENSION);
+		txfMaxSpeed.setPreferredSize(BTN_DIMENSION);
+
 		rbTargetVessel.setSelected(true);
-		bgChoice.add(rbTargetVessel);
-		bgChoice.add(rbWaypointOnMap);
+		rbTargetVessel.setActionCommand(Modulos.NAVE_ALVO.get());
+		rbTargetVessel.addActionListener(this::handleTargetSelection);
+		rbWaypointOnMap.setActionCommand(Modulos.MARCADOR_MAPA.get());
+		rbWaypointOnMap.addActionListener(this::handleTargetSelection);
 
-		GroupLayout glPnlTargetChoice = new GroupLayout(pnlTargetChoice);
-		glPnlTargetChoice.setHorizontalGroup(glPnlTargetChoice.createParallelGroup(Alignment.TRAILING)
-		                                                      .addGroup(Alignment.LEADING,
-		                                                                glPnlTargetChoice.createSequentialGroup()
-		                                                                                 .addGap(32)
-		                                                                                 .addComponent(rbTargetVessel)
-		                                                                                 .addGap(18)
-		                                                                                 .addComponent(rbWaypointOnMap)
-		                                                                                 .addContainerGap(28,
-		                                                                                                  Short.MAX_VALUE
-		                                                                                                 )
-		                                                               ));
-		glPnlTargetChoice.setVerticalGroup(glPnlTargetChoice.createParallelGroup(Alignment.LEADING)
-		                                                    .addGroup(glPnlTargetChoice.createSequentialGroup()
-		                                                                               .addContainerGap()
-		                                                                               .addGroup(
-				                                                                               glPnlTargetChoice.createParallelGroup(
-						                                                                                                Alignment.BASELINE)
-				                                                                                                .addComponent(
-						                                                                                                rbTargetVessel)
-				                                                                                                .addComponent(
-						                                                                                                rbWaypointOnMap))
-		                                                                               .addContainerGap(18,
-		                                                                                                Short.MAX_VALUE
-		                                                                                               )));
-		pnlTargetChoice.setLayout(glPnlTargetChoice);
+		bgTargetChoice = new ButtonGroup();
+		bgTargetChoice.add(rbTargetVessel);
+		bgTargetChoice.add(rbWaypointOnMap);
+
+		btnBack.addActionListener(MainGui::backToTelemetry);
+		btnBack.setMaximumSize(BTN_DIMENSION);
+		btnBack.setPreferredSize(BTN_DIMENSION);
+		btnDrive.addActionListener(this::handleDriveTo);
+		btnDrive.setMaximumSize(BTN_DIMENSION);
+		btnDrive.setPreferredSize(BTN_DIMENSION);
 	}
 
-	public void actionPerformed(ActionEvent e) {
-		if (e.getSource() == btnBack) {
-			handleBtnBackActionPerformed(e);
-		}
-		if (e.getSource() == btnDrive) {
-			handleBtnDriveActionPerformed(e);
-		}
+	@Override
+	public void layoutComponents() {
+		// Main Panel layout:
+		setPreferredSize(PNL_DIMENSION);
+		setSize(PNL_DIMENSION);
+		setLayout(new BorderLayout());
+
+		// Layout components:
+		JPanel pnlWaypointName = new JPanel();
+		pnlWaypointName.setLayout(new BoxLayout(pnlWaypointName, BoxLayout.X_AXIS));
+		pnlWaypointName.add(lblWaypointName);
+		pnlWaypointName.add(Box.createHorizontalGlue());
+		pnlWaypointName.add(txfWaypointName);
+
+		JPanel pnlMaxSpeed = new JPanel();
+		pnlMaxSpeed.setLayout(new BoxLayout(pnlMaxSpeed, BoxLayout.X_AXIS));
+		pnlMaxSpeed.add(lblMaxSpeed);
+		pnlMaxSpeed.add(Box.createHorizontalGlue());
+		pnlMaxSpeed.add(txfMaxSpeed);
+
+		JPanel pnlRoverControls = new JPanel();
+		pnlRoverControls.setLayout(new BoxLayout(pnlRoverControls, BoxLayout.Y_AXIS));
+		pnlRoverControls.setBorder(MARGIN_BORDER_10_PX_LR);
+		pnlRoverControls.add(MainGui.createMarginComponent(0, 6));
+		pnlRoverControls.add(pnlWaypointName);
+		pnlRoverControls.add(pnlMaxSpeed);
+		pnlRoverControls.add(Box.createVerticalGlue());
+
+		JPanel pnlTargetChoice = new JPanel();
+		pnlTargetChoice.setBorder(
+				new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED), Bundle.getString("pnl_rover_target_choice")));
+		pnlTargetChoice.setLayout(new BoxLayout(pnlTargetChoice, BoxLayout.Y_AXIS));
+		pnlTargetChoice.add(rbTargetVessel);
+		pnlTargetChoice.add(rbWaypointOnMap);
+		pnlTargetChoice.add(Box.createHorizontalGlue());
+
+		JPanel pnlButtons = new JPanel();
+		pnlButtons.setLayout(new BoxLayout(pnlButtons, BoxLayout.X_AXIS));
+		pnlButtons.add(btnDrive);
+		pnlButtons.add(Box.createHorizontalGlue());
+		pnlButtons.add(btnBack);
+
+		JPanel pnlMain = new JPanel();
+		pnlMain.setLayout(new BoxLayout(pnlMain, BoxLayout.X_AXIS));
+		pnlRoverControls.setAlignmentY(TOP_ALIGNMENT);
+		pnlTargetChoice.setAlignmentY(TOP_ALIGNMENT);
+		pnlMain.add(pnlRoverControls);
+		pnlMain.add(pnlTargetChoice);
+
+		setLayout(new BorderLayout());
+		add(pnlMain, BorderLayout.CENTER);
+		add(pnlButtons, BorderLayout.SOUTH);
 	}
 
-	protected void handleBtnDriveActionPerformed(ActionEvent e) {
+	private void handleTargetSelection(ActionEvent e) {
+		txfWaypointName.setEnabled(e.getSource().equals(rbWaypointOnMap));
+	}
+
+	private void handleDriveTo(ActionEvent e) {
 		if (validateTextFields()) {
 			Map<String, String> commands = new HashMap<>();
 			commands.put(Modulos.MODULO.get(), Modulos.MODULO_ROVER.get());
-			commands.put(Modulos.TIPO_ALVO_ROVER.get(), bgChoice.getSelection().getActionCommand());
+			commands.put(Modulos.TIPO_ALVO_ROVER.get(), bgTargetChoice.getSelection().getActionCommand());
 			commands.put(Modulos.NOME_MARCADOR.get(), txfWaypointName.getText());
 			commands.put(Modulos.VELOCIDADE_MAX.get(), txfMaxSpeed.getText());
-			MechPeste.startModule(commands);
+			MechPeste.newInstance().startModule(commands);
 		}
 	}
 
@@ -234,16 +161,12 @@ public class RoverJPanel extends JPanel implements ActionListener {
 				throw new IllegalArgumentException();
 			}
 		} catch (NumberFormatException e) {
-			StatusJPanel.setStatus(Bundle.getString("pnl_rover_max_speed_above_3")); //$NON-NLS-1$
+			StatusJPanel.setStatusMessage(Bundle.getString("pnl_rover_max_speed_above_3"));
 			return false;
 		} catch (IllegalArgumentException e) {
-			StatusJPanel.setStatus(Bundle.getString("pnl_rover_waypoint_name_not_empty")); //$NON-NLS-1$
+			StatusJPanel.setStatusMessage(Bundle.getString("pnl_rover_waypoint_name_not_empty"));
 			return false;
 		}
 		return true;
-	}
-
-	protected void handleBtnBackActionPerformed(ActionEvent e) {
-		MainGui.getParametros().firePropertyChange("Telemetria", false, true);
 	}
 }

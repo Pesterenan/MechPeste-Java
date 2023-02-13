@@ -9,12 +9,13 @@ public enum Modulos {
 	DIRECAO("Direção"),
 	MODULO("Módulo"),
 	FUNCAO("Função"),
-	MODULO_DECOLAGEM("Executar Decolagem"),
-	MODULO_MANOBRAS("Módulo Manobras"),
-	MODULO_POUSO("Módulo Pouso"),
-	MODULO_ROVER("Módulo Rover"),
+	MODULO_DECOLAGEM("LIFTOFF"),
+	MODULO_MANOBRAS("MANEUVER"),
+	MODULO_POUSO("LANDING"),
+	MODULO_ROVER("ROVER"),
+	MODULO_TELEMETRIA("TELEMETRY"),
+	MODULO_POUSO_SOBREVOAR("HOVER"),
 	ALTITUDE_SOBREVOO("Altitude Sobrevoo"),
-	MODULO_POUSO_SOBREVOAR("Sobrevoar"),
 	INCLINACAO("Inclinação"),
 	CIRCULAR("Circular"),
 	QUADRATICA("Quadrática"),
@@ -29,7 +30,11 @@ public enum Modulos {
 	NAVE_ALVO("Nave alvo"),
 	MARCADOR_MAPA("Marcador no mapa"),
 	NOME_MARCADOR("Nome do marcador"),
-	VELOCIDADE_MAX("Velocidade Máxima");
+	VELOCIDADE_MAX("Velocidade Máxima"),
+	POUSAR("Pousar nave"), 
+	MAX_TWR("Max_TWR"),
+	ORBITA_BAIXA("ÓRBITA BAIXA"),
+	SOBREVOO_POS_POUSO("SOBREVOO PÓS POUSO");
 
 	final String t;
 

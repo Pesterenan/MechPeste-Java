@@ -1,0 +1,12 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Launch MechPeste",
+            "request": "launch",
+            "mainClass": "com.pesterenan.MechPeste",
+            "projectName": "MechPeste-Java"
+        },
+        {}
+    ]
+}

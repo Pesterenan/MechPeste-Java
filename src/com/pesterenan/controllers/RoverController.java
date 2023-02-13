@@ -1,16 +1,13 @@
 package com.pesterenan.controllers;
 
-import com.pesterenan.model.ActiveVessel;
+import com.pesterenan.resources.Bundle;
 import com.pesterenan.utils.ControlePID;
 import com.pesterenan.utils.Modulos;
 import com.pesterenan.utils.PathFinding;
 import com.pesterenan.utils.Utilities;
 import com.pesterenan.utils.Vector;
-import com.pesterenan.views.StatusJPanel;
 import krpc.client.RPCException;
-import krpc.client.Stream;
 import krpc.client.StreamException;
-import krpc.client.services.Drawing;
 import krpc.client.services.SpaceCenter.ReferenceFrame;
 import krpc.client.services.SpaceCenter.SolarPanel;
 import krpc.client.services.SpaceCenter.SolarPanelState;
@@ -22,28 +19,40 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class RoverController extends ActiveVessel implements Runnable {
+import static com.pesterenan.MechPeste.getSpaceCenter;
+
+public class RoverController extends Controller {
 	private final ControlePID sterringCtrl = new ControlePID();
 	private final ControlePID acelCtrl = new ControlePID();
-	private final Map<String, String> commands;
 	float distanceFromTargetLimit = 50;
-	float velocidadeCurva = 3;
 	private float maxSpeed = 3;
-	private ReferenceFrame pontoRefRover;
-	private boolean isAutoRoverRunning = true;
-	private Drawing drawing;
-	private Stream<Float> bateriaAtual;
+	private ReferenceFrame roverReferenceFrame;
+	private boolean isAutoRoverRunning;
 	private PathFinding pathFinding;
 	private Vector targetPoint = new Vector();
 	private Vector roverDirection = new Vector();
+	private MODE currentMode;
 
 	public RoverController(Map<String, String> commands) {
-		super(getConexao());
+		super();
 		this.commands = commands;
 		initializeParameters();
 	}
 
-	private static boolean isSolarPanelNotBroken(SolarPanel sp) {
+	private void initializeParameters() {
+		try {
+			maxSpeed = Float.parseFloat(commands.get(Modulos.VELOCIDADE_MAX.get()));
+			roverReferenceFrame = getNaveAtual().getReferenceFrame();
+			roverDirection = new Vector(getNaveAtual().direction(roverReferenceFrame));
+			pathFinding = new PathFinding();
+			acelCtrl.adjustOutput(0, 1);
+			sterringCtrl.adjustOutput(-1, 1);
+			isAutoRoverRunning = true;
+		} catch (RPCException ignored) {
+		}
+	}
+
+	private boolean isSolarPanelNotBroken(SolarPanel sp) {
 		try {
 			return sp.getState() != SolarPanelState.BROKEN;
 		} catch (RPCException e) {
@@ -51,175 +60,151 @@ public class RoverController extends ActiveVessel implements Runnable {
 		}
 	}
 
-	private void initializeParameters() {
-		try {
-			currentBody = naveAtual.getOrbit().getBody();
-			parametrosDeVoo = naveAtual.flight(pontoRefOrbital);
-			pontoRefRover = naveAtual.getReferenceFrame();
-			velHorizontal = getConexao().addStream(parametrosDeVoo, "getHorizontalSpeed");
-			bateriaAtual = getConexao().addStream(naveAtual.getResources(), "amount", "ElectricCharge");
-			maxSpeed = Float.parseFloat(commands.get(Modulos.VELOCIDADE_MAX.get()));
-			roverDirection = new Vector(naveAtual.direction(pontoRefRover));
-			drawing = Drawing.newInstance(getConexao());
-			pathFinding = new PathFinding(getConexao());
-			// AJUSTAR CONTROLES PID:
-			acelCtrl.adjustOutput(0, 1);
-			sterringCtrl.adjustOutput(-1, 1);
-
-		} catch (RPCException | StreamException ignored) {
-		}
-	}
-
 	@Override
 	public void run() {
 		if (commands.get(Modulos.MODULO.get()).equals(Modulos.MODULO_ROVER.get())) {
-			try {
-				setTarget();
-				driveRoverToTarget();
-				drawing.clear(false);
-			} catch (RPCException | StreamException | IOException | InterruptedException e) {
-				try {
-					drawing.clear(false);
-					isAutoRoverRunning = false;
-					naveAtual.getControl().setBrakes(true);
-				} catch (RPCException ex) {
-					throw new RuntimeException(ex);
-				}
-				disengageAfterException("Rovering cancelled");
+			setTarget();
+			driveRoverToTarget();
+		}
+	}
+
+	private void setTarget() {
+		try {
+			if (commands.get(Modulos.TIPO_ALVO_ROVER.get()).equals(Modulos.MARCADOR_MAPA.get())) {
+				pathFinding.addWaypointsOnSameBody(commands.get(Modulos.NOME_MARCADOR.get()));
+				setCurrentStatus("Calculando rota até o alvo...");
+				pathFinding.buildPathToTarget(pathFinding.findNearestWaypoint());
 			}
+			if (commands.get(Modulos.TIPO_ALVO_ROVER.get()).equals(Modulos.NAVE_ALVO.get())) {
+				Vector targetVesselPosition = new Vector(
+						getSpaceCenter().getTargetVessel().position(orbitalReferenceFrame));
+				setCurrentStatus("Calculando rota até o alvo...");
+				pathFinding.buildPathToTarget(targetVesselPosition);
+			}
+		} catch (RPCException | IOException | InterruptedException ignored) {
 		}
 	}
 
-	private void setTarget() throws IOException, RPCException, InterruptedException {
-		if (commands.get(Modulos.TIPO_ALVO_ROVER.get()).equals(Modulos.MARCADOR_MAPA.get())) {
-			pathFinding.addWaypointsOnSameBody(commands.get(Modulos.NOME_MARCADOR.get()));
-			pathFinding.buildPathToTarget(pathFinding.findNearestWaypoint());
-		}
-		if (commands.get(Modulos.TIPO_ALVO_ROVER.get()).equals(Modulos.NAVE_ALVO.get())) {
-			Vector targetVesselPosition = new Vector(centroEspacial.getTargetVessel().position(pontoRefOrbital));
-			pathFinding.buildPathToTarget(targetVesselPosition);
-		}
-	}
-
-	private void driveRoverToTarget() throws IOException, RPCException, InterruptedException, StreamException {
-		while (isAutoRoverRunning) {
-			if (pathFinding.isPathToTargetEmpty()) {
-				isAutoRoverRunning = false;
-			} else {
+	private void changeControlMode() throws RPCException, IOException, StreamException, InterruptedException {
+		switch (currentMode) {
+			case DRIVE:
+				driveRover();
+				break;
+			case CHARGING:
+				rechargeRover();
+				break;
+			case NEXT_POINT:
 				setNextPointInPath();
-			}
-
-			if (!needToChargeBatteries()) {
-				if (isFarFromTarget()) {
-					naveAtual.getControl().setBrakes(false);
-					driveRover();
-				} else { // Rover arrived at destiny
-					naveAtual.getControl().setBrakes(true);
-					pathFinding.removePathsCurrentPoint();
-					if (commands.get(Modulos.TIPO_ALVO_ROVER.get()).equals(Modulos.MARCADOR_MAPA.get()) &&
-							pathFinding.isPathToTargetEmpty()) {
-						pathFinding.removeWaypointFromList();
-						pathFinding.findNearestWaypoint();
-					}
-				}
-			} else { // Rover needs recharging 
-				if (hasWorkingSolarPanels()) {
-					rechargeRover();
-				} else {
-					isAutoRoverRunning = false;
-				}
-			}
-			Thread.sleep(50);
+				break;
 		}
-		naveAtual.getControl().setBrakes(true);
-		Thread.sleep(1000);
 	}
 
-	private void setNextPointInPath() {
-		targetPoint = pathFinding.getPathsFirstPoint();
+	private void driveRoverToTarget() {
+		currentMode = MODE.NEXT_POINT;
+		try {
+			while (isAutoRoverRunning) {
+				if (Thread.interrupted()) {
+					throw new InterruptedException();
+				}
+				changeControlMode();
+				if (isFarFromTarget()) {
+					currentMode = needToChargeBatteries() ? MODE.CHARGING : MODE.DRIVE;
+				} else { // Rover arrived at destiny
+					currentMode = MODE.NEXT_POINT;
+				}
+				Thread.sleep(100);
+			}
+		} catch (InterruptedException | RPCException | IOException | StreamException ignored) {
+			try {
+				getNaveAtual().getControl().setBrakes(true);
+				pathFinding.removeDrawnPath();
+				isAutoRoverRunning = false;
+				setCurrentStatus(Bundle.getString("lbl_stat_ready"));
+			} catch (RPCException ignored2) {
+			}
+		}
+	}
+
+	private void setNextPointInPath() throws RPCException, IOException, InterruptedException {
+		pathFinding.removePathsCurrentPoint();
+		getNaveAtual().getControl().setBrakes(true);
+		if (pathFinding.isPathToTargetEmpty()) {
+			if (commands.get(Modulos.TIPO_ALVO_ROVER.get()).equals(Modulos.MARCADOR_MAPA.get())) {
+				pathFinding.removeWaypointFromList();
+				if (pathFinding.isWaypointsToReachEmpty()) {
+					throw new InterruptedException();
+				}
+				pathFinding.buildPathToTarget(pathFinding.findNearestWaypoint());
+			}
+
+		} else {
+			targetPoint = pathFinding.getPathsFirstPoint();
+		}
 	}
 
 	private boolean isFarFromTarget() throws RPCException {
-		double distance = Vector.distance(new Vector(naveAtual.position(pontoRefOrbital)), targetPoint);
+		double distance = Vector.distance(new Vector(getNaveAtual().position(orbitalReferenceFrame)), targetPoint);
 		return distance > distanceFromTargetLimit;
 	}
 
 	private boolean needToChargeBatteries() throws RPCException, IOException, StreamException, InterruptedException {
-		float totalCharge = naveAtual.getResources().max("ElectricCharge");
-		float currentCharge = naveAtual.getResources().amount("ElectricCharge");
+		float totalCharge = getNaveAtual().getResources().max("ElectricCharge");
+		float currentCharge = getNaveAtual().getResources().amount("ElectricCharge");
 		float minChargeLevel = 10.0f;
 		float chargePercentage = (float) Math.ceil(currentCharge * 100 / totalCharge);
-		if (chargePercentage > minChargeLevel) {
-			return false;
-		}
-		return true;
+		return (chargePercentage < minChargeLevel);
 	}
 
 	private void rechargeRover() throws RPCException, StreamException, InterruptedException {
 
-		float totalCharge = naveAtual.getResources().max("ElectricCharge");
-		float currentCharge = naveAtual.getResources().amount("ElectricCharge");
+		float totalCharge = getNaveAtual().getResources().max("ElectricCharge");
+		float currentCharge = getNaveAtual().getResources().amount("ElectricCharge");
 
 		setRoverThrottle(0);
-		naveAtual.getControl().setLights(false);
-		naveAtual.getControl().setBrakes(true);
+		getNaveAtual().getControl().setLights(false);
+		getNaveAtual().getControl().setBrakes(true);
 
-		if (velHorizontal.get() < 1 && naveAtual.getControl().getBrakes()) {
+		if (velHorizontal.get() < 1 && getNaveAtual().getControl().getBrakes()) {
 			Thread.sleep(1000);
-			double chargeTime = 0;
+			double chargeTime;
 			double totalEnergyFlow = 0;
-			List<SolarPanel> solarPanels = naveAtual.getParts()
-			                                        .getSolarPanels()
-			                                        .stream()
-			                                        .filter(RoverController::isSolarPanelNotBroken)
-			                                        .collect(Collectors.toList());
+			List<SolarPanel> solarPanels = getNaveAtual().getParts()
+					.getSolarPanels()
+					.stream()
+					.filter(this::isSolarPanelNotBroken)
+					.collect(Collectors.toList());
 
 			for (SolarPanel sp : solarPanels) {
 				totalEnergyFlow += sp.getEnergyFlow();
 			}
 			chargeTime = ((totalCharge - currentCharge) / totalEnergyFlow);
-			StatusJPanel.setStatus("Segundos de Carga: " + chargeTime);
+			setCurrentStatus("Segundos de Carga: " + chargeTime);
 			if (chargeTime < 1 || chargeTime > 21600) {
 				chargeTime = 3600;
 			}
-			centroEspacial.warpTo((centroEspacial.getUT() + chargeTime), 10000, 4);
-			naveAtual.getControl().setLights(true);
+			getSpaceCenter().warpTo((getSpaceCenter().getUT() + chargeTime), 10000, 4);
+			getNaveAtual().getControl().setLights(true);
 		}
 	}
 
-	private boolean hasWorkingSolarPanels() throws RPCException {
-		List<SolarPanel> solarPanels = naveAtual.getParts()
-		                                        .getSolarPanels()
-		                                        .stream()
-		                                        .filter(RoverController::isSolarPanelNotBroken)
-		                                        .collect(Collectors.toList());
-
-		if (solarPanels.isEmpty()) {
-			return false;
-		} else {
-			return true;
-		}
-	}
-
-	private void driveRover() throws IOException, RPCException, StreamException {
+	private void driveRover() throws RPCException, IOException, StreamException {
 		Vector targetDirection = posSurfToRover(posOrbToSurf(targetPoint)).normalize();
-		Vector radarSourcePosition =
-				posRoverToSurf(new Vector(naveAtual.position(pontoRefRover)).sum(new Vector(0.0, 3.0, 0.0)));
+		Vector radarSourcePosition = posRoverToSurf(
+				new Vector(getNaveAtual().position(roverReferenceFrame)).sum(new Vector(0.0, 3.0,
+						0.0)));
 
 		double roverAngle = (roverDirection.heading());
 		// fazer um raycast pra frente e verificar a distancia
-		double obstacleAhead =
-				pathFinding.raycastDistance(radarSourcePosition, transformDirection(roverDirection),
-				                            pontoRefSuperficie,
-				                            30
-				                           );
+		double obstacleAhead = pathFinding.raycastDistance(radarSourcePosition, transformDirection(roverDirection),
+				surfaceReferenceFrame, 30);
 		double steeringPower = Utilities.remap(3, 30, 0.1, 0.5, obstacleAhead, true);
 		// usar esse valor pra muiltiplicar a direcao alvo
 		double targetAndRadarAngle = (targetDirection.multiply(steeringPower)
-		                                             .sum(directionFromRadar(naveAtual.boundingBox(pontoRefRover)))
-		                                             .normalize()).heading();
+				.sum(directionFromRadar(
+						getNaveAtual().boundingBox(roverReferenceFrame)))
+				.normalize()).heading();
 		double deltaAngle = Math.abs(targetAndRadarAngle - roverAngle);
-		naveAtual.getControl().setSAS(velHorizontal.get() > velocidadeCurva && deltaAngle < 1);
+		getNaveAtual().getControl().setSAS(deltaAngle < 1);
 		// Control Rover Throttle
 		setRoverThrottle(acelCtrl.calcPID(velHorizontal.get() / maxSpeed * 50, 50));
 		// Control Rover Steering
@@ -228,12 +213,15 @@ public class RoverController extends ActiveVessel implements Runnable {
 		} else {
 			setRoverSteering(0.0f);
 		}
+		setCurrentStatus("Driving... " + deltaAngle);
 	}
 
-
-	private Vector directionFromRadar(Pair<Triplet<Double, Double, Double>, Triplet<Double, Double, Double>> boundingBox) throws RPCException, IOException {
+	private Vector directionFromRadar(
+			Pair<Triplet<Double, Double, Double>, Triplet<Double, Double, Double>> boundingBox)
+			throws RPCException, IOException {
 		// PONTO REF ROVER: X = DIREITA, Y = FRENTE, Z = BAIXO;
-		// Bounding box points from rover (LBU: Left, Back, Up - RFD: Right, Front, Down):
+		// Bounding box points from rover (LBU: Left, Back, Up - RFD: Right, Front,
+		// Down):
 		Vector LBU = new Vector(boundingBox.getValue0());
 		Vector RFD = new Vector(boundingBox.getValue1());
 
@@ -260,69 +248,70 @@ public class RoverController extends ActiveVessel implements Runnable {
 		Vector lateralDirAngulo = new Vector(Math.sin(Math.toRadians(90)), Math.cos(Math.toRadians(90)), 0.0);
 
 		// Raytracing distance from points:
-		Vector lateralEsqRay = calculateRaycastDirection(lateralEsq, lateralEsqAngulo, 20);
-		Vector latFrontEsqRay = calculateRaycastDirection(latFrontEsq, latFrontEsqAngulo, 22);
-		Vector frontalEsqRay = calculateRaycastDirection(frontalEsq, frontalEsqAngulo, 24);
-		Vector frontalEsqRay2 = calculateRaycastDirection(frontalEsq2, frontalEsqAngulo2, 26);
-		Vector frontalRay = calculateRaycastDirection(frontal, frontalAngulo, 30);
-		Vector frontalDirRay2 = calculateRaycastDirection(frontalDir2, frontalDirAngulo2, 26);
-		Vector frontalDirRay = calculateRaycastDirection(frontalDir, frontalDirAngulo, 24);
-		Vector latFrontDirRay = calculateRaycastDirection(latFrontDir, latFrontDirAngulo, 22);
-		Vector lateralDirRay = calculateRaycastDirection(lateralDir, lateralDirAngulo, 20);
+		Vector lateralEsqRay = calculateRaycastDirection(lateralEsq, lateralEsqAngulo, 15);
+		Vector latFrontEsqRay = calculateRaycastDirection(latFrontEsq, latFrontEsqAngulo, 19);
+		Vector frontalEsqRay = calculateRaycastDirection(frontalEsq, frontalEsqAngulo, 23);
+		Vector frontalEsqRay2 = calculateRaycastDirection(frontalEsq2, frontalEsqAngulo2, 27);
+		Vector frontalRay = calculateRaycastDirection(frontal, frontalAngulo, 35);
+		Vector frontalDirRay2 = calculateRaycastDirection(frontalDir2, frontalDirAngulo2, 27);
+		Vector frontalDirRay = calculateRaycastDirection(frontalDir, frontalDirAngulo, 23);
+		Vector latFrontDirRay = calculateRaycastDirection(latFrontDir, latFrontDirAngulo, 19);
+		Vector lateralDirRay = calculateRaycastDirection(lateralDir, lateralDirAngulo, 15);
 
 		Vector calculatedDirection = new Vector().sum(lateralEsqRay)
-		                                         .sum(latFrontEsqRay)
-		                                         .sum(frontalEsqRay)
-		                                         .sum(frontalEsqRay2)
-		                                         .sum(frontalRay)
-		                                         .sum(frontalDirRay2)
-		                                         .sum(frontalDirRay)
-		                                         .sum(latFrontDirRay)
-		                                         .sum(lateralDirRay);
+				.sum(latFrontEsqRay)
+				.sum(frontalEsqRay)
+				.sum(frontalEsqRay2)
+				.sum(frontalRay)
+				.sum(frontalDirRay2)
+				.sum(frontalDirRay)
+				.sum(latFrontDirRay)
+				.sum(lateralDirRay);
 
 		return (calculatedDirection.normalize());
 	}
 
 	private Vector calculateRaycastDirection(Vector point, Vector direction, double distance) throws RPCException {
-		double raycast =
-				pathFinding.raycastDistance(posRoverToSurf(point), transformDirection(direction), pontoRefSuperficie,
-				                            distance
-				                           );
+		double raycast = pathFinding.raycastDistance(posRoverToSurf(point), transformDirection(direction),
+				surfaceReferenceFrame,
+				distance);
 		return direction.multiply(raycast);
 	}
 
-	private Vector createRadarDirection(double angle) {
-		int sign = angle > 90 ? -1 : 1;
-		angle = angle >= 90 ? angle - 90 : angle;
-		return new Vector(Math.sin(Math.toRadians(angle)) * sign, Math.cos(Math.toRadians(angle)), 0.0);
-	}
-
 	private Vector transformDirection(Vector vector) throws RPCException {
-		return new Vector(centroEspacial.transformDirection(vector.toTriplet(), pontoRefRover, pontoRefSuperficie));
+		return new Vector(
+				getSpaceCenter().transformDirection(vector.toTriplet(), roverReferenceFrame, surfaceReferenceFrame));
 	}
 
 	private Vector posSurfToRover(Vector vector) throws RPCException {
-		return new Vector(centroEspacial.transformPosition(vector.toTriplet(), pontoRefSuperficie, pontoRefRover));
+		return new Vector(
+				getSpaceCenter().transformPosition(vector.toTriplet(), surfaceReferenceFrame, roverReferenceFrame));
 	}
 
 	private Vector posRoverToSurf(Vector vector) throws RPCException {
-		return new Vector(centroEspacial.transformPosition(vector.toTriplet(), pontoRefRover, pontoRefSuperficie));
+		return new Vector(
+				getSpaceCenter().transformPosition(vector.toTriplet(), roverReferenceFrame, surfaceReferenceFrame));
 	}
 
 	private Vector posOrbToSurf(Vector vector) throws RPCException {
-		return new Vector(centroEspacial.transformPosition(vector.toTriplet(), pontoRefOrbital, pontoRefSuperficie));
+		return new Vector(
+				getSpaceCenter().transformPosition(vector.toTriplet(), orbitalReferenceFrame, surfaceReferenceFrame));
 	}
 
 	private void setRoverThrottle(double throttle) throws RPCException, StreamException {
 		if (velHorizontal.get() < (maxSpeed * 1.01)) {
-			naveAtual.getControl().setBrakes(false);
-			naveAtual.getControl().setWheelThrottle((float) throttle);
+			getNaveAtual().getControl().setBrakes(false);
+			getNaveAtual().getControl().setWheelThrottle((float) throttle);
 		} else {
-			naveAtual.getControl().setBrakes(true);
+			getNaveAtual().getControl().setBrakes(true);
 		}
 	}
 
 	private void setRoverSteering(double steering) throws RPCException {
-		naveAtual.getControl().setWheelSteering((float) steering);
+		getNaveAtual().getControl().setWheelSteering((float) steering);
+	}
+
+	private enum MODE {
+		DRIVE, NEXT_POINT, CHARGING
 	}
 }

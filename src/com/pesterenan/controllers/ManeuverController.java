@@ -1,12 +1,9 @@
 package com.pesterenan.controllers;
 
-import com.pesterenan.model.ActiveVessel;
 import com.pesterenan.resources.Bundle;
 import com.pesterenan.utils.ControlePID;
 import com.pesterenan.utils.Modulos;
 import com.pesterenan.utils.Navigation;
-import com.pesterenan.views.MainGui;
-import com.pesterenan.views.StatusJPanel;
 import krpc.client.RPCException;
 import krpc.client.Stream;
 import krpc.client.StreamException;
@@ -20,28 +17,30 @@ import org.javatuples.Triplet;
 import java.util.List;
 import java.util.Map;
 
-public class ManeuverController extends ActiveVessel implements Runnable {
+import static com.pesterenan.MechPeste.getConnection;
+import static com.pesterenan.MechPeste.getSpaceCenter;
 
+public class ManeuverController extends Controller {
+
+	public final static float CONST_GRAV = 9.81f;
 	private final ControlePID ctrlRCS = new ControlePID();
 	private final ControlePID ctrlManeuver = new ControlePID();
-	private final Navigation nav = new Navigation();
+	private Navigation navigation;
 	private boolean fineAdjustment;
+	private double lowOrbitAltitude;
 
 	public ManeuverController(Map<String, String> commands) {
-		super(getConexao());
+		super();
 		this.commands = commands;
+		this.navigation = new Navigation(getNaveAtual());
 		initializeParameters();
 	}
 
 	private void initializeParameters() {
-		try {
-			ctrlRCS.adjustOutput(0.5, 1.0);
-			currentBody = naveAtual.getOrbit().getBody();
-			fineAdjustment = canFineAdjust(commands.get(Modulos.AJUSTE_FINO.get()));
-			tuneAutoPilot();
-		} catch (RPCException e) {
-			throw new RuntimeException(e);
-		}
+		ctrlRCS.adjustOutput(0.5, 1.0);
+		fineAdjustment = canFineAdjust(commands.get(Modulos.AJUSTE_FINO.get()));
+		lowOrbitAltitude = calculateSafeLowOrbitAltitude();
+		System.out.println(lowOrbitAltitude);
 	}
 
 	@Override
@@ -50,40 +49,61 @@ public class ManeuverController extends ActiveVessel implements Runnable {
 		executeNextManeuver();
 	}
 
+	private double calculateSafeLowOrbitAltitude() {
+		final double safeAltitude = 20000;
+		double bodyRadius = 0, atmosphereDepth = 0;
+		try {
+			bodyRadius = currentBody.getEquatorialRadius();
+			System.out.println(bodyRadius);
+			atmosphereDepth = currentBody.getAtmosphereDepth();
+			System.out.println(atmosphereDepth);
+			System.out.println(altitude.get());
+			System.out.println(altitudeSup.get());
+			System.out.println(apoastro.get());
+		} catch (RPCException | StreamException ignored) {
+		}
+		return bodyRadius + (atmosphereDepth > 0 ? atmosphereDepth + safeAltitude : safeAltitude);
+	}
+
 	public void calculateManeuver() {
 		try {
+			tuneAutoPilot();
+			System.out.println(commands);
 			if (commands.get(Modulos.FUNCAO.get()).equals(Modulos.EXECUTAR.get())) {
 				return;
 			}
-			if (naveAtual.getSituation() == VesselSituation.LANDED ||
-					naveAtual.getSituation() == VesselSituation.SPLASHED) {
+			if (getNaveAtual().getSituation() == VesselSituation.LANDED ||
+					getNaveAtual().getSituation() == VesselSituation.SPLASHED) {
 				throw new InterruptedException();
 			}
 			if (commands.get(Modulos.FUNCAO.get()).equals(Modulos.AJUSTAR.get())) {
 				this.alignPlanes();
 				return;
 			}
-			double parametroGravitacional = currentBody.getGravitationalParameter();
+			if (commands.get(Modulos.FUNCAO.get()).equals(Modulos.ORBITA_BAIXA.get())) {
+				hohmannTransferToOrbit(lowOrbitAltitude, getNaveAtual().getOrbit().getTimeToPeriapsis());
+				hohmannTransferToOrbit(lowOrbitAltitude, getNaveAtual().getOrbit().getTimeToPeriapsis());
+				return;
+			}
+			double gravParameter = currentBody.getGravitationalParameter();
 			double altitudeInicial = 0, tempoAteAltitude = 0;
 			if (commands.get(Modulos.FUNCAO.get()).equals(Modulos.APOASTRO.get())) {
-				altitudeInicial = naveAtual.getOrbit().getApoapsis();
-				tempoAteAltitude = naveAtual.getOrbit().getTimeToApoapsis();
+				altitudeInicial = getNaveAtual().getOrbit().getApoapsis();
+				tempoAteAltitude = getNaveAtual().getOrbit().getTimeToApoapsis();
 			}
 			if (commands.get(Modulos.FUNCAO.get()).equals(Modulos.PERIASTRO.get())) {
-				altitudeInicial = naveAtual.getOrbit().getPeriapsis();
-				tempoAteAltitude = naveAtual.getOrbit().getTimeToPeriapsis();
+				altitudeInicial = getNaveAtual().getOrbit().getPeriapsis();
+				tempoAteAltitude = getNaveAtual().getOrbit().getTimeToPeriapsis();
 			}
 
-			double semiEixoMaior = naveAtual.getOrbit().getSemiMajorAxis();
-			double velOrbitalAtual =
-					Math.sqrt(parametroGravitacional * ((2.0 / altitudeInicial) - (1.0 / semiEixoMaior)));
-			double velOrbitalAlvo =
-					Math.sqrt(parametroGravitacional * ((2.0 / altitudeInicial) - (1.0 / altitudeInicial)));
+			double semiEixoMaior = getNaveAtual().getOrbit().getSemiMajorAxis();
+			double velOrbitalAtual = Math.sqrt(gravParameter * ((2.0 / altitudeInicial) - (1.0 / semiEixoMaior)));
+			double velOrbitalAlvo = Math.sqrt(gravParameter * ((2.0 / altitudeInicial) - (1.0 / altitudeInicial)));
 			double deltaVdaManobra = velOrbitalAlvo - velOrbitalAtual;
 			double[] deltaV = { deltaVdaManobra, 0, 0 };
 			createManeuver(tempoAteAltitude, deltaV);
 		} catch (RPCException | InterruptedException e) {
-			disengageAfterException(Bundle.getString("status_maneuver_not_possible"));
+			setCurrentStatus(Bundle.getString("status_maneuver_not_possible"));
 		}
 	}
 
@@ -91,8 +111,12 @@ public class ManeuverController extends ActiveVessel implements Runnable {
 		try {
 			Orbit targetOrbit = getTargetOrbit();
 			System.out.println(targetOrbit.getApoapsis() + "-- APO");
-			Node maneuver = hohmannTransferToOrbit(targetOrbit, naveAtual.getOrbit().getTimeToPeriapsis());
+			Node maneuver = hohmannTransferToOrbit(targetOrbit.getApoapsis(),
+					getNaveAtual().getOrbit().getTimeToPeriapsis());
 			while (true) {
+				if (Thread.interrupted()) {
+					throw new InterruptedException();
+				}
 				double currentDeltaApo = compareOrbitParameter(maneuver.getOrbit(), targetOrbit, Compare.AP);
 				String deltaApoFormatted = String.format("%.2f", currentDeltaApo);
 				System.out.println(deltaApoFormatted);
@@ -106,26 +130,27 @@ public class ManeuverController extends ActiveVessel implements Runnable {
 				Thread.sleep(50);
 			}
 		} catch (Exception e) {
-			disengageAfterException("Não foi possivel ajustar a inclinação");
+			setCurrentStatus("Não foi possivel ajustar a inclinação");
 		}
 	}
 
-	private Node hohmannTransferToOrbit(Orbit targetOrbit, double timeToStart) {
+	private Node hohmannTransferToOrbit(double targetAltitude, double timeToStart) {
 		double[] totalDv = { 0, 0, 0 };
 		try {
-			double startingRadius = naveAtual.getOrbit().getPeriapsis();
-			double finalRadius = targetOrbit.getApoapsis();
-			System.out.println(startingRadius + " --- " + finalRadius);
-			double gravitationalParameter = currentBody.getGravitationalParameter();
-			// DeltaV used to get to the second Node
-			double firstNodeDv = Math.sqrt(gravitationalParameter * ((2.0 / startingRadius) -
-					(1.0 / naveAtual.getOrbit().getSemiMajorAxis())));
-			// DeltaV used to orbit in the second Node
-			double secondNodeDv = Math.sqrt(gravitationalParameter * ((2.0 / startingRadius) - (1.0 / finalRadius)));
-			// Time taken between the two points
-			totalDv[0] = secondNodeDv - firstNodeDv;
+			double startingRadius = Math.max(getNaveAtual().getOrbit().getApoapsis(),
+					getNaveAtual().getOrbit().getPeriapsis());
+			System.out.println(startingRadius + " --- " + targetAltitude);
+			double gravParameter = currentBody.getGravitationalParameter();
+			// Delta-v required to leave the current orbit
+			double deltaV1 = Math.sqrt(2 * gravParameter / startingRadius) - Math.sqrt(gravParameter / startingRadius);
+			// Delta-v required to enter the target orbit
+			double deltaV2 = Math.sqrt(gravParameter / targetAltitude) - Math.sqrt(2 * gravParameter / targetAltitude);
+			System.out.println(deltaV1);
+			System.out.println(deltaV2);
+
+			// Dv taken between the two points
+			totalDv[0] = deltaV2 + deltaV1;
 		} catch (RPCException e) {
-			e.printStackTrace();
 		}
 		return createManeuver(timeToStart, totalDv);
 	}
@@ -135,17 +160,17 @@ public class ManeuverController extends ActiveVessel implements Runnable {
 		double[] dv = { 0, 0, 0 };
 		try {
 			double[] incNodesUt = getTimeToIncNodes(targetOrbit);
-			uTatClosestNode = Math.min(incNodesUt[0], incNodesUt[1]) - centroEspacial.getUT();
+			uTatClosestNode = Math.min(incNodesUt[0], incNodesUt[1]) - getSpaceCenter().getUT();
 		} catch (Exception ignored) {
 		}
 		return createManeuver(uTatClosestNode, dv);
 	}
 
 	private double[] getTimeToIncNodes(Orbit targetOrbit) throws RPCException {
-		Orbit vesselOrbit = naveAtual.getOrbit();
+		Orbit vesselOrbit = getNaveAtual().getOrbit();
 		double ascendingNode = vesselOrbit.trueAnomalyAtAN(targetOrbit);
 		double descendingNode = vesselOrbit.trueAnomalyAtDN(targetOrbit);
-		return new double[]{ vesselOrbit.uTAtTrueAnomaly(ascendingNode), vesselOrbit.uTAtTrueAnomaly(descendingNode) };
+		return new double[] { vesselOrbit.uTAtTrueAnomaly(ascendingNode), vesselOrbit.uTAtTrueAnomaly(descendingNode) };
 	}
 
 	public void alignPlanes() {
@@ -156,6 +181,9 @@ public class ManeuverController extends ActiveVessel implements Runnable {
 			boolean closestIsAN = incNodesUt[0] < incNodesUt[1];
 			double timeToExecute = 0;
 			while (timeToExecute < 5000) {
+				if (Thread.interrupted()) {
+					throw new InterruptedException();
+				}
 				double currentDeltaInc = compareOrbitParameter(maneuver.getOrbit(), targetOrbit, Compare.INC);
 				String deltaIncFormatted = String.format("%.2f", currentDeltaInc);
 				System.out.println(deltaIncFormatted);
@@ -174,18 +202,8 @@ public class ManeuverController extends ActiveVessel implements Runnable {
 				Thread.sleep(25);
 			}
 		} catch (Exception e) {
-			disengageAfterException("Não foi possivel ajustar a inclinação");
+			setCurrentStatus("Não foi possivel ajustar a inclinação");
 		}
-	}
-
-	private double limitPIDOutput(double absDeltaInc) {
-		if (absDeltaInc < 0.05) {
-			return 0.1;
-		}
-		if (absDeltaInc < 0.5) {
-			return 5;
-		}
-		return 10;
 	}
 
 	private double compareOrbitParameter(Orbit maneuverOrbit, Orbit targetOrbit, Compare parameter) {
@@ -222,11 +240,11 @@ public class ManeuverController extends ActiveVessel implements Runnable {
 	}
 
 	private Orbit getTargetOrbit() throws RPCException {
-		if (centroEspacial.getTargetBody() != null) {
-			return centroEspacial.getTargetBody().getOrbit();
+		if (getSpaceCenter().getTargetBody() != null) {
+			return getSpaceCenter().getTargetBody().getOrbit();
 		}
-		if (centroEspacial.getTargetVessel() != null) {
-			return centroEspacial.getTargetVessel().getOrbit();
+		if (getSpaceCenter().getTargetVessel() != null) {
+			return getSpaceCenter().getTargetVessel().getOrbit();
 		}
 		return null;
 	}
@@ -234,142 +252,139 @@ public class ManeuverController extends ActiveVessel implements Runnable {
 	private Node createManeuver(double laterTime, double[] deltaV) {
 		Node maneuverNode = null;
 		try {
-			naveAtual.getControl()
-			         .addNode(centroEspacial.getUT() + laterTime, (float) deltaV[0], (float) deltaV[1],
-			                  (float) deltaV[2]
-			                 );
-			List<Node> currentNodes = naveAtual.getControl().getNodes();
+			getNaveAtual().getControl()
+					.addNode(getSpaceCenter().getUT() + laterTime, (float) deltaV[0], (float) deltaV[1],
+							(float) deltaV[2]);
+			List<Node> currentNodes = getNaveAtual().getControl().getNodes();
 			maneuverNode = currentNodes.get(currentNodes.size() - 1);
 		} catch (UnsupportedOperationException | RPCException e) {
-			disengageAfterException(Bundle.getString("status_maneuver_not_possible"));
+			setCurrentStatus(Bundle.getString("status_maneuver_not_possible"));
 		}
 		return maneuverNode;
 	}
 
 	public void executeNextManeuver() {
 		try {
-			List<Node> nodes = naveAtual.getControl().getNodes();
-			Node maneuverNode = nodes.get(0);
+			Node maneuverNode = getNaveAtual().getControl().getNodes().get(0);
 			double burnTime = calculateBurnTime(maneuverNode);
 			orientToManeuverNode(maneuverNode);
 			executeBurn(maneuverNode, burnTime);
 		} catch (UnsupportedOperationException e) {
-			disengageAfterException(Bundle.getString("status_maneuver_not_unlocked"));
+			setCurrentStatus(Bundle.getString("status_maneuver_not_unlocked"));
 		} catch (IndexOutOfBoundsException e) {
-			disengageAfterException(Bundle.getString("status_maneuver_unavailable"));
+			setCurrentStatus(Bundle.getString("status_maneuver_unavailable"));
 		} catch (RPCException e) {
-			disengageAfterException(Bundle.getString("status_data_unavailable"));
+			setCurrentStatus(Bundle.getString("status_data_unavailable"));
+		} catch (InterruptedException e) {
+			setCurrentStatus(Bundle.getString("status_couldnt_orient"));
 		}
 	}
 
-	public void orientToManeuverNode(Node maneuverNode) {
-		try {
-			StatusJPanel.setStatus(Bundle.getString("status_orienting_ship"));
-			ap.engage();
-			ap.setTargetRoll(0);
-			nav.aimAtManeuver(maneuverNode);
-			System.out.println("iniciando rolagem");
-			while (ap.getRollError() > 5) {
-				ap.wait_();
+	public void orientToManeuverNode(Node maneuverNode) throws InterruptedException, RPCException {
+		setCurrentStatus(Bundle.getString("status_orienting_ship"));
+		ap.engage();
+		while (ap.getHeadingError() > 3 || ap.getPitchError() > 3) {
+			if (Thread.interrupted()) {
+				throw new InterruptedException();
 			}
-			System.out.println("iniciando miragem");
-			while (ap.getError() > 5) {
-				ap.wait_();
-			}
-			System.out.println("miragem terminada");
-		} catch (RPCException e) {
-			disengageAfterException(Bundle.getString("status_couldnt_orient"));
+			navigation.aimAtManeuver(maneuverNode);
+			Thread.sleep(100);
 		}
+
 	}
 
 	public double calculateBurnTime(Node noDeManobra) throws RPCException {
 
-		List<Engine> motores = naveAtual.getParts().getEngines();
+		List<Engine> motores = getNaveAtual().getParts().getEngines();
 		for (Engine motor : motores) {
-			if (motor.getPart().getStage() == naveAtual.getControl().getCurrentStage() && !motor.getActive()) {
+			if (motor.getPart().getStage() == getNaveAtual().getControl().getCurrentStage() && !motor.getActive()) {
 				motor.setActive(true);
 			}
 		}
-		double empuxo = naveAtual.getAvailableThrust();
-		double isp = naveAtual.getSpecificImpulse() * CONST_GRAV;
-		double massaTotal = naveAtual.getMass();
+		double empuxo = getNaveAtual().getAvailableThrust();
+		double isp = getNaveAtual().getSpecificImpulse() * CONST_GRAV;
+		double massaTotal = getNaveAtual().getMass();
 		double massaSeca = massaTotal / Math.exp(noDeManobra.getDeltaV() / isp);
 		double taxaDeQueima = empuxo / isp;
 		double duracaoDaQueima = (massaTotal - massaSeca) / taxaDeQueima;
 
-		StatusJPanel.setStatus("Tempo de Queima da Manobra: " + duracaoDaQueima + " segundos");
+		setCurrentStatus("Tempo de Queima da Manobra: " + duracaoDaQueima + " segundos");
 		return duracaoDaQueima;
 	}
 
 	public void executeBurn(Node noDeManobra, double duracaoDaQueima) {
 		try {
 			double inicioDaQueima = noDeManobra.getTimeTo() - (duracaoDaQueima / 2.0) - (fineAdjustment ? 5 : 0);
-			StatusJPanel.setStatus(Bundle.getString("status_maneuver_warp"));
+			setCurrentStatus(Bundle.getString("status_maneuver_warp"));
 			if (inicioDaQueima > 30) {
-				centroEspacial.warpTo((centroEspacial.getUT() + inicioDaQueima - 10), 100000, 4);
+				getSpaceCenter().warpTo((getSpaceCenter().getUT() + inicioDaQueima - 10), 100000, 4);
 			}
 			// Mostrar tempo de ignição:
-			StatusJPanel.setStatus(String.format(Bundle.getString("status_maneuver_duration"), duracaoDaQueima));
+			setCurrentStatus(String.format(Bundle.getString("status_maneuver_duration"), duracaoDaQueima));
 			while (inicioDaQueima > 0) {
-				inicioDaQueima = noDeManobra.getTimeTo() - (duracaoDaQueima / 2.0);
-				inicioDaQueima = Math.max(inicioDaQueima, 0.0);
-				nav.aimAtManeuver(noDeManobra);
-				StatusJPanel.setStatus(String.format(Bundle.getString("status_maneuver_ignition_in"), inicioDaQueima));
+				if (Thread.interrupted()) {
+					throw new InterruptedException();
+				}
+				inicioDaQueima = Math.max(noDeManobra.getTimeTo() - (duracaoDaQueima / 2.0), 0.0);
+				navigation.aimAtManeuver(noDeManobra);
+				setCurrentStatus(String.format(Bundle.getString("status_maneuver_ignition_in"), inicioDaQueima));
 				Thread.sleep(100);
 			}
 			// Executar a manobra:
-			Stream<Triplet<Double, Double, Double>> queimaRestante =
-					getConexao().addStream(noDeManobra, "remainingBurnVector", noDeManobra.getReferenceFrame());
-			StatusJPanel.setStatus(Bundle.getString("status_maneuver_executing"));
-			double limiteParaDesacelerar =
-					noDeManobra.getDeltaV() > 1000 ? 0.025 : noDeManobra.getDeltaV() > 250 ? 0.10 : 0.25;
-
-			while (!noDeManobra.equals(null)) {
-				if (queimaRestante.get().getValue1() < (fineAdjustment ? 2 : 0.5)) {
+			Stream<Triplet<Double, Double, Double>> queimaRestante = getConnection().addStream(noDeManobra,
+					"remainingBurnVector", noDeManobra.getReferenceFrame());
+			setCurrentStatus(Bundle.getString("status_maneuver_executing"));
+			double remainingBurnTime = duracaoDaQueima + 0.5;
+			while (noDeManobra != null) {
+				if (Thread.interrupted()) {
+					throw new InterruptedException();
+				}
+				if (remainingBurnTime < 0.0 || queimaRestante.get().getValue1() < (fineAdjustment ? 2 : 0.5)) {
+					throttle(0.0f);
 					break;
 				}
-				nav.aimAtManeuver(noDeManobra);
-				throttle(ctrlManeuver.calcPID(
-						(noDeManobra.getDeltaV() - queimaRestante.get().getValue1()) / noDeManobra.getDeltaV() * 1000,
-						1000
-				                             ));
-				MainGui.getParametros()
-				       .getComponent(0)
-				       .firePropertyChange("distancia", 0, queimaRestante.get().getValue1());
-				Thread.sleep(25);
+				navigation.aimAtManeuver(noDeManobra);
+				throttle(ctrlManeuver.calcPID((noDeManobra.getDeltaV() - Math.floor(queimaRestante.get().getValue1())) /
+						noDeManobra.getDeltaV() * 1000, 1000));
+				remainingBurnTime -= 0.05;
+				Thread.sleep(50);
 			}
 			throttle(0.0f);
 			if (fineAdjustment) {
 				adjustManeuverWithRCS(queimaRestante);
 			}
-			ap.setReferenceFrame(pontoRefSuperficie);
+			ap.setReferenceFrame(surfaceReferenceFrame);
 			ap.disengage();
-			naveAtual.getControl().setSAS(true);
-			naveAtual.getControl().setRCS(false);
+			getNaveAtual().getControl().setSAS(true);
+			getNaveAtual().getControl().setRCS(false);
 			queimaRestante.remove();
 			noDeManobra.remove();
-			StatusJPanel.setStatus(Bundle.getString("status_ready"));
+			setCurrentStatus(Bundle.getString("status_ready"));
 		} catch (StreamException | RPCException e) {
-			disengageAfterException(Bundle.getString("status_data_unavailable"));
+			setCurrentStatus(Bundle.getString("status_data_unavailable"));
 		} catch (InterruptedException e) {
-			disengageAfterException(Bundle.getString("status_maneuver_cancelled"));
+			setCurrentStatus(Bundle.getString("status_maneuver_cancelled"));
 		}
 	}
 
 	private void adjustManeuverWithRCS(Stream<Triplet<Double, Double, Double>> remainingDeltaV) throws RPCException,
 			StreamException, InterruptedException {
-		naveAtual.getControl().setRCS(true);
+		getNaveAtual().getControl().setRCS(true);
 		while (Math.floor(remainingDeltaV.get().getValue1()) > 0.2) {
-			naveAtual.getControl().setForward((float) ctrlRCS.calcPID(-remainingDeltaV.get().getValue1() * 10, 0));
+			if (Thread.interrupted()) {
+				throw new InterruptedException();
+			}
+			getNaveAtual().getControl().setForward((float) ctrlRCS.calcPID(-remainingDeltaV.get().getValue1() * 10,
+					0));
 			Thread.sleep(25);
 		}
-		naveAtual.getControl().setForward(0);
+		getNaveAtual().getControl().setForward(0);
 	}
 
 	private boolean canFineAdjust(String string) {
 		if (string.equals("true")) {
 			try {
-				List<RCS> rcsEngines = naveAtual.getParts().getRCS();
+				List<RCS> rcsEngines = getNaveAtual().getParts().getRCS();
 				if (rcsEngines.size() > 0) {
 					for (RCS rcs : rcsEngines) {
 						if (rcs.getHasFuel()) {

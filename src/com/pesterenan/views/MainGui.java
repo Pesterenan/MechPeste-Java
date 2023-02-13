@@ -1,26 +1,42 @@
 package com.pesterenan.views;
 
 import com.pesterenan.resources.Bundle;
+import com.pesterenan.utils.Modulos;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 
-public class MainGui extends JFrame implements ActionListener {
+public class MainGui extends JFrame implements ActionListener, PropertyChangeListener {
 	private static final long serialVersionUID = 1L;
+	private final Dimension APP_DIMENSION = new Dimension(480, 300);
+	public static final Dimension PNL_DIMENSION = new Dimension(464, 216);
+	public static final Dimension BTN_DIMENSION = new Dimension(110, 25);
+	public static final EmptyBorder MARGIN_BORDER_10_PX_LR = new EmptyBorder(0,10,0,10);
 	private static MainGui mainGui = null;
 	private static StatusJPanel pnlStatus;
-	private static FunctionsJPanel pnlFuncoes;
-	private static ParametersJPanel pnlParametros;
-	private final Dimension dmsMainGui = new Dimension(480, 300);
+	private static FunctionsAndTelemetryJPanel pnlFunctionsAndTelemetry;
 	private final JPanel ctpMainGui = new JPanel();
+	private final static JPanel cardJPanels = new JPanel();
 	private JMenuBar menuBar;
 	private JMenu mnFile;
-	private JMenuItem mntmExit;
+	private JMenu mnOptions;
 	private JMenu mnHelp;
-	private JMenuItem mntmAbout;
 	private JMenuItem mntmInstallKrpc;
+	private JMenuItem mntmExit;
+	private JMenuItem mntmChangeVessels;
+	private JMenuItem mntmAbout;
+	private LiftoffJPanel pnlLiftoff;
+
+	private final CardLayout cardLayout = new CardLayout(0, 0);
+	private LandingJPanel pnlLanding;
+	private ManeuverJPanel pnlManeuver;
+	private RoverJPanel pnlRover;
 
 	private MainGui() {
 		try {
@@ -31,15 +47,10 @@ public class MainGui extends JFrame implements ActionListener {
 		}
 	}
 
-	public static MainGui getInstance() {
+	public static void newInstance() {
 		if (mainGui == null) {
 			mainGui = new MainGui();
 		}
-		return mainGui;
-	}
-
-	public static ParametersJPanel getParametros() {
-		return pnlParametros;
 	}
 
 	private void initComponents() {
@@ -48,7 +59,7 @@ public class MainGui extends JFrame implements ActionListener {
 		setVisible(true);
 		setResizable(false);
 		setLocation(100, 100);
-		setSize(dmsMainGui);
+		setSize(APP_DIMENSION);
 
 		menuBar = new JMenuBar();
 		setJMenuBar(menuBar);
@@ -56,9 +67,16 @@ public class MainGui extends JFrame implements ActionListener {
 		mnFile = new JMenu(Bundle.getString("main_mn_file")); //$NON-NLS-1$
 		menuBar.add(mnFile);
 
-		mntmInstallKrpc = new JMenuItem("Install KRPC");
+		mnOptions = new JMenu(Bundle.getString("main_mn_options")); //$NON-NLS-1$
+		menuBar.add(mnOptions);
+
+		mntmInstallKrpc = new JMenuItem(Bundle.getString("main_mntm_install_krpc"));
 		mntmInstallKrpc.addActionListener(this);
 		mnFile.add(mntmInstallKrpc);
+
+		mntmChangeVessels = new JMenuItem(Bundle.getString("main_mntm_change_vessels"));
+		mntmChangeVessels.addActionListener(this);
+		mnOptions.add(mntmChangeVessels);
 
 		mnFile.add(new JSeparator());
 		mntmExit = new JMenuItem(Bundle.getString("main_mntm_exit")); //$NON-NLS-1$
@@ -69,33 +87,108 @@ public class MainGui extends JFrame implements ActionListener {
 		menuBar.add(mnHelp);
 
 		mntmAbout = new JMenuItem(Bundle.getString("main_mntm_about")); //$NON-NLS-1$
+		mntmAbout.addActionListener(this);
 		mnHelp.add(mntmAbout);
 		setContentPane(ctpMainGui);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-		pnlFuncoes = new FunctionsJPanel();
-		pnlParametros = new ParametersJPanel();
+		pnlFunctionsAndTelemetry = new FunctionsAndTelemetryJPanel();
+		pnlLiftoff = new LiftoffJPanel();
+		pnlLanding = new LandingJPanel();
+		pnlManeuver = new ManeuverJPanel();
+		pnlRover = new RoverJPanel();
 		pnlStatus = new StatusJPanel();
+
+		cardJPanels.setLayout(cardLayout);
+		cardJPanels.setSize(PNL_DIMENSION);
+		cardJPanels.add(pnlFunctionsAndTelemetry, Modulos.MODULO_TELEMETRIA.get());
+		cardJPanels.add(pnlLiftoff, Modulos.MODULO_DECOLAGEM.get());
+		cardJPanels.add(pnlLanding, Modulos.MODULO_POUSO.get());
+		cardJPanels.add(pnlManeuver, Modulos.MODULO_MANOBRAS.get());
+		cardJPanels.add(pnlRover, Modulos.MODULO_ROVER.get());
+		cardJPanels.addPropertyChangeListener(this);
+
 		ctpMainGui.setLayout(new BorderLayout(0, 0));
-		ctpMainGui.add(pnlFuncoes, BorderLayout.WEST);
-		ctpMainGui.add(pnlParametros, BorderLayout.CENTER);
+		ctpMainGui.add(cardJPanels, BorderLayout.CENTER);
 		ctpMainGui.add(pnlStatus, BorderLayout.SOUTH);
 	}
 
 	public void actionPerformed(ActionEvent e) {
+		if (e.getSource() == mntmAbout) {
+			handleMntmAboutActionPerformed(e);
+		}
 		if (e.getSource() == mntmInstallKrpc) {
 			handleMntmInstallKrpcActionPerformed(e);
 		}
 		if (e.getSource() == mntmExit) {
 			handleMntmExitActionPerformed(e);
 		}
+		if (e.getSource() == mntmChangeVessels) {
+			handleMntmMultiControlActionPerformed(e);
+		}
+	}
+
+	private void handleMntmMultiControlActionPerformed(ActionEvent e) {
+		new ChangeVesselDialog();
 	}
 
 	protected void handleMntmInstallKrpcActionPerformed(ActionEvent e) {
-		InstallKrpcDialog ikd = new InstallKrpcDialog();
+		new InstallKrpcDialog();
 	}
 
 	protected void handleMntmExitActionPerformed(ActionEvent e) {
 		System.exit(0);
+	}
+
+	@Override
+	public void propertyChange(PropertyChangeEvent evt) {
+		if (evt.getSource() == cardJPanels) {
+			handlePnlTelemetriaPropertyChange(evt);
+		}
+	}
+
+	public static Rectangle centerDialogOnScreen() {
+		Dimension SCREEN_DIMENSIONS = Toolkit.getDefaultToolkit().getScreenSize();
+		Dimension DIALOG_DIMENSIONS = new Dimension(400, 240);
+		int w = DIALOG_DIMENSIONS.width;
+		int h = DIALOG_DIMENSIONS.height;
+		int x = (SCREEN_DIMENSIONS.width - w) / 2;
+		int y = (SCREEN_DIMENSIONS.height - h) / 2;
+		return new Rectangle(x, y, w, h);
+	}
+
+	protected void handlePnlTelemetriaPropertyChange(PropertyChangeEvent evt) {
+		if (evt.getPropertyName().equals(Modulos.MODULO_DECOLAGEM.get())) {
+			cardLayout.show(cardJPanels, Modulos.MODULO_DECOLAGEM.get());
+		}
+		if (evt.getPropertyName().equals(Modulos.MODULO_POUSO.get())) {
+			cardLayout.show(cardJPanels, Modulos.MODULO_POUSO.get());
+		}
+		if (evt.getPropertyName().equals(Modulos.MODULO_MANOBRAS.get())) {
+			cardLayout.show(cardJPanels, Modulos.MODULO_MANOBRAS.get());
+		}
+		if (evt.getPropertyName().equals(Modulos.MODULO_ROVER.get())) {
+			cardLayout.show(cardJPanels, Modulos.MODULO_ROVER.get());
+		}
+		if (evt.getPropertyName().equals(Modulos.MODULO_TELEMETRIA.get())) {
+			cardLayout.show(cardJPanels, Modulos.MODULO_TELEMETRIA.get());
+		}
+	}
+
+	public static JPanel getCardJPanels() {
+		return cardJPanels;
+	}
+
+	public static void backToTelemetry(ActionEvent e) {
+		cardJPanels.firePropertyChange(Modulos.MODULO_TELEMETRIA.get(), false, true);
+	}
+
+	protected void handleMntmAboutActionPerformed(ActionEvent e) {
+		new AboutJFrame();
+	}
+
+	public static Component createMarginComponent(int width, int height) {
+		Component marginComp = Box.createRigidArea(new Dimension(width,height));
+		return marginComp;
 	}
 }

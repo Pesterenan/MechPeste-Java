@@ -6,15 +6,15 @@ public class ControlePID {
 	private double kp = 0.025;
 	private double ki = 0.001;
 	private double kd = 0.01;
-	private final double timeSample = 25;
 	private double proportionalTerm, integralTerm, derivativeTerm = 0;
 	private double lastValue, lastTime = 0;
 
 	public double calcPID(double currentValue, double limitValue) {
 		double now = System.currentTimeMillis();
 		double changeInTime = now - this.lastTime;
+		double timeSample = 25;
 
-		if (changeInTime >= this.timeSample) {
+		if (changeInTime >= timeSample) {
 			double error = limitValue - currentValue;
 			double changeInValues = (currentValue - this.lastValue);
 
