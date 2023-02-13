@@ -75,13 +75,9 @@ public class ChangeVesselDialog extends JDialog implements UIMethods {
 	@Override
 	public void layoutComponents() {
 
-		JPanel pnlInfo = new JPanel();
-		lblPanelInfo.setAlignmentX(CENTER_ALIGNMENT);
-		pnlInfo.add(lblPanelInfo);
-
 		JPanel pnlSearchArea = new JPanel();
 		pnlSearchArea.setBorder(
-				new TitledBorder(null, "\u00C1rea de procura:", TitledBorder.LEADING, TitledBorder.TOP, null, null));
+				new TitledBorder(null, "\u00C1rea de procura:"));
 		pnlSearchArea.setLayout(new BoxLayout(pnlSearchArea, BoxLayout.Y_AXIS));
 		pnlSearchArea.add(rbClosestVessels);
 		pnlSearchArea.add(rbOnSameBody);
@@ -92,9 +88,8 @@ public class ChangeVesselDialog extends JDialog implements UIMethods {
 		pnlOptions.add(pnlSearchArea);
 		pnlOptions.add(Box.createVerticalStrut(10));
 		pnlOptions.add(btnChangeToVessel);
-		btnChangeToVessel.setAlignmentX(CENTER_ALIGNMENT);
-		pnlSearchArea.setAlignmentX(CENTER_ALIGNMENT);
-		pnlOptions.add(Box.createVerticalGlue());
+		btnChangeToVessel.setAlignmentX(LEFT_ALIGNMENT);
+		pnlSearchArea.setAlignmentX(LEFT_ALIGNMENT);
 
 		JPanel pnlScroll = new JPanel();
 		pnlScroll.setLayout(new BoxLayout(pnlScroll, BoxLayout.Y_AXIS));
@@ -102,6 +97,8 @@ public class ChangeVesselDialog extends JDialog implements UIMethods {
 		scrollPane.setViewportView(listActiveVessels);
 		pnlScroll.add(Box.createVerticalStrut(6));
 		pnlScroll.add(scrollPane);
+		pnlScroll.add(Box.createHorizontalStrut(190));
+
 
 		JPanel pnlOptionsAndList = new JPanel();
 		pnlOptionsAndList.setLayout(new BoxLayout(pnlOptionsAndList, BoxLayout.X_AXIS));
@@ -113,7 +110,6 @@ public class ChangeVesselDialog extends JDialog implements UIMethods {
 
 		JPanel pnlStatus = new JPanel();
 		pnlStatus.setLayout(new BoxLayout(pnlStatus, BoxLayout.X_AXIS));
-		lblVesselStatus.setAlignmentX(LEFT_ALIGNMENT);
 		pnlStatus.add(lblVesselStatus);
 		pnlStatus.add(Box.createHorizontalGlue());
 		pnlStatus.add(Box.createVerticalStrut(10));
@@ -121,7 +117,8 @@ public class ChangeVesselDialog extends JDialog implements UIMethods {
 		JPanel pnlMain = new JPanel();
 		pnlMain.setLayout(new BoxLayout(pnlMain, BoxLayout.Y_AXIS));
 		pnlMain.setBorder(MainGui.MARGIN_BORDER_10_PX_LR);
-		pnlMain.add(pnlInfo);
+		lblPanelInfo.setAlignmentX(CENTER_ALIGNMENT);
+		pnlMain.add(lblPanelInfo);
 		pnlOptionsAndList.setAlignmentY(TOP_ALIGNMENT);
 		pnlMain.add(pnlOptionsAndList);
 		pnlMain.add(Box.createVerticalStrut(5));
