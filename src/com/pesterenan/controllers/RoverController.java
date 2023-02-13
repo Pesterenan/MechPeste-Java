@@ -76,8 +76,8 @@ public class RoverController extends Controller {
 				pathFinding.buildPathToTarget(pathFinding.findNearestWaypoint());
 			}
 			if (commands.get(Modulos.TIPO_ALVO_ROVER.get()).equals(Modulos.NAVE_ALVO.get())) {
-				Vector targetVesselPosition =
-						new Vector(getSpaceCenter().getTargetVessel().position(orbitalReferenceFrame));
+				Vector targetVesselPosition = new Vector(
+						getSpaceCenter().getTargetVessel().position(orbitalReferenceFrame));
 				setCurrentStatus("Calculando rota até o alvo...");
 				pathFinding.buildPathToTarget(targetVesselPosition);
 			}
@@ -169,10 +169,10 @@ public class RoverController extends Controller {
 			double chargeTime;
 			double totalEnergyFlow = 0;
 			List<SolarPanel> solarPanels = getNaveAtual().getParts()
-			                                             .getSolarPanels()
-			                                             .stream()
-			                                             .filter(this::isSolarPanelNotBroken)
-			                                             .collect(Collectors.toList());
+					.getSolarPanels()
+					.stream()
+					.filter(this::isSolarPanelNotBroken)
+					.collect(Collectors.toList());
 
 			for (SolarPanel sp : solarPanels) {
 				totalEnergyFlow += sp.getEnergyFlow();
@@ -189,21 +189,20 @@ public class RoverController extends Controller {
 
 	private void driveRover() throws RPCException, IOException, StreamException {
 		Vector targetDirection = posSurfToRover(posOrbToSurf(targetPoint)).normalize();
-		Vector radarSourcePosition =
-				posRoverToSurf(new Vector(getNaveAtual().position(roverReferenceFrame)).sum(new Vector(0.0, 3.0,
-				                                                                                       0.0)));
+		Vector radarSourcePosition = posRoverToSurf(
+				new Vector(getNaveAtual().position(roverReferenceFrame)).sum(new Vector(0.0, 3.0,
+						0.0)));
 
 		double roverAngle = (roverDirection.heading());
 		// fazer um raycast pra frente e verificar a distancia
 		double obstacleAhead = pathFinding.raycastDistance(radarSourcePosition, transformDirection(roverDirection),
-		                                                   surfaceReferenceFrame, 30
-		                                                  );
+				surfaceReferenceFrame, 30);
 		double steeringPower = Utilities.remap(3, 30, 0.1, 0.5, obstacleAhead, true);
 		// usar esse valor pra muiltiplicar a direcao alvo
 		double targetAndRadarAngle = (targetDirection.multiply(steeringPower)
-		                                             .sum(directionFromRadar(
-				                                             getNaveAtual().boundingBox(roverReferenceFrame)))
-		                                             .normalize()).heading();
+				.sum(directionFromRadar(
+						getNaveAtual().boundingBox(roverReferenceFrame)))
+				.normalize()).heading();
 		double deltaAngle = Math.abs(targetAndRadarAngle - roverAngle);
 		getNaveAtual().getControl().setSAS(deltaAngle < 1);
 		// Control Rover Throttle
@@ -217,10 +216,12 @@ public class RoverController extends Controller {
 		setCurrentStatus("Driving... " + deltaAngle);
 	}
 
-
-	private Vector directionFromRadar(Pair<Triplet<Double, Double, Double>, Triplet<Double, Double, Double>> boundingBox) throws RPCException, IOException {
+	private Vector directionFromRadar(
+			Pair<Triplet<Double, Double, Double>, Triplet<Double, Double, Double>> boundingBox)
+			throws RPCException, IOException {
 		// PONTO REF ROVER: X = DIREITA, Y = FRENTE, Z = BAIXO;
-		// Bounding box points from rover (LBU: Left, Back, Up - RFD: Right, Front, Down):
+		// Bounding box points from rover (LBU: Left, Back, Up - RFD: Right, Front,
+		// Down):
 		Vector LBU = new Vector(boundingBox.getValue0());
 		Vector RFD = new Vector(boundingBox.getValue1());
 
@@ -258,24 +259,22 @@ public class RoverController extends Controller {
 		Vector lateralDirRay = calculateRaycastDirection(lateralDir, lateralDirAngulo, 15);
 
 		Vector calculatedDirection = new Vector().sum(lateralEsqRay)
-		                                         .sum(latFrontEsqRay)
-		                                         .sum(frontalEsqRay)
-		                                         .sum(frontalEsqRay2)
-		                                         .sum(frontalRay)
-		                                         .sum(frontalDirRay2)
-		                                         .sum(frontalDirRay)
-		                                         .sum(latFrontDirRay)
-		                                         .sum(lateralDirRay);
+				.sum(latFrontEsqRay)
+				.sum(frontalEsqRay)
+				.sum(frontalEsqRay2)
+				.sum(frontalRay)
+				.sum(frontalDirRay2)
+				.sum(frontalDirRay)
+				.sum(latFrontDirRay)
+				.sum(lateralDirRay);
 
 		return (calculatedDirection.normalize());
 	}
 
 	private Vector calculateRaycastDirection(Vector point, Vector direction, double distance) throws RPCException {
-		double raycast =
-				pathFinding.raycastDistance(posRoverToSurf(point), transformDirection(direction),
-				                            surfaceReferenceFrame,
-				                            distance
-				                           );
+		double raycast = pathFinding.raycastDistance(posRoverToSurf(point), transformDirection(direction),
+				surfaceReferenceFrame,
+				distance);
 		return direction.multiply(raycast);
 	}
 

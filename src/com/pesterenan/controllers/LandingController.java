@@ -70,6 +70,7 @@ public class LandingController extends Controller {
 						currentMode = MODE.GOING_UP;
 					} else {
 						currentMode = MODE.HOVERING;
+						currentMode = MODE.HOVERING;
 					}
 					changeControlMode();
 				} catch (RPCException | StreamException ignored) {
