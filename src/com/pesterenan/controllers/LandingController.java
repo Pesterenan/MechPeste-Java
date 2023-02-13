@@ -22,7 +22,9 @@ public class LandingController extends Controller {
 	private Navigation navigation;
 	private final int HUNDRED_PERCENT = 100;
 	private double hoverAltitude;
-	private boolean hoveringMode = false;
+	private boolean hoveringMode;
+	private boolean hoverAfterApproximation;
+	private boolean landingMode;
 	private MODE currentMode;
 	private double altitudeErrorPercentage;
 	private float maxTWR;
@@ -42,18 +44,17 @@ public class LandingController extends Controller {
 	@Override
 	public void run() {
 		if (commands.get(Modulos.MODULO.get()).equals(Modulos.MODULO_POUSO_SOBREVOAR.get())) {
-			hoverAltitude = Double.parseDouble(commands.get(Modulos.ALTITUDE_SOBREVOO.get()));
-			hoveringMode = true;
 			hoverArea();
 		}
 		if (commands.get(Modulos.MODULO.get()).equals(Modulos.MODULO_POUSO.get())) {
-			maxTWR = Float.parseFloat(commands.get(Modulos.MAX_TWR.get()));
 			autoLanding();
 		}
 	}
 
 	private void hoverArea() {
 		try {
+			hoverAltitude = Double.parseDouble(commands.get(Modulos.ALTITUDE_SOBREVOO.get()));
+			hoveringMode = true;
 			ap.engage();
 			tuneAutoPilot();
 			while (hoveringMode) {
@@ -76,7 +77,35 @@ public class LandingController extends Controller {
 				Thread.sleep(50);
 			}
 		} catch (InterruptedException | RPCException ignored) {
-//			disengageAfterException(Bundle.getString("status_liftoff_abort"));
+			// disengageAfterException(Bundle.getString("status_liftoff_abort"));
+		}
+	}
+
+	private void autoLanding() {
+		try {
+			landingMode = true;
+			maxTWR = Float.parseFloat(commands.get(Modulos.MAX_TWR.get()));
+			hoverAfterApproximation = Boolean.parseBoolean(commands.get(Modulos.SOBREVOO_POS_POUSO.get()));
+			hoverAltitude = Double.parseDouble(commands.get(Modulos.ALTITUDE_SOBREVOO.get()));
+			if (!hoverAfterApproximation) {
+				hoverAltitude = 100;
+			}
+			setCurrentStatus(Bundle.getString("status_starting_landing_at") + " " + currentBody.getName());
+			currentMode = MODE.DEORBITING;
+			ap.engage();
+			changeControlMode();
+			tuneAutoPilot();
+			setCurrentStatus(Bundle.getString("status_starting_landing"));
+			while (landingMode) {
+				if (Thread.interrupted()) {
+					throw new InterruptedException();
+				}
+				getNaveAtual().getControl().setBrakes(true);
+				changeControlMode();
+				Thread.sleep(100);
+			}
+		} catch (RPCException | StreamException | InterruptedException e) {
+			setCurrentStatus(Bundle.getString("status_ready"));
 		}
 	}
 
@@ -102,7 +131,7 @@ public class LandingController extends Controller {
 				velocityCtrl.adjustOutput(0, 1);
 				double currentVelocity = calculateCurrentVelocityMagnitude();
 				double zeroVelocity = calculateZeroVelocityMagnitude();
-				double landingDistanceThreshold = Math.max(100, getMaxAcel(maxTWR) * 3);
+				double landingDistanceThreshold = Math.max(hoverAltitude, getMaxAcel(maxTWR) * 3);
 				double threshold = Utilities.clamp(
 						((currentVelocity + zeroVelocity) - landingDistanceThreshold) / landingDistanceThreshold, 0,
 						1);
@@ -113,6 +142,11 @@ public class LandingController extends Controller {
 				if (threshold < 0.25) {
 					hoverAltitude = landingDistanceThreshold;
 					getNaveAtual().getControl().setGear(true);
+					if (hoverAfterApproximation) {
+						landingMode = false;
+						hoverArea();
+						break;
+					}
 					currentMode = MODE.LANDING;
 				}
 				setCurrentStatus("Se aproximando do momento do pouso...");
@@ -171,33 +205,12 @@ public class LandingController extends Controller {
 			}
 			while (periastro.get() > -apoastro.get()) {
 				navigation.aimForLanding();
-				throttle(altitudeCtrl.calcPID(-currentBody.getEquatorialRadius()/2, periastro.get()));
+				throttle(altitudeCtrl.calcPID(-currentBody.getEquatorialRadius() / 2, periastro.get()));
 				setCurrentStatus(Bundle.getString("status_lowering_periapsis"));
 				Thread.sleep(100);
 			}
 			getNaveAtual().getControl().setRCS(false);
 			throttle(0.0f);
-		}
-	}
-
-	private void autoLanding() {
-		try {
-			setCurrentStatus(Bundle.getString("status_starting_landing_at") + " " + currentBody.getName());
-			currentMode = MODE.DEORBITING;
-			ap.engage();
-			changeControlMode();
-			tuneAutoPilot();
-			setCurrentStatus(Bundle.getString("status_starting_landing"));
-			while (!hasTheVesselLanded()) {
-				if (Thread.interrupted()) {
-					throw new InterruptedException();
-				}
-				getNaveAtual().getControl().setBrakes(true);
-				changeControlMode();
-				Thread.sleep(100);
-			}
-		} catch (RPCException | StreamException | InterruptedException e) {
-			setCurrentStatus(Bundle.getString("status_ready"));
 		}
 	}
 
@@ -221,6 +234,7 @@ public class LandingController extends Controller {
 				getNaveAtual().getSituation().equals(VesselSituation.SPLASHED)) {
 			setCurrentStatus(Bundle.getString("status_landed"));
 			hoveringMode = false;
+			landingMode = false;
 			throttle(0.0f);
 			getNaveAtual().getControl().setSAS(true);
 			getNaveAtual().getControl().setRCS(true);

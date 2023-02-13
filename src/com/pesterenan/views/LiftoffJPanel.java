@@ -8,7 +8,6 @@ import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -162,6 +161,7 @@ public class LiftoffJPanel extends JPanel implements UIMethods {
 
 		JPanel pnlSetup = new JPanel();
 		pnlSetup.setLayout(new BoxLayout(pnlSetup, BoxLayout.Y_AXIS));
+		pnlSetup.add(MainGui.createMarginComponent(0, 6));
 		pnlSetup.add(pnlFinalApoapsis);
 		pnlSetup.add(pnlHeading);
 		pnlSetup.add(pnlRoll);

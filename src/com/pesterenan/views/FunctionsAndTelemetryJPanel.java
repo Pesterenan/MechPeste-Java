@@ -96,57 +96,33 @@ public class FunctionsAndTelemetryJPanel extends JPanel implements UIMethods {
 		pnlFunctionControls.add(btnRover);
 		pnlFunctionControls.add(Box.createVerticalGlue());
 
-		JPanel pnlAltitudeLabels = new JPanel();
-		pnlAltitudeLabels.setLayout(new BoxLayout(pnlAltitudeLabels, BoxLayout.X_AXIS));
-		pnlAltitudeLabels.add(lblAltitude);
-		pnlAltitudeLabels.add(Box.createHorizontalGlue());
-		pnlAltitudeLabels.add(lblAltitudeValue);
-
-		JPanel pnlSurfaceAltLabels = new JPanel();
-		pnlSurfaceAltLabels.setLayout(new BoxLayout(pnlSurfaceAltLabels, BoxLayout.X_AXIS));
-		pnlSurfaceAltLabels.add(lblSurfaceAlt);
-		pnlSurfaceAltLabels.add(Box.createHorizontalGlue());
-		pnlSurfaceAltLabels.add(lblSurfaceAltValue);
-
-		JPanel pnlApoapsisLabels = new JPanel();
-		pnlApoapsisLabels.setLayout(new BoxLayout(pnlApoapsisLabels, BoxLayout.X_AXIS));
-		pnlApoapsisLabels.add(lblApoapsis);
-		pnlApoapsisLabels.add(Box.createHorizontalGlue());
-		pnlApoapsisLabels.add(lblApoapsisValue);
-
-		JPanel pnlPeriapsisLabels = new JPanel();
-		pnlPeriapsisLabels.setLayout(new BoxLayout(pnlPeriapsisLabels, BoxLayout.X_AXIS));
-		pnlPeriapsisLabels.add(lblPeriapsis);
-		pnlPeriapsisLabels.add(Box.createHorizontalGlue());
-		pnlPeriapsisLabels.add(lblPeriapsisValue);
-
-		JPanel pnlHorzSpeedLabels = new JPanel();
-		pnlHorzSpeedLabels.setLayout(new BoxLayout(pnlHorzSpeedLabels, BoxLayout.X_AXIS));
-		pnlHorzSpeedLabels.add(lblHorzSpeed);
-		pnlHorzSpeedLabels.add(Box.createHorizontalGlue());
-		pnlHorzSpeedLabels.add(lblHorzSpeedValue);
-
-		JPanel pnlVertSpeedLabels = new JPanel();
-		pnlVertSpeedLabels.setLayout(new BoxLayout(pnlVertSpeedLabels, BoxLayout.X_AXIS));
-		pnlVertSpeedLabels.add(lblVertSpeed);
-		pnlVertSpeedLabels.add(Box.createHorizontalGlue());
-		pnlVertSpeedLabels.add(lblVertSpeedValue);
-
 		JPanel pnlLeftPanel = new JPanel();
 		pnlLeftPanel.setBorder(MainGui.MARGIN_BORDER_10_PX_LR);
 		pnlLeftPanel.setLayout(new BoxLayout(pnlLeftPanel, BoxLayout.Y_AXIS));
-		pnlLeftPanel.add(pnlAltitudeLabels);
-		pnlLeftPanel.add(pnlApoapsisLabels);
-		pnlLeftPanel.add(pnlHorzSpeedLabels);
-		pnlLeftPanel.add(Box.createVerticalGlue());
+		pnlLeftPanel.add(lblAltitude);
+		pnlLeftPanel.add(lblSurfaceAlt);
+		pnlLeftPanel.add(lblApoapsis);
+		pnlLeftPanel.add(lblPeriapsis);
+		pnlLeftPanel.add(lblHorzSpeed);
+		pnlLeftPanel.add(lblVertSpeed);
+		pnlLeftPanel.add(Box.createGlue());
 
 		JPanel pnlRightPanel = new JPanel();
 		pnlRightPanel.setBorder(MainGui.MARGIN_BORDER_10_PX_LR);
 		pnlRightPanel.setLayout(new BoxLayout(pnlRightPanel, BoxLayout.Y_AXIS));
-		pnlRightPanel.add(pnlSurfaceAltLabels);
-		pnlRightPanel.add(pnlPeriapsisLabels);
-		pnlRightPanel.add(pnlVertSpeedLabels);
-		pnlRightPanel.add(Box.createVerticalGlue());
+		lblAltitudeValue.setAlignmentX(RIGHT_ALIGNMENT);
+		lblSurfaceAltValue.setAlignmentX(RIGHT_ALIGNMENT);
+		lblApoapsisValue.setAlignmentX(RIGHT_ALIGNMENT);
+		lblPeriapsisValue.setAlignmentX(RIGHT_ALIGNMENT);
+		lblHorzSpeedValue.setAlignmentX(RIGHT_ALIGNMENT);
+		lblVertSpeedValue.setAlignmentX(RIGHT_ALIGNMENT);
+		pnlRightPanel.add(lblAltitudeValue);
+		pnlRightPanel.add(lblSurfaceAltValue);
+		pnlRightPanel.add(lblApoapsisValue);
+		pnlRightPanel.add(lblPeriapsisValue);
+		pnlRightPanel.add(lblHorzSpeedValue);
+		pnlRightPanel.add(lblVertSpeedValue);
+		pnlRightPanel.add(Box.createGlue());
 
 		JPanel pnlLeftRightContainer = new JPanel();
 		pnlLeftRightContainer.setLayout(new BoxLayout(pnlLeftRightContainer, BoxLayout.X_AXIS));

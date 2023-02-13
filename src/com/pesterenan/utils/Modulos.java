@@ -33,7 +33,8 @@ public enum Modulos {
 	VELOCIDADE_MAX("Velocidade Máxima"),
 	POUSAR("Pousar nave"), 
 	MAX_TWR("Max_TWR"),
-	ORBITA_BAIXA("ÓRBITA BAIXA");
+	ORBITA_BAIXA("ÓRBITA BAIXA"),
+	SOBREVOO_POS_POUSO("SOBREVOO PÓS POUSO");
 
 	final String t;
 

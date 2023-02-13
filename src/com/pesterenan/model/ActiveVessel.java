@@ -51,6 +51,7 @@ public class ActiveVessel {
 	protected Controller controller;
 	protected long timer = 0;
 	private String currentStatus = Bundle.getString("status_ready");
+	private boolean runningModule;
 
 	public ActiveVessel() {
 		initializeParameters();
@@ -170,19 +171,24 @@ public class ActiveVessel {
 		String currentFunction = commands.get(Modulos.MODULO.get());
 		if (controllerThread != null) {
 			controllerThread.interrupt();
+			runningModule = false;
 		}
 		if (currentFunction.equals(Modulos.MODULO_DECOLAGEM.get())) {
 			controller = new LiftoffController(commands);
+			runningModule = true;
 		}
 		if (currentFunction.equals(Modulos.MODULO_POUSO_SOBREVOAR.get()) ||
 				currentFunction.equals(Modulos.MODULO_POUSO.get())) {
 			controller = new LandingController(commands);
+			runningModule = true;
 		}
 		if (currentFunction.equals(Modulos.MODULO_MANOBRAS.get())) {
 			controller = new ManeuverController(commands);
+			runningModule = true;
 		}
 		if (currentFunction.equals(Modulos.MODULO_ROVER.get())) {
 			controller = new RoverController(commands);
+			runningModule = true;
 		}
 		controllerThread = new Thread(controller, currentVesselId + " - " + currentFunction);
 		controllerThread.start();
@@ -215,8 +221,13 @@ public class ActiveVessel {
 			throttle(0);
 			if (controllerThread != null) {
 				controllerThread.interrupt();
+				runningModule = false;
 			}
 		} catch (RPCException ignored) {
 		}
 	}
+
+    public boolean hasModuleRunning() {
+        return runningModule;
+    }
 }

@@ -140,7 +140,9 @@ public class MechPeste {
 				}
 				if (currentVesselId != -1) {
 					currentVessel.recordTelemetryData();
-					setStatusMessage(currentVessel.getCurrentStatus());
+					if (currentVessel.hasModuleRunning()){
+						setStatusMessage(currentVessel.getCurrentStatus());
+					}
 					FunctionsAndTelemetryJPanel.updateTelemetry(currentVessel.getTelemetryData());
 				}
 				Thread.sleep(100);

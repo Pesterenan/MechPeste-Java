@@ -6,7 +6,6 @@ import com.pesterenan.utils.Modulos;
 
 import javax.swing.*;
 import javax.swing.border.Border;
-import javax.swing.border.EmptyBorder;
 import javax.swing.border.EtchedBorder;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
@@ -47,7 +46,7 @@ public class LandingJPanel extends JPanel implements UIMethods {
 		btnBack = new JButton(Bundle.getString("pnl_land_btn_back"));
 
 		// Checkboxes:
-		chkHoverAfterLanding = new JCheckBox("Sobrevoar ao fim do pouso");
+		chkHoverAfterLanding = new JCheckBox(Bundle.getString("pnl_land_hover_checkbox"));
 	}
 
 	@Override
@@ -64,10 +63,12 @@ public class LandingJPanel extends JPanel implements UIMethods {
 		txfMaxTWR.setMaximumSize(BTN_DIMENSION);
 		txfMaxTWR.setHorizontalAlignment(JTextField.RIGHT);
 
-		btnAutoLanding.addActionListener(this::handleAutoLanding);
+		btnAutoLanding.addActionListener(this::handleLandingAction);
+		btnAutoLanding.setActionCommand(Modulos.MODULO_POUSO.get());
 		btnAutoLanding.setPreferredSize(BTN_DIMENSION);
 		btnAutoLanding.setMaximumSize(BTN_DIMENSION);
-		btnHover.addActionListener(this::handleHovering);
+		btnHover.addActionListener(this::handleLandingAction);
+		btnHover.setActionCommand(Modulos.MODULO_POUSO_SOBREVOAR.get());
 		btnHover.setPreferredSize(BTN_DIMENSION);
 		btnHover.setMaximumSize(BTN_DIMENSION);
 		btnBack.addActionListener(MainGui::backToTelemetry);
@@ -111,15 +112,16 @@ public class LandingJPanel extends JPanel implements UIMethods {
 
 		JPanel pnlControls = new JPanel();
 		pnlControls.setLayout(new BoxLayout(pnlControls, BoxLayout.Y_AXIS));
+		pnlControls.add(MainGui.createMarginComponent(0, 6));
 		pnlControls.add(pnlHoverControls);
 		pnlControls.add(pnlTWRLimitControls);
 		pnlControls.add(pnlLandingControls);
-
 
 		JPanel pnlOptions = new JPanel();
 		pnlOptions.setLayout(new BoxLayout(pnlOptions, BoxLayout.Y_AXIS));
 		pnlOptions.setBorder(new TitledBorder(Bundle.getString("pnl_lift_chk_options")));
 		pnlOptions.add(chkHoverAfterLanding);
+		pnlOptions.add(Box.createHorizontalGlue());
 
 		JPanel pnlMain = new JPanel();
 		pnlMain.setLayout(new BoxLayout(pnlMain, BoxLayout.X_AXIS));
@@ -137,27 +139,30 @@ public class LandingJPanel extends JPanel implements UIMethods {
 		add(pnlBackbtn, BorderLayout.SOUTH);
 	}
 
-	private void handleAutoLanding(ActionEvent e) {
-		Map<String, String> commands = new HashMap<>();
-		commands.put(Modulos.MODULO.get(), Modulos.MODULO_POUSO.get());
-		commands.put(Modulos.MAX_TWR.get(), txfMaxTWR.getText());
-		MechPeste.newInstance().startModule(commands);
+	private void handleLandingAction(ActionEvent e) {
+		try {
+			Map<String, String> commands = new HashMap<>();
+			commands.put(Modulos.MODULO.get(), e.getActionCommand());
+			validateTextFields();
+			commands.put(Modulos.ALTITUDE_SOBREVOO.get(), txfHover.getText());
+			commands.put(Modulos.MAX_TWR.get(), txfMaxTWR.getText());
+			commands.put(Modulos.SOBREVOO_POS_POUSO.get(), String.valueOf(chkHoverAfterLanding.isSelected()));
+			MechPeste.newInstance().startModule(commands);
+		} catch (NumberFormatException nfe) {
+			StatusJPanel.setStatusMessage(Bundle.getString("pnl_land_hover_alt_err"));
+		} catch (NullPointerException npe) {
+			StatusJPanel.setStatusMessage(Bundle.getString("pnl_land_hover_alt"));
+		}
 	}
 
-	private void handleHovering(ActionEvent e) {
-		Map<String, String> commands = new HashMap<>();
-		commands.put(Modulos.MODULO.get(), Modulos.MODULO_POUSO_SOBREVOAR.get());
-		try {
-			if (txfHover.getText().equals("")) {
-				StatusJPanel.setStatusMessage(Bundle.getString("pnl_land_hover_alt"));
-				return;
-			}
-			Integer.parseInt(txfHover.getText());
-		} catch (Exception e2) {
-			StatusJPanel.setStatusMessage(Bundle.getString("pnl_land_hover_alt_err"));
-			return;
+	private void validateTextFields() throws NumberFormatException, NullPointerException {
+		if (txfHover.getText().equals("")
+				|| txfHover.getText().equals("0")
+				|| txfMaxTWR.getText().equals("")
+				|| txfMaxTWR.getText().equals("0")) {
+			throw new NullPointerException();
 		}
-		commands.put(Modulos.ALTITUDE_SOBREVOO.get(), txfHover.getText());
-		MechPeste.newInstance().startModule(commands);
+		Float.parseFloat(txfHover.getText());
+		Float.parseFloat(txfMaxTWR.getText());
 	}
 }
