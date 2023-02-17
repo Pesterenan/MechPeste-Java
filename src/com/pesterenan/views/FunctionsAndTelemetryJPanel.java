@@ -21,7 +21,7 @@ public class FunctionsAndTelemetryJPanel extends JPanel implements UIMethods {
 	private static final long serialVersionUID = 0L;
 
 	private final Dimension btnFuncDimension = new Dimension(140, 25);
-	private JButton btnLiftoff, btnLanding, btnManeuver, btnRover, btnCancel;
+	private JButton btnLiftoff, btnLanding, btnExecManeuver, btnRover, btnCancel, btnCreateManeuver;
 	private static JLabel lblAltitude, lblSurfaceAlt, lblApoapsis, lblPeriapsis, lblVertSpeed, lblHorzSpeed;
 	private static JLabel lblAltitudeValue, lblSurfaceAltValue, lblApoapsisValue;
 	private static JLabel lblPeriapsisValue, lblVertSpeedValue, lblHorzSpeedValue;
@@ -51,7 +51,8 @@ public class FunctionsAndTelemetryJPanel extends JPanel implements UIMethods {
 		// Buttons:
 		btnLiftoff = new JButton(Bundle.getString("btn_func_liftoff"));
 		btnLanding = new JButton(Bundle.getString("btn_func_landing"));
-		btnManeuver = new JButton(Bundle.getString("btn_func_maneuvers"));
+		btnCreateManeuver = new JButton(Bundle.getString("btn_func_create_maneuver"));
+		btnExecManeuver = new JButton(Bundle.getString("btn_func_exec_maneuver"));
 		btnRover = new JButton(Bundle.getString("btn_func_rover"));
 		btnCancel = new JButton(Bundle.getString("pnl_tel_btn_cancel"));
 	}
@@ -75,10 +76,14 @@ public class FunctionsAndTelemetryJPanel extends JPanel implements UIMethods {
 		btnLiftoff.setActionCommand(Modulos.MODULO_DECOLAGEM.get());
 		btnLiftoff.setMaximumSize(btnFuncDimension);
 		btnLiftoff.setPreferredSize(btnFuncDimension);
-		btnManeuver.addActionListener(this::changeFunctionPanel);
-		btnManeuver.setActionCommand(Modulos.MODULO_MANOBRAS.get());
-		btnManeuver.setMaximumSize(btnFuncDimension);
-		btnManeuver.setPreferredSize(btnFuncDimension);
+		btnCreateManeuver.addActionListener(this::changeFunctionPanel);
+		btnCreateManeuver.setActionCommand(Modulos.MODULO_CRIAR_MANOBRAS.get());
+		btnCreateManeuver.setMaximumSize(btnFuncDimension);
+		btnCreateManeuver.setPreferredSize(btnFuncDimension);
+		btnExecManeuver.addActionListener(this::changeFunctionPanel);
+		btnExecManeuver.setActionCommand(Modulos.MODULO_EXEC_MANOBRAS.get());
+		btnExecManeuver.setMaximumSize(btnFuncDimension);
+		btnExecManeuver.setPreferredSize(btnFuncDimension);
 		btnRover.addActionListener(this::changeFunctionPanel);
 		btnRover.setActionCommand(Modulos.MODULO_ROVER.get());
 		btnRover.setMaximumSize(btnFuncDimension);
@@ -93,8 +98,10 @@ public class FunctionsAndTelemetryJPanel extends JPanel implements UIMethods {
 		pnlFunctionControls.add(MainGui.createMarginComponent(0, 4));
 		pnlFunctionControls.add(btnLiftoff);
 		pnlFunctionControls.add(btnLanding);
-		pnlFunctionControls.add(btnManeuver);
 		pnlFunctionControls.add(btnRover);
+		pnlFunctionControls.add(MainGui.createMarginComponent(0, 20));
+		pnlFunctionControls.add(btnCreateManeuver);
+		pnlFunctionControls.add(btnExecManeuver);
 		pnlFunctionControls.add(Box.createVerticalGlue());
 
 		JPanel pnlLeftPanel = new JPanel();
@@ -159,7 +166,7 @@ public class FunctionsAndTelemetryJPanel extends JPanel implements UIMethods {
 	}
 
 	private void changeFunctionPanel(ActionEvent e) {
-		MainGui.getCardJPanels().firePropertyChange(e.getActionCommand(), false, true);
+		MainGui.changeToPage(e);
 	}
 
 	public static void updateTelemetry(Map<Telemetry, Double> telemetryData) {
