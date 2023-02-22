@@ -334,19 +334,17 @@ public class ManeuverController extends Controller {
 			Stream<Triplet<Double, Double, Double>> queimaRestante = getConnection().addStream(noDeManobra,
 					"remainingBurnVector", noDeManobra.getReferenceFrame());
 			setCurrentStatus(Bundle.getString("status_maneuver_executing"));
-			double remainingBurnTime = duracaoDaQueima + 0.5;
 			while (noDeManobra != null) {
 				if (Thread.interrupted()) {
 					throw new InterruptedException();
 				}
-				if (remainingBurnTime < 0.0 || queimaRestante.get().getValue1() < (fineAdjustment ? 2 : 0.5)) {
+				if (queimaRestante.get().getValue1() < (fineAdjustment ? 2 : 0.5)) {
 					throttle(0.0f);
 					break;
 				}
 				navigation.aimAtManeuver(noDeManobra);
 				throttle(ctrlManeuver.calcPID((noDeManobra.getDeltaV() - Math.floor(queimaRestante.get().getValue1())) /
 						noDeManobra.getDeltaV() * 1000, 1000));
-				remainingBurnTime -= 0.05;
 				Thread.sleep(50);
 			}
 			throttle(0.0f);
