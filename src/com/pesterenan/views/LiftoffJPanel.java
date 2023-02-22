@@ -209,6 +209,7 @@ public class LiftoffJPanel extends JPanel implements UIMethods {
 			commands.put(Modulos.USAR_ESTAGIOS.get(), String.valueOf(chkDecoupleStages.isSelected()));
 			commands.put(Modulos.ABRIR_PAINEIS.get(), String.valueOf(chkOpenPanels.isSelected()));
 			MechPeste.newInstance().startModule(commands);
+			MainGui.backToTelemetry(e);
 		}
 	}
 }
