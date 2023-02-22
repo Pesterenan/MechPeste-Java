@@ -74,7 +74,7 @@ public class MechPeste {
 		if (search == "all") {
 			return true;
 		}
-		double TWO_KILOMETERS = 2000.0;
+		double TEN_KILOMETERS = 10000.0;
 		try {
 			Vessel active = MechPeste.getSpaceCenter().getActiveVessel();
 			if (vessel.getOrbit().getBody().getName().equals(active.getOrbit().getBody().getName())) {
@@ -83,7 +83,7 @@ public class MechPeste {
 				final double distance = Vector.distance(activePos, vesselPos);
 				switch (search) {
 					case "closest":
-						if (distance < TWO_KILOMETERS) {
+						if (distance < TEN_KILOMETERS) {
 							return true;
 						}
 						break;
