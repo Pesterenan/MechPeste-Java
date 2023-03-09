@@ -31,7 +31,7 @@ public class ChangeVesselDialog extends JDialog implements UIMethods {
 
 		// Buttons:
 		btnChangeToVessel = new JButton("Mudar para");
-		rbClosestVessels = new JRadioButton("Naves próximas (2km)");
+		rbClosestVessels = new JRadioButton("Naves próximas (10km)");
 		rbOnSameBody = new JRadioButton("No mesmo corpo celeste");
 		rbAllVessels = new JRadioButton("Todas as naves");
 

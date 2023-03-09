@@ -11,7 +11,7 @@ manobras, e pilotar rovers.
 ---
 É necessário ter o [Java](https://java.com/pt-BR/) instalado para utilizar o "MechPeste.jar".
 Uma versão mais atualizada do
-mod [KRPC](https://github.com/nullprofile/krpc/releases/download/0.4.9-1.12.1/krpc-0.4.9-1.12.1.zip)
+mod [KRPC](https://github.com/krpc/krpc/releases/download/v0.5.1/krpc-0.5.1.zip)
 pode ser instalada diretamente do aplicativo MechPeste pelo menu Arquivo > Instalar KRPC.
 
 ## **Como instalar:**
