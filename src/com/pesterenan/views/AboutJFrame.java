@@ -28,7 +28,7 @@ public class AboutJFrame extends JDialog implements UIMethods {
 	@Override
 	public void initComponents() {
 		// Labels:
-		lblMechpeste = new JLabel("MechPeste - v.0.6.1");
+		lblMechpeste = new JLabel("MechPeste - v.0.6.2");
 		lblAboutInfo = new JLabel(
 				"<html>Esse app foi desenvolvido com o intuito de auxiliar o controle de naves<br>no game Kerbal Space Program.<br><br>"
 						+ "Não há garantias sobre o controle exato do app, portanto fique atento <br>"
