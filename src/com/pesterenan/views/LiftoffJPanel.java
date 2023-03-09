@@ -46,7 +46,7 @@ public class LiftoffJPanel extends JPanel implements UIMethods {
 		txfFinalApoapsis = new JTextField("80000");
 		txfFinalApoapsis.setToolTipText(Bundle.getString("pnl_lift_txf_final_apo_tooltip"));
 		txfHeading = new JTextField("90");
-		txfLimitTWR = new JTextField("1.5");
+		txfLimitTWR = new JTextField("2.2");
 
 		// Buttons:
 		btnLiftoff = new JButton(Bundle.getString("pnl_lift_btn_liftoff"));
@@ -209,6 +209,7 @@ public class LiftoffJPanel extends JPanel implements UIMethods {
 			commands.put(Modulos.USAR_ESTAGIOS.get(), String.valueOf(chkDecoupleStages.isSelected()));
 			commands.put(Modulos.ABRIR_PAINEIS.get(), String.valueOf(chkOpenPanels.isSelected()));
 			MechPeste.newInstance().startModule(commands);
+			MainGui.backToTelemetry(e);
 		}
 	}
 }

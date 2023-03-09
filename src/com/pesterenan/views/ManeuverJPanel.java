@@ -171,7 +171,7 @@ public class ManeuverJPanel extends JPanel implements ActionListener, UIMethods 
 
 	protected void handleManeuverFunction(String maneuverFunction) {
 		Map<String, String> commands = new HashMap<>();
-		commands.put(Modulos.MODULO.get(), Modulos.MODULO_MANOBRAS.get());
+		commands.put(Modulos.MODULO.get(), Modulos.MODULO_EXEC_MANOBRAS.get());
 		commands.put(Modulos.FUNCAO.get(), maneuverFunction);
 		commands.put(Modulos.AJUSTE_FINO.get(), String.valueOf(chkFineAdjusment.isSelected()));
 		MechPeste.newInstance().startModule(commands);

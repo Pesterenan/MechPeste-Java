@@ -126,7 +126,7 @@ public class LiftoffController extends Controller {
 	private void circularizeOrbitOnApoapsis() {
 		setCurrentStatus(Bundle.getString("status_planning_orbit"));
 		Map<String, String> commands = new HashMap<>();
-		commands.put(Modulos.MODULO.get(), Modulos.MODULO_MANOBRAS.get());
+		commands.put(Modulos.MODULO.get(), Modulos.MODULO_EXEC_MANOBRAS.get());
 		commands.put(Modulos.FUNCAO.get(), Modulos.APOASTRO.get());
 		commands.put(Modulos.AJUSTE_FINO.get(), String.valueOf(false));
 		MechPeste.newInstance().startModule(commands);
