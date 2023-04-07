@@ -25,7 +25,7 @@ public class LiftoffController extends Controller {
 	private float roll;
 	private float maxTWR;
 
-	private boolean willDecoupleStages, willDeployPanelsAndRadiators;
+	private boolean willDecoupleStages, willOpenPanelsAndAntenna;
 	private String gravityCurveModel = Modulos.CIRCULAR.get();
 	private Navigation navigation;
 
@@ -43,7 +43,7 @@ public class LiftoffController extends Controller {
 		setRoll(Float.parseFloat(commands.get(Modulos.ROLAGEM.get())));
 		maxTWR = (float) Utilities.clamp(Float.parseFloat(commands.get(Modulos.MAX_TWR.get())), 1.2, 5.0);
 		setGravityCurveModel(commands.get(Modulos.INCLINACAO.get()));
-		willDeployPanelsAndRadiators = Boolean.parseBoolean(commands.get(Modulos.ABRIR_PAINEIS.get()));
+		willOpenPanelsAndAntenna = Boolean.parseBoolean(commands.get(Modulos.ABRIR_PAINEIS.get()));
 		willDecoupleStages = Boolean.parseBoolean(commands.get(Modulos.USAR_ESTAGIOS.get()));
 		thrControl.adjustOutput(0.0, 1.0);
 	}
@@ -118,8 +118,8 @@ public class LiftoffController extends Controller {
 		if (willDecoupleStages) {
 			jettisonFairings();
 		}
-		if (willDeployPanelsAndRadiators) {
-			deployPanelsAndRadiators();
+		if (willOpenPanelsAndAntenna) {
+			openPanelsAndAntenna();
 		}
 	}
 
@@ -148,9 +148,10 @@ public class LiftoffController extends Controller {
 		}
 	}
 
-	private void deployPanelsAndRadiators() throws RPCException, InterruptedException {
+	private void openPanelsAndAntenna() throws RPCException, InterruptedException {
 		getNaveAtual().getControl().setSolarPanels(true);
 		getNaveAtual().getControl().setRadiators(true);
+		getNaveAtual().getControl().setAntennas(true);
 	}
 
 	private double calculateCurrentPitch(double currentAltitude) {

@@ -40,7 +40,6 @@ public class ManeuverController extends Controller {
 		ctrlRCS.adjustOutput(0.5, 1.0);
 		fineAdjustment = canFineAdjust(commands.get(Modulos.AJUSTE_FINO.get()));
 		lowOrbitAltitude = calculateSafeLowOrbitAltitude();
-		System.out.println(lowOrbitAltitude);
 	}
 
 	@Override
@@ -54,13 +53,8 @@ public class ManeuverController extends Controller {
 		double bodyRadius = 0, atmosphereDepth = 0;
 		try {
 			bodyRadius = currentBody.getEquatorialRadius();
-			System.out.println(bodyRadius);
 			atmosphereDepth = currentBody.getAtmosphereDepth();
-			System.out.println(atmosphereDepth);
-			System.out.println(altitude.get());
-			System.out.println(altitudeSup.get());
-			System.out.println(apoastro.get());
-		} catch (RPCException | StreamException ignored) {
+		} catch (RPCException ignored) {
 		}
 		return bodyRadius + (atmosphereDepth > 0 ? atmosphereDepth + safeAltitude : safeAltitude);
 	}
