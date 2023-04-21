@@ -16,8 +16,7 @@ import java.util.zip.ZipInputStream;
 
 public class KrpcInstaller {
 	static final int BUFFER = 2048;
-	private static final String KRPC_GITHUB_LINK =
-			"https://github.com/krpc/krpc/releases/download/v0.5.1/krpc-0.5.1.zip";
+	private static final String KRPC_GITHUB_LINK = "https://github.com/krpc/krpc/releases/download/v0.5.2/krpc-0.5.2.zip";
 	private static String KSP_FOLDER = null;
 
 	public static String getKspFolder() {
@@ -43,7 +42,7 @@ public class KrpcInstaller {
 
 			krpcLink = new URL(KRPC_GITHUB_LINK);
 			ReadableByteChannel readableByteChannel = Channels.newChannel(krpcLink.openStream());
-			FileOutputStream fos = new FileOutputStream(KSP_FOLDER + "\\krpc-0.5.1.zip");
+			FileOutputStream fos = new FileOutputStream(KSP_FOLDER + "\\krpc-0.5.2.zip");
 			fos.getChannel().transferFrom(readableByteChannel, 0, Long.MAX_VALUE);
 			fos.close();
 
@@ -60,7 +59,7 @@ public class KrpcInstaller {
 			}
 			BufferedOutputStream dest;
 			// zipped input
-			FileInputStream fis = new FileInputStream(KSP_FOLDER + "\\krpc-0.5.1.zip");
+			FileInputStream fis = new FileInputStream(KSP_FOLDER + "\\krpc-0.5.2.zip");
 			ZipInputStream zis = new ZipInputStream(new BufferedInputStream(fis));
 			ZipEntry entry;
 			while ((entry = zis.getNextEntry()) != null) {

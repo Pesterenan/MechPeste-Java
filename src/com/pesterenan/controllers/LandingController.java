@@ -204,9 +204,11 @@ public class LandingController extends Controller {
 				ap.wait_();
 				Thread.sleep(100);
 			}
+			double targetPeriapsis = currentBody.getAtmosphereDepth();
+			targetPeriapsis = targetPeriapsis > 0 ? targetPeriapsis / 2 : -currentBody.getEquatorialRadius() / 2;
 			while (periastro.get() > -apoastro.get()) {
 				navigation.aimForLanding();
-				throttle(altitudeCtrl.calcPID(-currentBody.getEquatorialRadius() / 2, periastro.get()));
+				throttle(altitudeCtrl.calcPID(targetPeriapsis, periastro.get()));
 				setCurrentStatus(Bundle.getString("status_lowering_periapsis"));
 				Thread.sleep(100);
 			}
