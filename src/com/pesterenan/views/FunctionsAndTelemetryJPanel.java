@@ -80,7 +80,6 @@ public class FunctionsAndTelemetryJPanel extends JPanel implements UIMethods {
 		btnCreateManeuver.setActionCommand(Modulos.MODULO_CRIAR_MANOBRAS.get());
 		btnCreateManeuver.setMaximumSize(btnFuncDimension);
 		btnCreateManeuver.setPreferredSize(btnFuncDimension);
-		btnCreateManeuver.setEnabled(false);
 		btnExecManeuver.addActionListener(this::changeFunctionPanel);
 		btnExecManeuver.setActionCommand(Modulos.MODULO_EXEC_MANOBRAS.get());
 		btnExecManeuver.setMaximumSize(btnFuncDimension);

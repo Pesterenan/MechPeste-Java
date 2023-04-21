@@ -9,8 +9,6 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 
 public class MainGui extends JFrame implements ActionListener, UIMethods {
 	
@@ -32,6 +30,7 @@ public class MainGui extends JFrame implements ActionListener, UIMethods {
 	private final static CardLayout cardLayout = new CardLayout(0, 0);
 	private LiftoffJPanel pnlLiftoff;
 	private LandingJPanel pnlLanding;
+	private CreateManeuverJPanel pnlCreateManeuver;
 	private ManeuverJPanel pnlManeuver;
 	private RoverJPanel pnlRover;
 
@@ -73,6 +72,7 @@ public class MainGui extends JFrame implements ActionListener, UIMethods {
 		pnlFunctionsAndTelemetry = new FunctionsAndTelemetryJPanel();
 		pnlLiftoff = new LiftoffJPanel();
 		pnlLanding = new LandingJPanel();
+		pnlCreateManeuver = new CreateManeuverJPanel();
 		pnlManeuver = new ManeuverJPanel();
 		pnlRover = new RoverJPanel();
 		pnlStatus = new StatusJPanel();
@@ -124,6 +124,7 @@ public class MainGui extends JFrame implements ActionListener, UIMethods {
 		cardJPanels.add(pnlFunctionsAndTelemetry, Modulos.MODULO_TELEMETRIA.get());
 		cardJPanels.add(pnlLiftoff, Modulos.MODULO_DECOLAGEM.get());
 		cardJPanels.add(pnlLanding, Modulos.MODULO_POUSO.get());
+		cardJPanels.add(pnlCreateManeuver, Modulos.MODULO_CRIAR_MANOBRAS.get());
 		cardJPanels.add(pnlManeuver, Modulos.MODULO_EXEC_MANOBRAS.get());
 		cardJPanels.add(pnlRover, Modulos.MODULO_ROVER.get());
 	}
