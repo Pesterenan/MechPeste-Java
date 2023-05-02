@@ -3,12 +3,14 @@ package com.pesterenan;
 import com.pesterenan.model.ActiveVessel;
 import com.pesterenan.resources.Bundle;
 import com.pesterenan.utils.Vector;
+import com.pesterenan.views.CreateManeuverJPanel;
 import com.pesterenan.views.FunctionsAndTelemetryJPanel;
 import com.pesterenan.views.MainGui;
 import krpc.client.Connection;
 import krpc.client.RPCException;
 import krpc.client.services.KRPC;
 import krpc.client.services.SpaceCenter;
+import krpc.client.services.SpaceCenter.Node;
 import krpc.client.services.SpaceCenter.Vessel;
 
 import javax.swing.*;
@@ -62,6 +64,22 @@ public class MechPeste {
 				try {
 					String naveStr = v.hashCode() + " - \t" + v.getName();
 					list.addElement(naveStr);
+				} catch (RPCException ignored) {
+				}
+			});
+		} catch (RPCException | NullPointerException ignored) {
+		}
+		return list;
+	}
+
+	public static ListModel<String> getCurrentManeuvers() {
+		DefaultListModel<String> list = new DefaultListModel<>();
+		try {
+			List<Node> maneuvers = getSpaceCenter().getActiveVessel().getControl().getNodes();
+			maneuvers.forEach(m -> {
+				try {
+					String maneuverStr = String.format("%d - \tDv: %.1f", maneuvers.indexOf(m) + 1, m.getDeltaV());
+					list.addElement(maneuverStr);
 				} catch (RPCException ignored) {
 				}
 			});
@@ -144,6 +162,7 @@ public class MechPeste {
 						setStatusMessage(currentVessel.getCurrentStatus());
 					}
 					FunctionsAndTelemetryJPanel.updateTelemetry(currentVessel.getTelemetryData());
+					CreateManeuverJPanel.updateManeuverList(getCurrentManeuvers());
 				}
 				Thread.sleep(100);
 			} catch (RPCException | InterruptedException ignored) {
