@@ -19,6 +19,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.HashMap;
 import java.util.Hashtable;
+import java.util.List;
 import java.util.Map;
 
 import static com.pesterenan.views.MainGui.PNL_DIMENSION;
@@ -27,7 +28,7 @@ import static com.pesterenan.views.MainGui.BTN_DIMENSION;
 public class CreateManeuverJPanel extends JPanel implements ActionListener, UIMethods {
 
     private static JButton btnCreateManeuver, btnDeleteManeuver, btnBack, btnAp, btnPe, btnAN, btnDN;
-    private static JButton btnIncrease, btnDecrease, btnNextOrbit, btnPrevOrbit;
+    private static JButton btnIncrease, btnDecrease, btnNextOrbit, btnPrevOrbit, btnAlignPlanes, btnRendezvous;
     private static JSlider sldScale;
     private static JList<String> listCurrentManeuvers;
     private static int selectedManeuverIndex = 0;
@@ -55,6 +56,8 @@ public class CreateManeuverJPanel extends JPanel implements ActionListener, UIMe
         btnDecrease = new JButton("-");
         btnNextOrbit = new JButton(">");
         btnPrevOrbit = new JButton("<");
+        btnAlignPlanes = new JButton("Alinhar planos");
+        btnRendezvous = new JButton("Rendezvous");
 
         // Radio buttons:
         rbPrograde = new JRadioButton("Pro");
@@ -99,9 +102,6 @@ public class CreateManeuverJPanel extends JPanel implements ActionListener, UIMe
         btnBack.setMaximumSize(BTN_DIMENSION);
         btnBack.setPreferredSize(BTN_DIMENSION);
         btnIncrease.setActionCommand("increase");
-        btnDecrease.setActionCommand("decrease");
-        btnNextOrbit.setActionCommand("next_orbit");
-        btnPrevOrbit.setActionCommand("prev_orbit");
         btnIncrease.addActionListener(this);
         btnIncrease.addMouseWheelListener(e -> {
             int rotation = e.getWheelRotation();
@@ -111,6 +111,10 @@ public class CreateManeuverJPanel extends JPanel implements ActionListener, UIMe
                 changeManeuverDeltaV(btnIncrease.getActionCommand());
             }
         });
+        btnIncrease.setMaximumSize(new Dimension(70, 26));
+        btnIncrease.setPreferredSize(new Dimension(70, 26));
+        btnIncrease.setMargin(new Insets(0, 0, 0, 0));
+        btnDecrease.setActionCommand("decrease");
         btnDecrease.addActionListener(this);
         btnDecrease.addMouseWheelListener(e -> {
             int rotation = e.getWheelRotation();
@@ -119,21 +123,47 @@ public class CreateManeuverJPanel extends JPanel implements ActionListener, UIMe
             } else {
                 changeManeuverDeltaV(btnDecrease.getActionCommand());
             }
-        });;
-        btnNextOrbit.addActionListener(this);
-        btnPrevOrbit.addActionListener(this);
-        btnIncrease.setMaximumSize(new Dimension(70, 26));
+        });
         btnDecrease.setMaximumSize(new Dimension(70, 26));
-        btnNextOrbit.setMaximumSize(new Dimension(35, 26));
-        btnPrevOrbit.setMaximumSize(new Dimension(35, 26));
-        btnIncrease.setPreferredSize(new Dimension(70, 26));
         btnDecrease.setPreferredSize(new Dimension(70, 26));
-        btnNextOrbit.setPreferredSize(new Dimension(35, 26));
-        btnPrevOrbit.setPreferredSize(new Dimension(35, 26));
-        btnIncrease.setMargin(new Insets(0, 0, 0, 0));
         btnDecrease.setMargin(new Insets(0, 0, 0, 0));
+        btnNextOrbit.setActionCommand("next_orbit");
+        btnNextOrbit.addActionListener(this);
+        btnNextOrbit.setMaximumSize(new Dimension(35, 26));
+        btnNextOrbit.setPreferredSize(new Dimension(35, 26));
         btnNextOrbit.setMargin(new Insets(0, 0, 0, 0));
+        btnPrevOrbit.setActionCommand("prev_orbit");
+        btnPrevOrbit.addActionListener(this);
+        btnPrevOrbit.setMaximumSize(new Dimension(35, 26));
+        btnPrevOrbit.setPreferredSize(new Dimension(35, 26));
         btnPrevOrbit.setMargin(new Insets(0, 0, 0, 0));
+        btnAlignPlanes.addActionListener(e -> {
+            try {
+                MechPeste.newInstance();
+                Vessel vessel = MechPeste.getSpaceCenter().getActiveVessel();
+                Vessel targetVessel = MechPeste.getSpaceCenter().getTargetVessel();
+                List<Node> currentManeuvers = vessel.getControl().getNodes();
+                if (currentManeuvers.size() < 1) {
+                    createManeuver();
+                    positionManeuverAt("ascending");
+                }
+                Node currentManeuver = currentManeuvers.get(0);
+                double currentInclination = currentManeuver.getOrbit().relativeInclination(targetVessel.getOrbit());
+                System.out.println(Math.toDegrees(currentInclination));
+            } catch (Exception err) {
+            }
+        });
+        btnRendezvous.addActionListener(e -> {
+            try {
+                MechPeste.newInstance();
+                Vessel vessel = MechPeste.getSpaceCenter().getActiveVessel();
+                Vessel targetVessel = MechPeste.getSpaceCenter().getTargetVessel();
+                Node currentManeuver = vessel.getControl().getNodes().get(selectedManeuverIndex);
+                double closestApproach = currentManeuver.getOrbit().distanceAtClosestApproach(targetVessel.getOrbit());
+                System.out.println(closestApproach);
+            } catch (Exception err) {
+            }
+        });
 
         rbPrograde.setActionCommand("prograde");
         rbNormal.setActionCommand("normal");
@@ -219,15 +249,27 @@ public class CreateManeuverJPanel extends JPanel implements ActionListener, UIMe
         JPanel pnlManeuverController = new JPanel();
         pnlManeuverController.setLayout(new BoxLayout(pnlManeuverController, BoxLayout.X_AXIS));
         pnlManeuverController.setBorder(new TitledBorder("Controlador de Manobra:"));
-        pnlManeuverController.setMaximumSize(new Dimension(400, 300));
+        pnlManeuverController.setMaximumSize(new Dimension(380, 300));
         pnlManeuverController.add(pnlRadioButtons);
         pnlManeuverController.add(pnlSlider);
         pnlManeuverController.add(pnlManeuverButtons);
+        
+        JPanel pnlAutoPosition = new JPanel();
+        pnlAutoPosition.setLayout(new BoxLayout(pnlAutoPosition, BoxLayout.Y_AXIS));
+        pnlAutoPosition.setBorder(new TitledBorder("Auto posição:"));
+        pnlAutoPosition.setMaximumSize(new Dimension(400, 300));
+        pnlAutoPosition.add(btnAlignPlanes);
+        pnlAutoPosition.add(btnRendezvous);
+
+        JPanel pnlMCpnlAP = new JPanel();
+        pnlMCpnlAP.setLayout(new BoxLayout(pnlMCpnlAP, BoxLayout.X_AXIS));
+        pnlMCpnlAP.add(pnlManeuverController);
+        pnlMCpnlAP.add(pnlAutoPosition);
 
         JPanel pnlControls = new JPanel();
         pnlControls.setLayout(new BoxLayout(pnlControls, BoxLayout.Y_AXIS));
         pnlControls.add(pnlPositionManeuver);
-        pnlControls.add(pnlManeuverController);
+        pnlControls.add(pnlMCpnlAP);
 
         JPanel pnlManeuverList = new JPanel();
         pnlManeuverList.setLayout(new BoxLayout(pnlManeuverList, BoxLayout.Y_AXIS));
@@ -375,6 +417,24 @@ public class CreateManeuverJPanel extends JPanel implements ActionListener, UIMe
 
     }
 
+    private void changeOrbit(String command) {
+        try {
+            MechPeste.newInstance();
+            Vessel vessel;
+            vessel = MechPeste.getSpaceCenter().getActiveVessel();
+            Node currentManeuver = vessel.getControl().getNodes().get(selectedManeuverIndex);
+            double currentOrbitPeriod = vessel.getOrbit().getPeriod();
+            if (command == "next_orbit") {
+                currentManeuver.setUT(currentManeuver.getUT() + currentOrbitPeriod);
+            } else {
+                double newUT = currentManeuver.getUT() - currentOrbitPeriod;
+                newUT = newUT < MechPeste.getSpaceCenter().getUT() ? MechPeste.getSpaceCenter().getUT() + 60 : newUT;
+                currentManeuver.setUT(newUT);
+            }
+        } catch (RPCException ignored) {
+        }
+    }
+
     @Override
     public void actionPerformed(ActionEvent e) {
         if (e.getSource() == btnCreateManeuver) {
@@ -385,6 +445,9 @@ public class CreateManeuverJPanel extends JPanel implements ActionListener, UIMe
         }
         if (e.getSource() == btnIncrease || e.getSource() == btnDecrease) {
             changeManeuverDeltaV(e.getActionCommand());
+        }
+        if (e.getSource() == btnNextOrbit || e.getSource() == btnPrevOrbit) {
+            changeOrbit(e.getActionCommand());
         }
         if (e.getSource() == btnAp || e.getSource() == btnPe || e.getSource() == btnAN || e.getSource() == btnDN) {
             positionManeuverAt(e.getActionCommand());
