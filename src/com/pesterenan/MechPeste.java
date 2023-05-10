@@ -78,7 +78,9 @@ public class MechPeste {
 			List<Node> maneuvers = getSpaceCenter().getActiveVessel().getControl().getNodes();
 			maneuvers.forEach(m -> {
 				try {
-					String maneuverStr = String.format("%d - \tDv: %.1f", maneuvers.indexOf(m) + 1, m.getDeltaV());
+					String maneuverStr = String.format("%d - Dv: %.1f {P: %.1f, N: %.1f, R: %.1f} AP: %.1f, PE: %.1f",
+							maneuvers.indexOf(m) + 1, m.getDeltaV(), m.getPrograde(), m.getNormal(), m.getRadial(),
+							m.getOrbit().getApoapsisAltitude(), m.getOrbit().getPeriapsisAltitude());
 					list.addElement(maneuverStr);
 				} catch (RPCException ignored) {
 				}
@@ -116,13 +118,13 @@ public class MechPeste {
 
 	public static String getVesselInfo(int selectedIndex) {
 		try {
-			Vessel naveAtual =
-					spaceCenter.getVessels().stream().filter(v -> v.hashCode() == selectedIndex).findFirst().get();
+			Vessel naveAtual = spaceCenter.getVessels().stream().filter(v -> v.hashCode() == selectedIndex).findFirst()
+					.get();
 			String name = naveAtual.getName().length() > 40
-			              ? naveAtual.getName().substring(0, 40) + "..."
-			              : naveAtual.getName();
-			String vesselInfo =
-					String.format("Nome: %s\t\t\t | Corpo: %s", name, naveAtual.getOrbit().getBody().getName());
+					? naveAtual.getName().substring(0, 40) + "..."
+					: naveAtual.getName();
+			String vesselInfo = String.format("Nome: %s\t\t\t | Corpo: %s", name,
+					naveAtual.getOrbit().getBody().getName());
 			return vesselInfo;
 		} catch (RPCException | NullPointerException ignored) {
 		}
@@ -131,8 +133,8 @@ public class MechPeste {
 
 	public static void changeToVessel(int selectedIndex) {
 		try {
-			Vessel naveAtual =
-					spaceCenter.getVessels().stream().filter(v -> v.hashCode() == selectedIndex).findFirst().get();
+			Vessel naveAtual = spaceCenter.getVessels().stream().filter(v -> v.hashCode() == selectedIndex).findFirst()
+					.get();
 			spaceCenter.setActiveVessel(naveAtual);
 		} catch (RPCException | NullPointerException e) {
 			System.out.println(Bundle.getString("status_couldnt_switch_vessel"));
@@ -158,11 +160,11 @@ public class MechPeste {
 				}
 				if (currentVesselId != -1) {
 					currentVessel.recordTelemetryData();
-					if (currentVessel.hasModuleRunning()){
+					if (currentVessel.hasModuleRunning()) {
 						setStatusMessage(currentVessel.getCurrentStatus());
 					}
 					FunctionsAndTelemetryJPanel.updateTelemetry(currentVessel.getTelemetryData());
-					CreateManeuverJPanel.updateManeuverList(getCurrentManeuvers());
+					CreateManeuverJPanel.updatePanel(getCurrentManeuvers());
 				}
 				Thread.sleep(100);
 			} catch (RPCException | InterruptedException ignored) {

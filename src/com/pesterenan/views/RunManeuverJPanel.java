@@ -18,14 +18,14 @@ import static com.pesterenan.views.MainGui.BTN_DIMENSION;
 import static com.pesterenan.views.MainGui.MARGIN_BORDER_10_PX_LR;
 import static com.pesterenan.views.MainGui.PNL_DIMENSION;
 
-public class ManeuverJPanel extends JPanel implements ActionListener, UIMethods {
+public class RunManeuverJPanel extends JPanel implements ActionListener, UIMethods {
 	private static final long serialVersionUID = 1L;
 
 	private JLabel lblExecute, lblAdjustInc;
 	private JButton btnLowerOrbit, btnApoapsis, btnPeriapsis, btnExecute, btnAdjustInc, btnBack;
 	private JCheckBox chkFineAdjusment;
 
-	public ManeuverJPanel() {
+	public RunManeuverJPanel() {
 		initComponents();
 		setupComponents();
 		layoutComponents();
@@ -49,10 +49,6 @@ public class ManeuverJPanel extends JPanel implements ActionListener, UIMethods 
 	}
 
 	public void setupComponents() {
-		// Main Panel setup:
-		setBorder(new TitledBorder(null, Bundle.getString("pnl_mnv_border"), TitledBorder.LEADING, TitledBorder.TOP,
-				null, null));
-
 		// Setting-up components:
 		btnAdjustInc.addActionListener(this);
 		btnAdjustInc.setActionCommand(Modulos.AJUSTAR.get());
@@ -171,7 +167,7 @@ public class ManeuverJPanel extends JPanel implements ActionListener, UIMethods 
 
 	protected void handleManeuverFunction(String maneuverFunction) {
 		Map<String, String> commands = new HashMap<>();
-		commands.put(Modulos.MODULO.get(), Modulos.MODULO_EXEC_MANOBRAS.get());
+		commands.put(Modulos.MODULO.get(), Modulos.MODULE_MANEUVER.get());
 		commands.put(Modulos.FUNCAO.get(), maneuverFunction);
 		commands.put(Modulos.AJUSTE_FINO.get(), String.valueOf(chkFineAdjusment.isSelected()));
 		MechPeste.newInstance().startModule(commands);

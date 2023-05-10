@@ -182,7 +182,7 @@ public class ActiveVessel {
 			controller = new LandingController(commands);
 			runningModule = true;
 		}
-		if (currentFunction.equals(Modulos.MODULO_EXEC_MANOBRAS.get())) {
+		if (currentFunction.equals(Modulos.MODULE_MANEUVER.get())) {
 			controller = new ManeuverController(commands);
 			runningModule = true;
 		}

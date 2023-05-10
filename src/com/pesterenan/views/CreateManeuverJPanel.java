@@ -2,6 +2,7 @@ package com.pesterenan.views;
 
 import com.pesterenan.MechPeste;
 import com.pesterenan.resources.Bundle;
+import com.pesterenan.utils.ControlePID;
 
 import krpc.client.RPCException;
 import krpc.client.services.SpaceCenter.Node;
@@ -27,6 +28,7 @@ import static com.pesterenan.views.MainGui.BTN_DIMENSION;
 
 public class CreateManeuverJPanel extends JPanel implements ActionListener, UIMethods {
 
+    private static JLabel lblManeuverInfo;
     private static JButton btnCreateManeuver, btnDeleteManeuver, btnBack, btnAp, btnPe, btnAN, btnDN;
     private static JButton btnIncrease, btnDecrease, btnNextOrbit, btnPrevOrbit, btnAlignPlanes, btnRendezvous;
     private static JSlider sldScale;
@@ -35,6 +37,7 @@ public class CreateManeuverJPanel extends JPanel implements ActionListener, UIMe
     private static JRadioButton rbPrograde, rbNormal, rbRadial, rbTime;
     private static ButtonGroup bgManeuverType;
     private static Map<Integer, Pair<String, Float>> sliderValues = new HashMap<>();
+    private final ControlePID ctrlManeuver = new ControlePID();
 
     public CreateManeuverJPanel() {
         initComponents();
@@ -44,6 +47,9 @@ public class CreateManeuverJPanel extends JPanel implements ActionListener, UIMe
 
     @Override
     public void initComponents() {
+        // Labels:
+        lblManeuverInfo = new JLabel("");
+
         // Buttons:
         btnCreateManeuver = new JButton("Criar");
         btnDeleteManeuver = new JButton("Apagar");
@@ -69,20 +75,18 @@ public class CreateManeuverJPanel extends JPanel implements ActionListener, UIMe
         listCurrentManeuvers = new JList<>();
         sldScale = new JSlider(JSlider.VERTICAL, 0, 5, 2);
         bgManeuverType = new ButtonGroup();
-        sliderValues.put(0, new Pair<>("0.01m/s", 0.01f));
-        sliderValues.put(1, new Pair<>("0.10m/s", 0.1f));
-        sliderValues.put(2, new Pair<>("1.0 m/s", 1f));
-        sliderValues.put(3, new Pair<>("10  m/s", 10f));
-        sliderValues.put(4, new Pair<>("100 m/s", 100f));
-        sliderValues.put(5, new Pair<>("1k  m/s", 1000f));
+        sliderValues.put(0, new Pair<>("0.01", 0.01f));
+        sliderValues.put(1, new Pair<>("0.10", 0.1f));
+        sliderValues.put(2, new Pair<>("1", 1f));
+        sliderValues.put(3, new Pair<>("10", 10f));
+        sliderValues.put(4, new Pair<>("100", 100f));
+        sliderValues.put(5, new Pair<>("1000", 1000f));
+
+        ctrlManeuver.adjustOutput(-100, 100);
     }
 
     @Override
     public void setupComponents() {
-        // Main Panel setup:
-        setBorder(new TitledBorder(null, Bundle.getString("pnl_mnv_border"), TitledBorder.LEADING, TitledBorder.TOP,
-                null, null));
-
         // Setting-up components:
         btnCreateManeuver.addActionListener(this);
         btnCreateManeuver.setMaximumSize(BTN_DIMENSION);
@@ -142,15 +146,29 @@ public class CreateManeuverJPanel extends JPanel implements ActionListener, UIMe
                 MechPeste.newInstance();
                 Vessel vessel = MechPeste.getSpaceCenter().getActiveVessel();
                 Vessel targetVessel = MechPeste.getSpaceCenter().getTargetVessel();
-                List<Node> currentManeuvers = vessel.getControl().getNodes();
-                if (currentManeuvers.size() < 1) {
+                boolean hasManeuverNodes = vessel.getControl().getNodes().size() > 0;
+                if (!hasManeuverNodes) {
                     createManeuver();
-                    positionManeuverAt("ascending");
                 }
+                List<Node> currentManeuvers = vessel.getControl().getNodes();
                 Node currentManeuver = currentManeuvers.get(0);
-                double currentInclination = currentManeuver.getOrbit().relativeInclination(targetVessel.getOrbit());
-                System.out.println(Math.toDegrees(currentInclination));
+                double[] incNodesUt = {
+                        vessel.getOrbit().uTAtTrueAnomaly(vessel.getOrbit().trueAnomalyAtAN(targetVessel.getOrbit())),
+                        vessel.getOrbit().uTAtTrueAnomaly(vessel.getOrbit().trueAnomalyAtDN(targetVessel.getOrbit()))
+                };
+                boolean closestIsAN = incNodesUt[0] < incNodesUt[1];
+                positionManeuverAt(closestIsAN ? "ascending" : "descending");
+                double currentInclination = Math
+                        .toDegrees(currentManeuver.getOrbit().relativeInclination(targetVessel.getOrbit()));
+                while (currentInclination > 0.05) {
+                    currentInclination = Math
+                            .toDegrees(currentManeuver.getOrbit().relativeInclination(targetVessel.getOrbit()));
+                    double ctrlOutput = ctrlManeuver.calcPID(currentInclination * 100, 0);
+                    currentManeuver.setNormal(currentManeuver.getNormal() + (closestIsAN ? ctrlOutput : -ctrlOutput));
+                    Thread.sleep(25);
+                }
             } catch (Exception err) {
+                System.err.println(err);
             }
         });
         btnRendezvous.addActionListener(e -> {
@@ -158,22 +176,53 @@ public class CreateManeuverJPanel extends JPanel implements ActionListener, UIMe
                 MechPeste.newInstance();
                 Vessel vessel = MechPeste.getSpaceCenter().getActiveVessel();
                 Vessel targetVessel = MechPeste.getSpaceCenter().getTargetVessel();
-                Node currentManeuver = vessel.getControl().getNodes().get(selectedManeuverIndex);
-                double closestApproach = currentManeuver.getOrbit().distanceAtClosestApproach(targetVessel.getOrbit());
+                boolean hasManeuverNodes = vessel.getControl().getNodes().size() > 0;
+                List<Node> currentManeuvers = vessel.getControl().getNodes();
+                Node lastManeuverNode;
+                double lastManeuverNodeUT = 60;
+                if (hasManeuverNodes) {
+                    currentManeuvers = vessel.getControl().getNodes();
+                    lastManeuverNode = currentManeuvers.get(currentManeuvers.size() - 1);
+                    lastManeuverNodeUT += lastManeuverNode.getUT();
+                    createManeuver(lastManeuverNodeUT);
+                } else {
+                    createManeuver();
+                }
+                currentManeuvers = vessel.getControl().getNodes();
+                lastManeuverNode = currentManeuvers.get(currentManeuvers.size() - 1);
+                double targetAP = targetVessel.getOrbit().getApoapsisAltitude();
+                double targetPE = targetVessel.getOrbit().getPeriapsisAltitude();
+                double maneuverAP = lastManeuverNode.getOrbit().getApoapsisAltitude();
+                double maneuverPE = lastManeuverNode.getOrbit().getPeriapsisAltitude();
+                ctrlManeuver.adjustOutput(-10, 10);
+                if (targetAP < maneuverPE) {
+                    while (Math.floor(targetAP) != Math.floor(maneuverPE)) {
+                        lastManeuverNode.setPrograde(
+                                lastManeuverNode.getPrograde() + ctrlManeuver.calcPID(maneuverPE - targetAP, 0));
+                        maneuverPE = lastManeuverNode.getOrbit().getPeriapsisAltitude();
+                        System.out.println("maneuverPE: " + maneuverPE);
+                        Thread.sleep(100);
+                    }
+                }
+                double closestApproach = lastManeuverNode.getOrbit().distanceAtClosestApproach(targetVessel.getOrbit());
                 System.out.println(closestApproach);
             } catch (Exception err) {
             }
         });
 
         rbPrograde.setActionCommand("prograde");
+        rbPrograde.addChangeListener(e -> handleChangeButtonText(sldScale.getValue()));
         rbNormal.setActionCommand("normal");
+        rbNormal.addChangeListener(e -> handleChangeButtonText(sldScale.getValue()));
         rbRadial.setActionCommand("radial");
+        rbRadial.addChangeListener(e -> handleChangeButtonText(sldScale.getValue()));
         rbTime.setActionCommand("time");
-        rbPrograde.setSelected(true);
+        rbTime.addChangeListener(e -> handleChangeButtonText(sldScale.getValue()));
         bgManeuverType.add(rbPrograde);
         bgManeuverType.add(rbNormal);
         bgManeuverType.add(rbRadial);
         bgManeuverType.add(rbTime);
+        bgManeuverType.setSelected(rbPrograde.getModel(), true);
 
         listCurrentManeuvers.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         listCurrentManeuvers.addListSelectionListener(e -> selectedManeuverIndex = e.getFirstIndex());
@@ -249,15 +298,15 @@ public class CreateManeuverJPanel extends JPanel implements ActionListener, UIMe
         JPanel pnlManeuverController = new JPanel();
         pnlManeuverController.setLayout(new BoxLayout(pnlManeuverController, BoxLayout.X_AXIS));
         pnlManeuverController.setBorder(new TitledBorder("Controlador de Manobra:"));
-        pnlManeuverController.setMaximumSize(new Dimension(380, 300));
+        pnlManeuverController.setMaximumSize(new Dimension(400, 300));
         pnlManeuverController.add(pnlRadioButtons);
         pnlManeuverController.add(pnlSlider);
         pnlManeuverController.add(pnlManeuverButtons);
-        
+
         JPanel pnlAutoPosition = new JPanel();
         pnlAutoPosition.setLayout(new BoxLayout(pnlAutoPosition, BoxLayout.Y_AXIS));
         pnlAutoPosition.setBorder(new TitledBorder("Auto posição:"));
-        pnlAutoPosition.setMaximumSize(new Dimension(400, 300));
+        pnlAutoPosition.setMaximumSize(new Dimension(300, 300));
         pnlAutoPosition.add(btnAlignPlanes);
         pnlAutoPosition.add(btnRendezvous);
 
@@ -296,6 +345,7 @@ public class CreateManeuverJPanel extends JPanel implements ActionListener, UIMe
 
         JPanel pnlBackButton = new JPanel();
         pnlBackButton.setLayout(new BoxLayout(pnlBackButton, BoxLayout.X_AXIS));
+        pnlBackButton.add(lblManeuverInfo);
         pnlBackButton.add(Box.createHorizontalGlue());
         pnlBackButton.add(btnBack);
 
@@ -307,38 +357,50 @@ public class CreateManeuverJPanel extends JPanel implements ActionListener, UIMe
         add(pnlBackButton, BorderLayout.SOUTH);
     }
 
-    public static void updateManeuverList(ListModel<String> list) {
-        listCurrentManeuvers.setModel(list);
-        listCurrentManeuvers.setSelectedIndex(selectedManeuverIndex);
-        btnDeleteManeuver.setEnabled(list.getSize() > 0);
+    public static void updatePanel(ListModel<String> list) {
         try {
-            btnAp.setEnabled(list.getSize() > 0);
-            btnPe.setEnabled(list.getSize() > 0);
-            btnAN.setEnabled(list.getSize() > 0 && MechPeste.getSpaceCenter().getTargetVessel() != null);
-            btnDN.setEnabled(list.getSize() > 0 && MechPeste.getSpaceCenter().getTargetVessel() != null);
+            boolean hasManeuverNodes = list.getSize() > 0;
+            boolean hasTargetVessel = MechPeste.getSpaceCenter().getTargetVessel() != null;
+            listCurrentManeuvers.setModel(list);
+            listCurrentManeuvers.setSelectedIndex(selectedManeuverIndex);
+            btnDeleteManeuver.setEnabled(hasManeuverNodes);
+            btnAp.setEnabled(hasManeuverNodes);
+            btnPe.setEnabled(hasManeuverNodes);
+            btnAN.setEnabled(hasManeuverNodes && hasTargetVessel);
+            btnDN.setEnabled(hasManeuverNodes && hasTargetVessel);
+            btnAlignPlanes.setEnabled(hasTargetVessel);
+            btnIncrease.setEnabled(hasManeuverNodes);
+            btnDecrease.setEnabled(hasManeuverNodes);
+            btnNextOrbit.setEnabled(hasManeuverNodes);
+            btnPrevOrbit.setEnabled(hasManeuverNodes);
+            lblManeuverInfo.setText(listCurrentManeuvers.getSelectedValue());
         } catch (RPCException ignored) {
         }
     }
 
     private static void handleChangeButtonText(int value) {
-        btnIncrease.setText("+ " + sliderValues.get(value).getValue0());
-        btnDecrease.setText("- " + sliderValues.get(value).getValue0());
+        String suffix = bgManeuverType.getSelection() == rbTime.getModel() ? " s" : "m/s";
+        btnIncrease.setText("+ " + sliderValues.get(value).getValue0() + suffix);
+        btnDecrease.setText("- " + sliderValues.get(value).getValue0() + suffix);
     }
 
     private void createManeuver() {
+        try {
+            createManeuver(MechPeste.getSpaceCenter().getUT() + 60);
+        } catch (RPCException e) {
+        }
+    }
+
+    private void createManeuver(double atFutureTime) {
         try {
             MechPeste.newInstance();
             Vessel vessel = MechPeste.getSpaceCenter().getActiveVessel();
 
             if (vessel.getSituation() != VesselSituation.ORBITING) {
-                System.out.println("Não é possível criar a manobra fora de órbita.");
+                StatusJPanel.setStatusMessage("Não é possível criar a manobra fora de órbita.");
                 return;
             }
-            double oneMinuteAhead = MechPeste.getSpaceCenter().getUT() + 60;
-            Node maneuverNode = vessel.getControl().addNode(oneMinuteAhead, 0, 0, 0);
-            // Print the maneuver node information
-            System.out.println("Maneuver Node created:");
-            System.out.println("  Time to node: " + maneuverNode.getTimeTo() + " s");
+            vessel.getControl().addNode(atFutureTime, 0, 0, 0);
         } catch (Exception e) {
         }
     }

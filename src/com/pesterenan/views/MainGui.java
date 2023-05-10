@@ -11,9 +11,9 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 public class MainGui extends JFrame implements ActionListener, UIMethods {
-	
+
 	private static final long serialVersionUID = 1L;
-	
+
 	private final Dimension APP_DIMENSION = new Dimension(480, 300);
 	public static final Dimension PNL_DIMENSION = new Dimension(464, 216);
 	public static final Dimension BTN_DIMENSION = new Dimension(110, 25);
@@ -26,12 +26,12 @@ public class MainGui extends JFrame implements ActionListener, UIMethods {
 	private JMenuBar menuBar;
 	private JMenu mnFile, mnOptions, mnHelp;
 	private JMenuItem mntmInstallKrpc, mntmExit, mntmChangeVessels, mntmAbout;
-	
+
 	private final static CardLayout cardLayout = new CardLayout(0, 0);
 	private LiftoffJPanel pnlLiftoff;
 	private LandingJPanel pnlLanding;
-	private CreateManeuverJPanel pnlCreateManeuver;
-	private ManeuverJPanel pnlManeuver;
+	private CreateManeuverJPanel pnlCreateManeuvers;
+	private RunManeuverJPanel pnlRunManeuvers;
 	private RoverJPanel pnlRover;
 
 	private MainGui() {
@@ -53,7 +53,7 @@ public class MainGui extends JFrame implements ActionListener, UIMethods {
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 		} catch (Exception ignored) {
 		}
-		
+
 		// Menu bar
 		menuBar = new JMenuBar();
 
@@ -61,7 +61,7 @@ public class MainGui extends JFrame implements ActionListener, UIMethods {
 		mnFile = new JMenu(Bundle.getString("main_mn_file"));
 		mnOptions = new JMenu(Bundle.getString("main_mn_options"));
 		mnHelp = new JMenu(Bundle.getString("main_mn_help"));
-		
+
 		// Menu Items
 		mntmInstallKrpc = new JMenuItem(Bundle.getString("main_mntm_install_krpc"));
 		mntmChangeVessels = new JMenuItem(Bundle.getString("main_mntm_change_vessels"));
@@ -72,8 +72,8 @@ public class MainGui extends JFrame implements ActionListener, UIMethods {
 		pnlFunctionsAndTelemetry = new FunctionsAndTelemetryJPanel();
 		pnlLiftoff = new LiftoffJPanel();
 		pnlLanding = new LandingJPanel();
-		pnlCreateManeuver = new CreateManeuverJPanel();
-		pnlManeuver = new ManeuverJPanel();
+		pnlCreateManeuvers = new CreateManeuverJPanel();
+		pnlRunManeuvers = new RunManeuverJPanel();
 		pnlRover = new RoverJPanel();
 		pnlStatus = new StatusJPanel();
 	}
@@ -88,7 +88,7 @@ public class MainGui extends JFrame implements ActionListener, UIMethods {
 		setLocation(100, 100);
 		setContentPane(ctpMainGui);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		
+
 		// Setting-up components:
 		mntmAbout.addActionListener(this);
 		mntmChangeVessels.addActionListener(this);
@@ -98,7 +98,7 @@ public class MainGui extends JFrame implements ActionListener, UIMethods {
 		cardJPanels.setPreferredSize(PNL_DIMENSION);
 		cardJPanels.setSize(PNL_DIMENSION);
 	}
-	
+
 	@Override
 	public void layoutComponents() {
 		// Main Panel layout:
@@ -120,12 +120,15 @@ public class MainGui extends JFrame implements ActionListener, UIMethods {
 		menuBar.add(mnOptions);
 		menuBar.add(mnHelp);
 
+		JTabbedPane pnlManeuverJTabbedPane = new JTabbedPane();
+		pnlManeuverJTabbedPane.addTab("Criar Manobras", pnlCreateManeuvers);
+		pnlManeuverJTabbedPane.addTab("Executar Manobras", pnlRunManeuvers);
+
 		cardJPanels.setLayout(cardLayout);
 		cardJPanels.add(pnlFunctionsAndTelemetry, Modulos.MODULO_TELEMETRIA.get());
 		cardJPanels.add(pnlLiftoff, Modulos.MODULO_DECOLAGEM.get());
 		cardJPanels.add(pnlLanding, Modulos.MODULO_POUSO.get());
-		cardJPanels.add(pnlCreateManeuver, Modulos.MODULO_CRIAR_MANOBRAS.get());
-		cardJPanels.add(pnlManeuver, Modulos.MODULO_EXEC_MANOBRAS.get());
+		cardJPanels.add(pnlManeuverJTabbedPane, Modulos.MODULE_MANEUVER.get());
 		cardJPanels.add(pnlRover, Modulos.MODULO_ROVER.get());
 	}
 
@@ -173,7 +176,7 @@ public class MainGui extends JFrame implements ActionListener, UIMethods {
 	public static void changeToPage(ActionEvent e) {
 		cardLayout.show(cardJPanels, e.getActionCommand());
 	}
-	
+
 	public static void backToTelemetry(ActionEvent e) {
 		cardLayout.show(cardJPanels, Modulos.MODULO_TELEMETRIA.get());
 	}
