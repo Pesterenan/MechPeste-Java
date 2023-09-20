@@ -20,7 +20,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.HashMap;
 import java.util.Hashtable;
-import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import static com.pesterenan.views.MainGui.PNL_DIMENSION;
@@ -30,13 +30,13 @@ public class CreateManeuverJPanel extends JPanel implements ActionListener, UIMe
 
     private static JLabel lblManeuverInfo;
     private static JButton btnCreateManeuver, btnDeleteManeuver, btnBack, btnAp, btnPe, btnAN, btnDN;
-    private static JButton btnIncrease, btnDecrease, btnNextOrbit, btnPrevOrbit, btnAlignPlanes, btnRendezvous;
+    private static JButton btnIncrease, btnDecrease, btnNextOrbit, btnPrevOrbit;
     private static JSlider sldScale;
     private static JList<String> listCurrentManeuvers;
     private static int selectedManeuverIndex = 0;
     private static JRadioButton rbPrograde, rbNormal, rbRadial, rbTime;
     private static ButtonGroup bgManeuverType;
-    private static Map<Integer, Pair<String, Float>> sliderValues = new HashMap<>();
+    private static Map<Integer, Float> sliderValues = new HashMap<>();
     private final ControlePID ctrlManeuver = new ControlePID();
 
     public CreateManeuverJPanel() {
@@ -62,8 +62,6 @@ public class CreateManeuverJPanel extends JPanel implements ActionListener, UIMe
         btnDecrease = new JButton("-");
         btnNextOrbit = new JButton(">");
         btnPrevOrbit = new JButton("<");
-        btnAlignPlanes = new JButton("Alinhar planos");
-        btnRendezvous = new JButton("Rendezvous");
 
         // Radio buttons:
         rbPrograde = new JRadioButton("Pro");
@@ -75,12 +73,12 @@ public class CreateManeuverJPanel extends JPanel implements ActionListener, UIMe
         listCurrentManeuvers = new JList<>();
         sldScale = new JSlider(JSlider.VERTICAL, 0, 5, 2);
         bgManeuverType = new ButtonGroup();
-        sliderValues.put(0, new Pair<>("0.01", 0.01f));
-        sliderValues.put(1, new Pair<>("0.10", 0.1f));
-        sliderValues.put(2, new Pair<>("1", 1f));
-        sliderValues.put(3, new Pair<>("10", 10f));
-        sliderValues.put(4, new Pair<>("100", 100f));
-        sliderValues.put(5, new Pair<>("1000", 1000f));
+        sliderValues.put(0, 0.01f);
+        sliderValues.put(1, 0.1f);
+        sliderValues.put(2, 1f);
+        sliderValues.put(3, 10f);
+        sliderValues.put(4, 100f);
+        sliderValues.put(5, 1000f);
 
         ctrlManeuver.adjustOutput(-100, 100);
     }
@@ -141,74 +139,6 @@ public class CreateManeuverJPanel extends JPanel implements ActionListener, UIMe
         btnPrevOrbit.setMaximumSize(new Dimension(35, 26));
         btnPrevOrbit.setPreferredSize(new Dimension(35, 26));
         btnPrevOrbit.setMargin(new Insets(0, 0, 0, 0));
-        btnAlignPlanes.addActionListener(e -> {
-            try {
-                MechPeste.newInstance();
-                Vessel vessel = MechPeste.getSpaceCenter().getActiveVessel();
-                Vessel targetVessel = MechPeste.getSpaceCenter().getTargetVessel();
-                boolean hasManeuverNodes = vessel.getControl().getNodes().size() > 0;
-                if (!hasManeuverNodes) {
-                    createManeuver();
-                }
-                List<Node> currentManeuvers = vessel.getControl().getNodes();
-                Node currentManeuver = currentManeuvers.get(0);
-                double[] incNodesUt = {
-                        vessel.getOrbit().uTAtTrueAnomaly(vessel.getOrbit().trueAnomalyAtAN(targetVessel.getOrbit())),
-                        vessel.getOrbit().uTAtTrueAnomaly(vessel.getOrbit().trueAnomalyAtDN(targetVessel.getOrbit()))
-                };
-                boolean closestIsAN = incNodesUt[0] < incNodesUt[1];
-                positionManeuverAt(closestIsAN ? "ascending" : "descending");
-                double currentInclination = Math
-                        .toDegrees(currentManeuver.getOrbit().relativeInclination(targetVessel.getOrbit()));
-                while (currentInclination > 0.05) {
-                    currentInclination = Math
-                            .toDegrees(currentManeuver.getOrbit().relativeInclination(targetVessel.getOrbit()));
-                    double ctrlOutput = ctrlManeuver.calcPID(currentInclination * 100, 0);
-                    currentManeuver.setNormal(currentManeuver.getNormal() + (closestIsAN ? ctrlOutput : -ctrlOutput));
-                    Thread.sleep(25);
-                }
-            } catch (Exception err) {
-                System.err.println(err);
-            }
-        });
-        btnRendezvous.addActionListener(e -> {
-            try {
-                MechPeste.newInstance();
-                Vessel vessel = MechPeste.getSpaceCenter().getActiveVessel();
-                Vessel targetVessel = MechPeste.getSpaceCenter().getTargetVessel();
-                boolean hasManeuverNodes = vessel.getControl().getNodes().size() > 0;
-                List<Node> currentManeuvers = vessel.getControl().getNodes();
-                Node lastManeuverNode;
-                double lastManeuverNodeUT = 60;
-                if (hasManeuverNodes) {
-                    currentManeuvers = vessel.getControl().getNodes();
-                    lastManeuverNode = currentManeuvers.get(currentManeuvers.size() - 1);
-                    lastManeuverNodeUT += lastManeuverNode.getUT();
-                    createManeuver(lastManeuverNodeUT);
-                } else {
-                    createManeuver();
-                }
-                currentManeuvers = vessel.getControl().getNodes();
-                lastManeuverNode = currentManeuvers.get(currentManeuvers.size() - 1);
-                double targetAP = targetVessel.getOrbit().getApoapsisAltitude();
-                double targetPE = targetVessel.getOrbit().getPeriapsisAltitude();
-                double maneuverAP = lastManeuverNode.getOrbit().getApoapsisAltitude();
-                double maneuverPE = lastManeuverNode.getOrbit().getPeriapsisAltitude();
-                ctrlManeuver.adjustOutput(-10, 10);
-                if (targetAP < maneuverPE) {
-                    while (Math.floor(targetAP) != Math.floor(maneuverPE)) {
-                        lastManeuverNode.setPrograde(
-                                lastManeuverNode.getPrograde() + ctrlManeuver.calcPID(maneuverPE - targetAP, 0));
-                        maneuverPE = lastManeuverNode.getOrbit().getPeriapsisAltitude();
-                        System.out.println("maneuverPE: " + maneuverPE);
-                        Thread.sleep(100);
-                    }
-                }
-                double closestApproach = lastManeuverNode.getOrbit().distanceAtClosestApproach(targetVessel.getOrbit());
-                System.out.println(closestApproach);
-            } catch (Exception err) {
-            }
-        });
 
         rbPrograde.setActionCommand("prograde");
         rbPrograde.addChangeListener(e -> handleChangeButtonText(sldScale.getValue()));
@@ -231,15 +161,7 @@ public class CreateManeuverJPanel extends JPanel implements ActionListener, UIMe
         sldScale.setPaintTicks(true);
         sldScale.setMajorTickSpacing(1);
         sldScale.setMinorTickSpacing(1);
-        Hashtable<Integer, JLabel> labelTable = new Hashtable<Integer, JLabel>();
-        labelTable.put(0, new JLabel(sliderValues.get(0).getValue0()));
-        labelTable.put(1, new JLabel(sliderValues.get(1).getValue0()));
-        labelTable.put(2, new JLabel(sliderValues.get(2).getValue0()));
-        labelTable.put(3, new JLabel(sliderValues.get(3).getValue0()));
-        labelTable.put(4, new JLabel(sliderValues.get(4).getValue0()));
-        labelTable.put(5, new JLabel(sliderValues.get(5).getValue0()));
-        sldScale.setLabelTable(labelTable);
-        sldScale.setPaintLabels(true);
+        sldScale.setPaintLabels(false);
         sldScale.addChangeListener(e -> handleChangeButtonText(sldScale.getValue()));
         sldScale.addMouseWheelListener(e -> {
             int rotation = e.getWheelRotation();
@@ -279,8 +201,8 @@ public class CreateManeuverJPanel extends JPanel implements ActionListener, UIMe
         pnlSlider.setLayout(new BoxLayout(pnlSlider, BoxLayout.Y_AXIS));
         pnlSlider.setAlignmentX(Component.LEFT_ALIGNMENT);
         pnlSlider.setBorder(new TitledBorder("Escala:"));
-        pnlSlider.setPreferredSize(new Dimension(50, 100));
         pnlSlider.add(sldScale);
+        pnlSlider.add(Box.createHorizontalStrut(40));
 
         JPanel pnlOrbitControl = new JPanel();
         pnlOrbitControl.setLayout(new BoxLayout(pnlOrbitControl, BoxLayout.X_AXIS));
@@ -298,22 +220,20 @@ public class CreateManeuverJPanel extends JPanel implements ActionListener, UIMe
         JPanel pnlManeuverController = new JPanel();
         pnlManeuverController.setLayout(new BoxLayout(pnlManeuverController, BoxLayout.X_AXIS));
         pnlManeuverController.setBorder(new TitledBorder("Controlador de Manobra:"));
-        pnlManeuverController.setMaximumSize(new Dimension(400, 300));
+        pnlManeuverController.setMaximumSize(new Dimension(180, 300));
         pnlManeuverController.add(pnlRadioButtons);
         pnlManeuverController.add(pnlSlider);
         pnlManeuverController.add(pnlManeuverButtons);
 
-        JPanel pnlAutoPosition = new JPanel();
-        pnlAutoPosition.setLayout(new BoxLayout(pnlAutoPosition, BoxLayout.Y_AXIS));
-        pnlAutoPosition.setBorder(new TitledBorder("Auto posição:"));
-        pnlAutoPosition.setMaximumSize(new Dimension(300, 300));
-        pnlAutoPosition.add(btnAlignPlanes);
-        pnlAutoPosition.add(btnRendezvous);
+        JPanel pnlManeuverInfo = new JPanel();
+        pnlManeuverInfo.setLayout(new BoxLayout(pnlManeuverInfo, BoxLayout.Y_AXIS));
+        pnlManeuverInfo.setBorder(new TitledBorder("Info. Manobra:"));
+        pnlManeuverInfo.setMaximumSize(new Dimension(300, 300));
 
         JPanel pnlMCpnlAP = new JPanel();
         pnlMCpnlAP.setLayout(new BoxLayout(pnlMCpnlAP, BoxLayout.X_AXIS));
         pnlMCpnlAP.add(pnlManeuverController);
-        pnlMCpnlAP.add(pnlAutoPosition);
+        pnlMCpnlAP.add(pnlManeuverInfo);
 
         JPanel pnlControls = new JPanel();
         pnlControls.setLayout(new BoxLayout(pnlControls, BoxLayout.Y_AXIS));
@@ -368,7 +288,6 @@ public class CreateManeuverJPanel extends JPanel implements ActionListener, UIMe
             btnPe.setEnabled(hasManeuverNodes);
             btnAN.setEnabled(hasManeuverNodes && hasTargetVessel);
             btnDN.setEnabled(hasManeuverNodes && hasTargetVessel);
-            btnAlignPlanes.setEnabled(hasTargetVessel);
             btnIncrease.setEnabled(hasManeuverNodes);
             btnDecrease.setEnabled(hasManeuverNodes);
             btnNextOrbit.setEnabled(hasManeuverNodes);
@@ -379,9 +298,11 @@ public class CreateManeuverJPanel extends JPanel implements ActionListener, UIMe
     }
 
     private static void handleChangeButtonText(int value) {
+        String decimalPlaces = value > 1 ? "%.0f" : "%.2f";
+        String formattedValue = String.format(Locale.ENGLISH, decimalPlaces, sliderValues.get(value));
         String suffix = bgManeuverType.getSelection() == rbTime.getModel() ? " s" : "m/s";
-        btnIncrease.setText("+ " + sliderValues.get(value).getValue0() + suffix);
-        btnDecrease.setText("- " + sliderValues.get(value).getValue0() + suffix);
+        btnIncrease.setText("+ " + formattedValue + suffix);
+        btnDecrease.setText("- " + formattedValue + suffix);
     }
 
     private void createManeuver() {
@@ -454,7 +375,7 @@ public class CreateManeuverJPanel extends JPanel implements ActionListener, UIMe
             Vessel vessel = MechPeste.getSpaceCenter().getActiveVessel();
             Node currentManeuver = vessel.getControl().getNodes().get(selectedManeuverIndex);
             String maneuverType = bgManeuverType.getSelection().getActionCommand();
-            float currentSliderValue = sliderValues.get(sldScale.getValue()).getValue1();
+            float currentSliderValue = sliderValues.get(sldScale.getValue());
             currentSliderValue = command == "decrease" ? -currentSliderValue : currentSliderValue;
 
             switch (maneuverType) {

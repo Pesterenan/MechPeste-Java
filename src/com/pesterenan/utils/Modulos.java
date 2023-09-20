@@ -30,6 +30,7 @@ public enum Modulos {
 	PERIASTRO("Periastro"),
 	POUSAR("Pousar nave"), 
 	QUADRATICA("Quadrática"),
+	RENDEZVOUS("Rendezvous"),
 	ROLAGEM("Rolagem"),
 	SINUSOIDAL("Sinusoidal"),
 	SOBREVOO_POS_POUSO("SOBREVOO PÓS POUSO"), 

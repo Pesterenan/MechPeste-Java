@@ -2,7 +2,16 @@ package com.pesterenan.views;
 
 import com.pesterenan.MechPeste;
 import com.pesterenan.resources.Bundle;
+import com.pesterenan.utils.ControlePID;
+import com.pesterenan.utils.Vector;
 import com.pesterenan.utils.Modulos;
+
+import krpc.client.RPCException;
+import krpc.client.services.SpaceCenter.Node;
+import krpc.client.services.SpaceCenter.Orbit;
+import krpc.client.services.SpaceCenter.ReferenceFrame;
+import krpc.client.services.SpaceCenter.Vessel;
+import krpc.client.services.SpaceCenter.VesselSituation;
 
 import javax.swing.*;
 import javax.swing.border.CompoundBorder;
@@ -21,9 +30,10 @@ import static com.pesterenan.views.MainGui.PNL_DIMENSION;
 public class RunManeuverJPanel extends JPanel implements ActionListener, UIMethods {
 	private static final long serialVersionUID = 1L;
 
-	private JLabel lblExecute, lblAdjustInc;
-	private JButton btnLowerOrbit, btnApoapsis, btnPeriapsis, btnExecute, btnAdjustInc, btnBack;
+	private JLabel lblExecute;
+	private JButton btnLowerOrbit, btnApoapsis, btnPeriapsis, btnExecute, btnBack, btnAlignPlanes, btnRendezvous;
 	private JCheckBox chkFineAdjusment;
+	private final ControlePID ctrlManeuver = new ControlePID();
 
 	public RunManeuverJPanel() {
 		initComponents();
@@ -33,31 +43,89 @@ public class RunManeuverJPanel extends JPanel implements ActionListener, UIMetho
 
 	public void initComponents() {
 		// Labels:
-		lblAdjustInc = new JLabel(Bundle.getString("pnl_mnv_lbl_adj_inc"));
 		lblExecute = new JLabel(Bundle.getString("pnl_mnv_lbl_exec_mnv"));
 
 		// Buttons:
-		btnAdjustInc = new JButton(Bundle.getString("pnl_mnv_btn_adj_inc"));
 		btnApoapsis = new JButton(Bundle.getString("pnl_mnv_btn_apoapsis"));
 		btnBack = new JButton(Bundle.getString("pnl_mnv_btn_back"));
 		btnExecute = new JButton(Bundle.getString("pnl_mnv_btn_exec_mnv"));
 		btnLowerOrbit = new JButton(Bundle.getString("pnl_mnv_btn_lower_orbit"));
 		btnPeriapsis = new JButton(Bundle.getString("pnl_mnv_btn_periapsis"));
+		btnAlignPlanes = new JButton("Alinhar planos");
+		btnRendezvous = new JButton("Rendezvous");
 
 		// Misc:
 		chkFineAdjusment = new JCheckBox(Bundle.getString("pnl_mnv_chk_adj_mnv_rcs"));
 	}
 
+	public static void createManeuver() {
+		System.out.println("Create maneuver");
+		try {
+			createManeuver(MechPeste.getSpaceCenter().getUT() + 60);
+		} catch (RPCException e) {
+		}
+	}
+	
+	public static void createManeuver(double atFutureTime) {
+		System.out.println("Create maneuver overloaded");
+		try {
+			MechPeste.newInstance();
+			Vessel vessel = MechPeste.getSpaceCenter().getActiveVessel();
+			System.out.println("vessel: " + vessel);
+
+			if (vessel.getSituation() != VesselSituation.ORBITING) {
+				StatusJPanel.setStatusMessage("Não é possível criar a manobra fora de órbita.");
+				return;
+			}
+			vessel.getControl().addNode(atFutureTime, 0, 0, 0);
+		} catch (Exception e) {
+		}
+	}
+
+	public static void positionManeuverAt(String node) {
+		try {
+			MechPeste.newInstance();
+			Vessel vessel = MechPeste.getSpaceCenter().getActiveVessel();
+			Orbit orbit = vessel.getOrbit();
+			Node currentManeuver = vessel.getControl().getNodes().get(0);
+			double timeToNode = 0;
+			switch (node) {
+				case "apoapsis":
+					timeToNode = MechPeste.getSpaceCenter().getUT() + orbit.getTimeToApoapsis();
+					break;
+				case "periapsis":
+					timeToNode = MechPeste.getSpaceCenter().getUT() + orbit.getTimeToPeriapsis();
+					break;
+				case "ascending":
+					double ascendingAnomaly = orbit
+							.trueAnomalyAtAN(MechPeste.getSpaceCenter().getTargetVessel().getOrbit());
+					timeToNode = orbit.uTAtTrueAnomaly(ascendingAnomaly);
+					break;
+				case "descending":
+					double descendingAnomaly = orbit
+							.trueAnomalyAtDN(MechPeste.getSpaceCenter().getTargetVessel().getOrbit());
+					timeToNode = orbit.uTAtTrueAnomaly(descendingAnomaly);
+					break;
+			}
+			currentManeuver.setUT(timeToNode);
+			// Print the maneuver node information
+			System.out.println("Maneuver Node updated:");
+			System.out.println("  Time to node: " + currentManeuver.getTimeTo() + " s");
+		} catch (Exception e) {
+		}
+	}
+
 	public void setupComponents() {
 		// Setting-up components:
-		btnAdjustInc.addActionListener(this);
-		btnAdjustInc.setActionCommand(Modulos.AJUSTAR.get());
-		btnAdjustInc.setEnabled(false);
-		btnAdjustInc.setMaximumSize(BTN_DIMENSION);
-		btnAdjustInc.setPreferredSize(BTN_DIMENSION);
+		btnAlignPlanes.addActionListener(this);
+		btnAlignPlanes.setMaximumSize(BTN_DIMENSION);
+		btnAlignPlanes.setPreferredSize(BTN_DIMENSION);
+
+		btnRendezvous.addActionListener(this);
+		btnRendezvous.setMaximumSize(BTN_DIMENSION);
+		btnRendezvous.setPreferredSize(BTN_DIMENSION);
 
 		btnApoapsis.addActionListener(this);
-		btnApoapsis.setActionCommand(Modulos.APOASTRO.get());
 		btnApoapsis.setMaximumSize(BTN_DIMENSION);
 		btnApoapsis.setPreferredSize(BTN_DIMENSION);
 
@@ -66,17 +134,14 @@ public class RunManeuverJPanel extends JPanel implements ActionListener, UIMetho
 		btnBack.setPreferredSize(BTN_DIMENSION);
 
 		btnExecute.addActionListener(this);
-		btnExecute.setActionCommand(Modulos.EXECUTAR.get());
 		btnExecute.setMaximumSize(BTN_DIMENSION);
 		btnExecute.setPreferredSize(BTN_DIMENSION);
 
 		btnLowerOrbit.addActionListener(this);
-		btnLowerOrbit.setActionCommand(Modulos.ORBITA_BAIXA.get());
 		btnLowerOrbit.setMaximumSize(BTN_DIMENSION);
 		btnLowerOrbit.setPreferredSize(BTN_DIMENSION);
 
 		btnPeriapsis.addActionListener(this);
-		btnPeriapsis.setActionCommand(Modulos.PERIASTRO.get());
 		btnPeriapsis.setMaximumSize(BTN_DIMENSION);
 		btnPeriapsis.setPreferredSize(BTN_DIMENSION);
 	}
@@ -94,12 +159,11 @@ public class RunManeuverJPanel extends JPanel implements ActionListener, UIMetho
 		pnlExecuteManeuver.add(MainGui.createMarginComponent(10, 0));
 		pnlExecuteManeuver.add(btnExecute);
 
-		JPanel pnlAdjustInclination = new JPanel();
-		pnlAdjustInclination.setLayout(new BoxLayout(pnlAdjustInclination, BoxLayout.X_AXIS));
-		pnlAdjustInclination.setBorder(MARGIN_BORDER_10_PX_LR);
-		pnlAdjustInclination.add(lblAdjustInc);
-		pnlAdjustInclination.add(Box.createHorizontalGlue());
-		pnlAdjustInclination.add(btnAdjustInc);
+		JPanel pnlAutoPosition = new JPanel();
+		pnlAutoPosition.setLayout(new BoxLayout(pnlAutoPosition, BoxLayout.X_AXIS));
+		pnlAutoPosition.setBorder(new TitledBorder("Auto posição:"));
+		pnlAutoPosition.add(btnAlignPlanes);
+		pnlAutoPosition.add(btnRendezvous);
 
 		JPanel pnlCircularize = new JPanel();
 		pnlCircularize.setLayout(new BoxLayout(pnlCircularize, BoxLayout.X_AXIS));
@@ -115,7 +179,7 @@ public class RunManeuverJPanel extends JPanel implements ActionListener, UIMetho
 		JPanel pnlSetup = new JPanel();
 		pnlSetup.setLayout(new BoxLayout(pnlSetup, BoxLayout.Y_AXIS));
 		pnlSetup.add(pnlExecuteManeuver);
-		pnlSetup.add(pnlAdjustInclination);
+		pnlSetup.add(pnlAutoPosition);
 
 		JPanel pnlOptions = new JPanel();
 		pnlOptions.setLayout(new BoxLayout(pnlOptions, BoxLayout.Y_AXIS));
@@ -157,8 +221,11 @@ public class RunManeuverJPanel extends JPanel implements ActionListener, UIMetho
 		if (e.getSource() == btnPeriapsis) {
 			handleManeuverFunction(Modulos.PERIASTRO.get());
 		}
-		if (e.getSource() == btnAdjustInc) {
+		if (e.getSource() == btnAlignPlanes) {
 			handleManeuverFunction(Modulos.AJUSTAR.get());
+		}
+		if (e.getSource() == btnRendezvous) {
+			handleManeuverFunction(Modulos.RENDEZVOUS.get());
 		}
 		if (e.getSource() == btnBack) {
 			MainGui.backToTelemetry(e);
@@ -168,7 +235,7 @@ public class RunManeuverJPanel extends JPanel implements ActionListener, UIMetho
 	protected void handleManeuverFunction(String maneuverFunction) {
 		Map<String, String> commands = new HashMap<>();
 		commands.put(Modulos.MODULO.get(), Modulos.MODULE_MANEUVER.get());
-		commands.put(Modulos.FUNCAO.get(), maneuverFunction);
+		commands.put(Modulos.FUNCAO.get(), maneuverFunction.toString());
 		commands.put(Modulos.AJUSTE_FINO.get(), String.valueOf(chkFineAdjusment.isSelected()));
 		MechPeste.newInstance().startModule(commands);
 	}

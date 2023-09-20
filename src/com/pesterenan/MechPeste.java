@@ -1,27 +1,29 @@
 package com.pesterenan;
 
-import com.pesterenan.model.ActiveVessel;
-import com.pesterenan.resources.Bundle;
-import com.pesterenan.utils.Vector;
-import com.pesterenan.views.CreateManeuverJPanel;
-import com.pesterenan.views.FunctionsAndTelemetryJPanel;
-import com.pesterenan.views.MainGui;
-import krpc.client.Connection;
-import krpc.client.RPCException;
-import krpc.client.services.KRPC;
-import krpc.client.services.SpaceCenter;
-import krpc.client.services.SpaceCenter.Node;
-import krpc.client.services.SpaceCenter.Vessel;
+import static com.pesterenan.views.StatusJPanel.isBtnConnectVisible;
+import static com.pesterenan.views.StatusJPanel.setStatusMessage;
 
-import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static com.pesterenan.views.StatusJPanel.isBtnConnectVisible;
-import static com.pesterenan.views.StatusJPanel.setStatusMessage;
+import javax.swing.*;
+
+import com.pesterenan.model.ActiveVessel;
+import com.pesterenan.resources.Bundle;
+import com.pesterenan.utils.Vector;
+import com.pesterenan.views.CreateManeuverJPanel;
+import com.pesterenan.views.FunctionsAndTelemetryJPanel;
+import com.pesterenan.views.MainGui;
+
+import krpc.client.Connection;
+import krpc.client.RPCException;
+import krpc.client.services.KRPC;
+import krpc.client.services.SpaceCenter;
+import krpc.client.services.SpaceCenter.Node;
+import krpc.client.services.SpaceCenter.Vessel;
 
 public class MechPeste {
 	private static KRPC krpc;
