@@ -2,16 +2,14 @@ package com.pesterenan;
 
 import java.io.IOException;
 
-import org.javatuples.Triplet;
-
 import com.pesterenan.utils.ControlePID;
-import com.pesterenan.utils.Navigation;
 import com.pesterenan.utils.Vector;
+
 import krpc.client.Connection;
 import krpc.client.RPCException;
 import krpc.client.services.Drawing;
-import krpc.client.services.SpaceCenter;
 import krpc.client.services.Drawing.Line;
+import krpc.client.services.SpaceCenter;
 import krpc.client.services.SpaceCenter.DockingPort;
 import krpc.client.services.SpaceCenter.ReferenceFrame;
 import krpc.client.services.SpaceCenter.Vessel;
@@ -29,7 +27,7 @@ public class Main {
             spaceCenter = SpaceCenter.newInstance(connection);
             drawing = Drawing.newInstance(connection);
             ctrlRCS = new ControlePID();
-            ctrlRCS.adjustOutput(-1,1);
+            ctrlRCS.adjustOutput(-1, 1);
 
             Vessel minhaNave = spaceCenter.getActiveVessel();
             minhaNave.getAutoPilot().setTimeToPeak(new Vector(3, 3, 3).toTriplet());
@@ -42,8 +40,7 @@ public class Main {
             DockingPort dockingPortAlvo = targetVessel.getParts().getDockingPorts().get(0);
 
             Line linhaDistancia = drawing.addLine(minhaDockingPort.position(referenciaOrbital),
-             dockingPortAlvo.position(referenciaOrbital), referenciaOrbital, true);
-            
+                    dockingPortAlvo.position(referenciaOrbital), referenciaOrbital, true);
 
             minhaNave.getAutoPilot().setReferenceFrame(referenciaOrbital);
             minhaNave.getAutoPilot().setTargetRoll(0);
@@ -53,17 +50,15 @@ public class Main {
                 // Fase 1: Apontar pra dockingport alvo de longe:
                 Vector posicaoDockingPortAlvo = new Vector(dockingPortAlvo.position(referenciaOrbital));
                 Vector posicaoMinhaDockingPort = new Vector(minhaDockingPort.position(referenciaOrbital));
-               
 
                 // Calcular distancia:
                 Vector distanciaEntrePortas = posicaoDockingPortAlvo.subtract(posicaoMinhaDockingPort);
                 double distanciaEntrePortasEmMetros = distanciaEntrePortas.magnitude();
-                
+
                 // Aproximar-se a 100 metros do alvo pra terminar a primeira fase:
                 double VEL_LIMIT = 2.0; // 1m/s²
                 Vector vetorVelocidadeMinhaNave = new Vector(minhaNave.velocity(
-                    dockingPortAlvo.getReferenceFrame()
-                ));
+                        dockingPortAlvo.getReferenceFrame()));
                 double velocidadeAtualDaNave = vetorVelocidadeMinhaNave.magnitude();
 
                 // System.out.println(velocidadeAtualDaNave);

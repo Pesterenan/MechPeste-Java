@@ -9,7 +9,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import javax.swing.*;
+import javax.swing.DefaultListModel;
+import javax.swing.ListModel;
 
 import com.pesterenan.model.ActiveVessel;
 import com.pesterenan.resources.Bundle;
@@ -32,10 +33,6 @@ public class MechPeste {
 	private static Connection connection;
 	private static int currentVesselId = -1;
 	private static ActiveVessel currentVessel = null;
-
-	private MechPeste() {
-		MainGui.newInstance();
-	}
 
 	public static void main(String[] args) {
 		MechPeste.newInstance().connectToKSP();
@@ -92,6 +89,35 @@ public class MechPeste {
 		return list;
 	}
 
+	public static String getVesselInfo(int selectedIndex) {
+		try {
+			Vessel naveAtual = spaceCenter.getVessels().stream().filter(v -> v.hashCode() == selectedIndex).findFirst()
+					.get();
+			String name = naveAtual.getName().length() > 40
+					? naveAtual.getName().substring(0, 40) + "..."
+					: naveAtual.getName();
+			String vesselInfo = String.format("Nome: %s\t\t\t | Corpo: %s", name,
+					naveAtual.getOrbit().getBody().getName());
+			return vesselInfo;
+		} catch (RPCException | NullPointerException ignored) {
+		}
+		return "";
+	}
+
+	public static void changeToVessel(int selectedIndex) {
+		try {
+			Vessel naveAtual = spaceCenter.getVessels().stream().filter(v -> v.hashCode() == selectedIndex).findFirst()
+					.get();
+			spaceCenter.setActiveVessel(naveAtual);
+		} catch (RPCException | NullPointerException e) {
+			System.out.println(Bundle.getString("status_couldnt_switch_vessel"));
+		}
+	}
+
+	public static void cancelControl(ActionEvent e) {
+		currentVessel.cancelControl();
+	}
+
 	private static boolean filterVessels(Vessel vessel, String search) {
 		if (search == "all") {
 			return true;
@@ -118,60 +144,12 @@ public class MechPeste {
 		return false;
 	}
 
-	public static String getVesselInfo(int selectedIndex) {
-		try {
-			Vessel naveAtual = spaceCenter.getVessels().stream().filter(v -> v.hashCode() == selectedIndex).findFirst()
-					.get();
-			String name = naveAtual.getName().length() > 40
-					? naveAtual.getName().substring(0, 40) + "..."
-					: naveAtual.getName();
-			String vesselInfo = String.format("Nome: %s\t\t\t | Corpo: %s", name,
-					naveAtual.getOrbit().getBody().getName());
-			return vesselInfo;
-		} catch (RPCException | NullPointerException ignored) {
-		}
-		return "";
-	}
-
-	public static void changeToVessel(int selectedIndex) {
-		try {
-			Vessel naveAtual = spaceCenter.getVessels().stream().filter(v -> v.hashCode() == selectedIndex).findFirst()
-					.get();
-			spaceCenter.setActiveVessel(naveAtual);
-		} catch (RPCException | NullPointerException e) {
-			System.out.println(Bundle.getString("status_couldnt_switch_vessel"));
-		}
+	private MechPeste() {
+		MainGui.newInstance();
 	}
 
 	public KRPC.GameScene getCurrentGameScene() throws RPCException {
 		return krpc.getCurrentGameScene();
-	}
-
-	private void checkActiveVessel() {
-		while (getConnection() != null) {
-			try {
-				if (!MechPeste.newInstance().getCurrentGameScene().equals(KRPC.GameScene.FLIGHT)) {
-					Thread.sleep(100);
-					return;
-				}
-				int activeVesselId = spaceCenter.getActiveVessel().hashCode();
-				// If the current active vessel changes, create a new connection
-				if (currentVesselId != activeVesselId) {
-					currentVessel = new ActiveVessel();
-					currentVesselId = currentVessel.getCurrentVesselId();
-				}
-				if (currentVesselId != -1) {
-					currentVessel.recordTelemetryData();
-					if (currentVessel.hasModuleRunning()) {
-						setStatusMessage(currentVessel.getCurrentStatus());
-					}
-					FunctionsAndTelemetryJPanel.updateTelemetry(currentVessel.getTelemetryData());
-					CreateManeuverJPanel.updatePanel(getCurrentManeuvers());
-				}
-				Thread.sleep(100);
-			} catch (RPCException | InterruptedException ignored) {
-			}
-		}
 	}
 
 	public void startModule(Map<String, String> commands) {
@@ -205,7 +183,30 @@ public class MechPeste {
 		}
 	}
 
-	public static void cancelControl(ActionEvent e) {
-		currentVessel.cancelControl();
+	private void checkActiveVessel() {
+		while (getConnection() != null) {
+			try {
+				if (!MechPeste.newInstance().getCurrentGameScene().equals(KRPC.GameScene.FLIGHT)) {
+					Thread.sleep(100);
+					return;
+				}
+				int activeVesselId = spaceCenter.getActiveVessel().hashCode();
+				// If the current active vessel changes, create a new connection
+				if (currentVesselId != activeVesselId) {
+					currentVessel = new ActiveVessel();
+					currentVesselId = currentVessel.getCurrentVesselId();
+				}
+				if (currentVesselId != -1) {
+					currentVessel.recordTelemetryData();
+					if (currentVessel.hasModuleRunning()) {
+						setStatusMessage(currentVessel.getCurrentStatus());
+					}
+					FunctionsAndTelemetryJPanel.updateTelemetry(currentVessel.getTelemetryData());
+					CreateManeuverJPanel.updatePanel(getCurrentManeuvers());
+				}
+				Thread.sleep(100);
+			} catch (RPCException | InterruptedException ignored) {
+			}
+		}
 	}
 }
