@@ -45,8 +45,8 @@ public class RoverController extends Controller {
 			roverReferenceFrame = getNaveAtual().getReferenceFrame();
 			roverDirection = new Vector(getNaveAtual().direction(roverReferenceFrame));
 			pathFinding = new PathFinding();
-			acelCtrl.adjustOutput(0, 1);
-			sterringCtrl.adjustOutput(-1, 1);
+			acelCtrl.setOutput(0, 1);
+			sterringCtrl.setOutput(-1, 1);
 			isAutoRoverRunning = true;
 		} catch (RPCException ignored) {
 		}
@@ -206,10 +206,10 @@ public class RoverController extends Controller {
 		double deltaAngle = Math.abs(targetAndRadarAngle - roverAngle);
 		getNaveAtual().getControl().setSAS(deltaAngle < 1);
 		// Control Rover Throttle
-		setRoverThrottle(acelCtrl.calcPID(velHorizontal.get() / maxSpeed * 50, 50));
+		setRoverThrottle(acelCtrl.calculate(velHorizontal.get() / maxSpeed * 50, 50));
 		// Control Rover Steering
 		if (deltaAngle > 1) {
-			setRoverSteering(sterringCtrl.calcPID(roverAngle / (targetAndRadarAngle) * 100, 100));
+			setRoverSteering(sterringCtrl.calculate(roverAngle / (targetAndRadarAngle) * 100, 100));
 		} else {
 			setRoverSteering(0.0f);
 		}

@@ -1,47 +1,70 @@
 package com.pesterenan.utils;
 
+import krpc.client.RPCException;
+import krpc.client.services.SpaceCenter;
+
 public class ControlePID {
-	private double limiteMin = -1;
-	private double limiteMax = 1;
+	private SpaceCenter spaceCenter = null;
+	private double outputMin = -1;
+	private double outputMax = 1;
 	private double kp = 0.025;
 	private double ki = 0.001;
 	private double kd = 0.01;
-	private double proportionalTerm, integralTerm, derivativeTerm = 0;
-	private double lastValue, lastTime = 0;
+	private double integralTerm = 0.0;
+	private double previousError, lastTime = 0.0;
+	private double timeSample = 0.025;
+	private double proportionalTerm;
+	private double derivativeTerm;
 
-	public double calcPID(double currentValue, double limitValue) {
-		double now = System.currentTimeMillis();
-		double changeInTime = now - this.lastTime;
-		double timeSample = 25;
+	public ControlePID() {
+	}
+
+	public ControlePID(SpaceCenter spaceCenter, double timeSample) {
+		this.spaceCenter = spaceCenter;
+		setTimeSample(timeSample);
+	}
+
+	public ControlePID(double kp, double ki, double kd, double outputMin, double outputMax) {
+		this.kp = kp;
+		this.ki = ki;
+		this.kd = kd;
+		this.outputMin = outputMin;
+		this.outputMax = outputMax;
+	}
+
+	public double calculate(double currentValue, double setPoint) {
+		double now = this.getCurrentTime();
+		double changeInTime = now - lastTime;
+		System.out.println(changeInTime);
 
 		if (changeInTime >= timeSample) {
-			double error = limitValue - currentValue;
-			double changeInValues = (currentValue - this.lastValue);
+			double error = setPoint - currentValue;
+			proportionalTerm = kp * error;
 
-			this.proportionalTerm = this.kp * error;
-			this.integralTerm = limitOutput(this.integralTerm + ki * error);
-			this.derivativeTerm = kd * -changeInValues;
-			this.lastValue = currentValue;
-			this.lastTime = now;
+			integralTerm += ki * error;
+			integralTerm = limitOutput(integralTerm);
+
+			derivativeTerm = kd * (error - previousError);
+			previousError = error;
+			lastTime = now;
 		}
-		return limitOutput(proportionalTerm + ki * this.integralTerm + derivativeTerm);
+		return limitOutput(proportionalTerm + integralTerm + derivativeTerm);
 	}
 
-	private double limitOutput(double valor) {
-		return Utilities.clamp(valor, this.limiteMin, this.limiteMax);
+	private double limitOutput(double value) {
+		return Utilities.clamp(value, outputMin, outputMax);
 	}
 
-	public void adjustOutput(double min, double max) {
+	public void setOutput(double min, double max) {
 		if (min > max) {
 			return;
 		}
-		this.limiteMin = min;
-		this.limiteMax = max;
-		this.integralTerm = limitOutput(this.integralTerm);
-
+		outputMin = min;
+		outputMax = max;
+		integralTerm = limitOutput(integralTerm);
 	}
 
-	public void adjustPID(double Kp, double Ki, double Kd) {
+	public void setPIDValues(double Kp, double Ki, double Kd) {
 		if (Kp > 0) {
 			this.kp = Kp;
 		}
@@ -50,6 +73,19 @@ public class ControlePID {
 		}
 		if (Kd >= 0) {
 			this.kd = Kd;
+		}
+	}
+
+	public void setTimeSample(double milliseconds) {
+		timeSample = milliseconds > 0 ? milliseconds / 1000 : timeSample;
+	}
+
+	private double getCurrentTime() {
+		try {
+			return spaceCenter.getUT();
+		} catch (RPCException | NullPointerException ignored) {
+			System.err.println("Não foi possível buscar o tempo do jogo, retornando do sistema");
+			return System.currentTimeMillis();
 		}
 	}
 

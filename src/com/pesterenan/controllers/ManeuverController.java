@@ -1,5 +1,13 @@
 package com.pesterenan.controllers;
 
+import static com.pesterenan.MechPeste.getConnection;
+import static com.pesterenan.MechPeste.getSpaceCenter;
+
+import java.util.List;
+import java.util.Map;
+
+import org.javatuples.Triplet;
+
 import com.pesterenan.resources.Bundle;
 import com.pesterenan.utils.Attributes;
 import com.pesterenan.utils.ControlePID;
@@ -18,19 +26,12 @@ import krpc.client.services.SpaceCenter.RCS;
 import krpc.client.services.SpaceCenter.ReferenceFrame;
 import krpc.client.services.SpaceCenter.Vessel;
 import krpc.client.services.SpaceCenter.VesselSituation;
-import org.javatuples.Triplet;
-
-import java.util.List;
-import java.util.Map;
-
-import static com.pesterenan.MechPeste.getConnection;
-import static com.pesterenan.MechPeste.getSpaceCenter;
 
 public class ManeuverController extends Controller {
 
 	public final static float CONST_GRAV = 9.81f;
-	private final ControlePID ctrlRCS = new ControlePID();
-	private final ControlePID ctrlManeuver = new ControlePID();
+	private ControlePID ctrlRCS;
+	private ControlePID ctrlManeuver;
 	private Navigation navigation;
 	private boolean fineAdjustment;
 	private double lowOrbitAltitude;
@@ -43,7 +44,10 @@ public class ManeuverController extends Controller {
 	}
 
 	private void initializeParameters() {
-		ctrlRCS.adjustOutput(0.5, 1.0);
+		ctrlRCS = new ControlePID(getSpaceCenter(), 25);
+		ctrlManeuver = new ControlePID(getSpaceCenter(), 25);
+		ctrlManeuver.setPIDValues(1, 0.001, 0.1);
+		ctrlRCS.setOutput(0.5, 1.0);
 		fineAdjustment = canFineAdjust(commands.get(Modulos.AJUSTE_FINO.get()));
 		try {
 			lowOrbitAltitude = new Attributes().getLowOrbitAltitude(currentBody.getName());
@@ -157,10 +161,10 @@ public class ManeuverController extends Controller {
 					break;
 				}
 				double dvPrograde = maneuver.getPrograde();
-				double ctrlOutput = ctrlManeuver.calcPID(currentDeltaApo, 0);
+				double ctrlOutput = ctrlManeuver.calculate(currentDeltaApo, 0);
 
 				maneuver.setPrograde(dvPrograde - (ctrlOutput));
-				Thread.sleep(50);
+				Thread.sleep(25);
 			}
 		} catch (Exception e) {
 			setCurrentStatus("Não foi possivel ajustar a inclinação");
@@ -205,10 +209,11 @@ public class ManeuverController extends Controller {
 			RunManeuverJPanel.positionManeuverAt(closestIsAN ? "ascending" : "descending");
 			double currentInclination = Math
 					.toDegrees(currentManeuver.getOrbit().relativeInclination(targetVesselOrbit));
+			ctrlManeuver.setTimeSample(25);
 			while (currentInclination > 0.05) {
 				currentInclination = Math
 						.toDegrees(currentManeuver.getOrbit().relativeInclination(targetVesselOrbit));
-				double ctrlOutput = ctrlManeuver.calcPID(currentInclination * 100, 0);
+				double ctrlOutput = ctrlManeuver.calculate(currentInclination * 100, 0);
 				currentManeuver.setNormal(currentManeuver.getNormal() + (closestIsAN ? ctrlOutput : -ctrlOutput));
 				Thread.sleep(25);
 			}
@@ -219,9 +224,8 @@ public class ManeuverController extends Controller {
 
 	private void rendezvousWithTargetVessel() {
 		try {
-			Orbit targetVesselOrbit = getSpaceCenter().getTargetVessel().getOrbit();
 			boolean hasManeuverNodes = getNaveAtual().getControl().getNodes().size() > 0;
-			java.util.List<Node> currentManeuvers = getNaveAtual().getControl().getNodes();
+			List<Node> currentManeuvers = getNaveAtual().getControl().getNodes();
 			Node lastManeuverNode;
 			double lastManeuverNodeUT = 60;
 			if (hasManeuverNodes) {
@@ -234,72 +238,99 @@ public class ManeuverController extends Controller {
 			}
 			currentManeuvers = getNaveAtual().getControl().getNodes();
 			lastManeuverNode = currentManeuvers.get(currentManeuvers.size() - 1);
-			double targetAP = targetVesselOrbit.getApoapsis();
-			double targetPE = targetVesselOrbit.getPeriapsis();
-			double maneuverAP = lastManeuverNode.getOrbit().getApoapsis();
-			double maneuverPE = lastManeuverNode.getOrbit().getPeriapsis();
-			double maneuverUT = lastManeuverNode.getUT();
-			ctrlManeuver.adjustPID(0.25, 0.0, 0.01);
-			ctrlManeuver.adjustOutput(-100, 100);
-			if (targetAP < maneuverPE) {
-				while (Math.floor(targetAP) != Math.floor(maneuverPE)) {
-					lastManeuverNode.setPrograde(
-							lastManeuverNode.getPrograde()
-									+ ctrlManeuver.calcPID(maneuverPE / targetAP * 1000, 1000));
-					maneuverPE = lastManeuverNode.getOrbit().getPeriapsis();
-					Thread.sleep(25);
-				}
-			}
-			if (targetPE > maneuverAP) {
-				while (Math.floor(targetPE) != Math.floor(maneuverAP)) {
-					lastManeuverNode.setPrograde(
-							lastManeuverNode.getPrograde()
-									+ ctrlManeuver.calcPID(maneuverAP / targetPE * 1000, 1000));
-					maneuverAP = lastManeuverNode.getOrbit().getApoapsis();
-					Thread.sleep(25);
-				}
-			}
 
-			double mu = currentBody.getGravitationalParameter();
-			double time = 1000;
+			Orbit activeVesselOrbit = getNaveAtual().getOrbit();
+			Orbit targetVesselOrbit = getSpaceCenter().getTargetVessel().getOrbit();
+			ReferenceFrame currentBodyRefFrame = activeVesselOrbit.getBody().getNonRotatingReferenceFrame();
 
-			double hohmannTransferDistance = lastManeuverNode.getOrbit().getSemiMajorAxis();
-			double timeOfFlight = Math.PI * Math.sqrt(Math.pow(hohmannTransferDistance, 3) / mu);
-			double angle = getNaveAtual().getOrbit().getMeanAnomalyAtEpoch();
-			double omegaInterceptor = Math
-					.sqrt(mu / Math.pow(getNaveAtual().getOrbit().radiusAt(getSpaceCenter().getUT()), 3)); // rad/s
-			double omegaTarget = Math.sqrt(mu / Math.pow(targetVesselOrbit.radiusAt(getSpaceCenter().getUT()), 3)); // rad/s
-			// double leadAngle = omegaTarget * timeOfFlight; // rad
-			double leadAngle = targetVesselOrbit.getMeanAnomalyAtEpoch(); // rad
-			double phaseAngle = Math.PI - leadAngle; // rad
-			double calcAngle = (phaseAngle - angle);
-			calcAngle = calcAngle < 0 ? calcAngle + (Math.PI * 2) : calcAngle;
-			double waitTime = calcAngle / (omegaTarget - omegaInterceptor);
-			time = waitTime;
+			double angularDiff = 10;
+			while (angularDiff >= 0.005) {
+				double maneuverUT = lastManeuverNode.getUT();
+				double targetOrbitPosition = new Vector(
+						targetVesselOrbit.positionAt(maneuverUT, currentBodyRefFrame))
+						.magnitude();
+				double maneuverAP = lastManeuverNode.getOrbit().getApoapsis();
+				double maneuverPE = lastManeuverNode.getOrbit().getPeriapsis();
+				ctrlManeuver.setPIDValues(0.25, 0.0, 0.01);
+				ctrlManeuver.setOutput(-100, 100);
 
-			lastManeuverNode.setUT(getSpaceCenter().getUT() + time);
-			ctrlManeuver.adjustOutput(-100, 100);
-			ctrlManeuver.adjustPID(0.05, 0.1, 0.01);
-			double closestApproach = lastManeuverNode.getOrbit().distanceAtClosestApproach(targetVesselOrbit);
-			System.out.println(closestApproach);
-			System.out.println("Ajustando tempo de Rendezvous...");
-			while (Math.round(closestApproach) > 100) {
-				if (closestApproach < 100000) {
-					ctrlManeuver.adjustOutput(-10, 10);
-				} else if (closestApproach < 10000) {
-					ctrlManeuver.adjustOutput(-1, 1);
-				} else {
-					ctrlManeuver.adjustOutput(-100, 100);
+				if (targetOrbitPosition < maneuverPE) {
+					while (Math.floor(targetOrbitPosition) != Math.floor(maneuverPE)) {
+						lastManeuverNode.setPrograde(
+								lastManeuverNode.getPrograde()
+										+ ctrlManeuver.calculate(maneuverPE / targetOrbitPosition * 1000, 1000));
+						maneuverPE = lastManeuverNode.getOrbit().getPeriapsis();
+						Thread.sleep(25);
+					}
 				}
-				maneuverUT = ctrlManeuver.calcPID(-closestApproach, 0);
-				lastManeuverNode.setUT(lastManeuverNode.getUT() + maneuverUT);
-				System.out.println("Closest " + (closestApproach));
-				closestApproach = targetVesselOrbit.distanceAtClosestApproach(lastManeuverNode.getOrbit());
+
+				if (targetOrbitPosition > maneuverAP) {
+					while (Math.floor(targetOrbitPosition) != Math.floor(maneuverAP)) {
+						lastManeuverNode.setPrograde(
+								lastManeuverNode.getPrograde()
+										+ ctrlManeuver.calculate(maneuverAP / targetOrbitPosition * 1000, 1000));
+						maneuverAP = lastManeuverNode.getOrbit().getApoapsis();
+						Thread.sleep(25);
+					}
+				}
+				angularDiff = calculatePhaseAngle(lastManeuverNode.getOrbit().positionAt(maneuverUT, currentBodyRefFrame),
+						getSpaceCenter().getTargetVessel().getOrbit().positionAt(maneuverUT, currentBodyRefFrame));
+				maneuverUT = lastManeuverNode.getUT();
+				lastManeuverNode.setUT(
+						lastManeuverNode.getUT()
+								+ ctrlManeuver.calculate(-angularDiff * 100, 0));
+				System.out.println(angularDiff);
 				Thread.sleep(25);
 			}
+			// double mu = currentBody.getGravitationalParameter();
+			// double time = 1000;
+			//
+			// double hohmannTransferDistance =
+			// lastManeuverNode.getOrbit().getSemiMajorAxis();
+			// double timeOfFlight = Math.PI * Math.sqrt(Math.pow(hohmannTransferDistance,
+			// 3) / mu);
+			// double angle = activeVesselOrbit.getMeanAnomalyAtEpoch();
+			// double omegaInterceptor = Math
+			// .sqrt(mu /
+			// Math.pow(activeVesselOrbit.radiusAt(getSpaceCenter().getUT()), 3));
+			// // rad/s
+			// double omegaTarget = Math.sqrt(mu /
+			// Math.pow(targetVesselOrbit.radiusAt(getSpaceCenter().getUT()), 3)); // rad/s
+			// // double leadAngle = omegaTarget * timeOfFlight; // rad
+			// double leadAngle = targetVesselOrbit.getMeanAnomalyAtEpoch(); // rad
+			// double phaseAngle = Math.PI - leadAngle; // rad
+			// double calcAngle = (phaseAngle - angle);
+			// calcAngle = calcAngle < 0 ? calcAngle + (Math.PI * 2) : calcAngle;
+			// double waitTime = calcAngle / (omegaTarget - omegaInterceptor);
+			// time = waitTime;
+			//
+			// lastManeuverNode.setUT(getSpaceCenter().getUT() + time);
+			// ctrlManeuver.setOutput(-100, 100);
+			// ctrlManeuver.setPIDValues(0.05, 0.1, 0.01);
+			// double closestApproach =
+			// lastManeuverNode.getOrbit().distanceAtClosestApproach(targetVesselOrbit);
+			// System.out.println(closestApproach);
+			// System.out.println("Ajustando tempo de Rendezvous...");
+			// while (Math.round(closestApproach) > 100) {
+			// if (closestApproach < 100000) {
+			// ctrlManeuver.setOutput(-10, 10);
+			// } else if (closestApproach < 10000) {
+			// ctrlManeuver.setOutput(-1, 1);
+			// } else {
+			// ctrlManeuver.setOutput(-100, 100);
+			// }
+			// maneuverUT = ctrlManeuver.calculate(-closestApproach, 0);
+			// lastManeuverNode.setUT(lastManeuverNode.getUT() + maneuverUT);
+			// System.out.println("Closest " + (closestApproach));
+			// closestApproach =
+			// targetVesselOrbit.distanceAtClosestApproach(lastManeuverNode.getOrbit());
+			// Thread.sleep(25);
+			// }
 			// lastManeuverNode.setUT(lastManeuverNode.getUT() -
 			// lastManeuverNode.getOrbit().getPeriod() / 2);
-		} catch (Exception err) {
+		} catch (
+
+		Exception err) {
 		}
 	}
 
@@ -442,9 +473,9 @@ public class ManeuverController extends Controller {
 				}
 				navigation.aimAtManeuver(noDeManobra);
 				float limitValue = burnDvLeft > 100 ? 1000 : 100;
-				throttle(ctrlManeuver.calcPID((noDeManobra.getDeltaV() - Math.floor(burnDvLeft)) /
+				throttle(ctrlManeuver.calculate((noDeManobra.getDeltaV() - Math.floor(burnDvLeft)) /
 						noDeManobra.getDeltaV() * limitValue, limitValue));
-				Thread.sleep(50);
+				Thread.sleep(25);
 			}
 			throttle(0.0f);
 			if (fineAdjustment) {
@@ -471,7 +502,7 @@ public class ManeuverController extends Controller {
 			if (Thread.interrupted()) {
 				throw new InterruptedException();
 			}
-			getNaveAtual().getControl().setForward((float) ctrlRCS.calcPID(-remainingDeltaV.get().getValue1() * 10,
+			getNaveAtual().getControl().setForward((float) ctrlRCS.calculate(-remainingDeltaV.get().getValue1() * 10,
 					0));
 			Thread.sleep(25);
 		}
@@ -494,6 +525,27 @@ public class ManeuverController extends Controller {
 			}
 		}
 		return false;
+	}
+
+	private double calculatePhaseAngle(Triplet<Double, Double, Double> startPos, Triplet<Double, Double, Double> endPos)
+			throws RPCException, InterruptedException {
+		double targetPhaseAngle = 10;
+		double angularDifference = 15;
+		Vector startPosition = new Vector(startPos);
+		Vector endPosition = new Vector(endPos);
+
+		// Phase angle
+		double dot = endPosition.dotProduct(startPosition);
+		double det = endPosition.determinant(startPosition);
+		targetPhaseAngle = Math.atan2(det, dot);
+
+		double targetOrbit = endPosition.magnitude();
+
+		double activeVesselSMA = getNaveAtual().getOrbit().getSemiMajorAxis();
+		angularDifference = targetPhaseAngle + Math.PI
+				* (1 - (1 / (2 * Math.sqrt(2))) * Math.sqrt(Math.pow((activeVesselSMA / targetOrbit + 1), 3)));
+
+		return Math.abs(angularDifference);
 	}
 
 	enum Compare {
