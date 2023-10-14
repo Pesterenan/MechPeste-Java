@@ -11,8 +11,8 @@ public class ControlePID {
 	private double ki = 0.001;
 	private double kd = 0.01;
 	private double integralTerm = 0.0;
-	private double previousError, lastTime = 0.0;
-	private double timeSample = 0.025;
+	private double previousError, previousMeasurement, lastTime = 0.0;
+	private double timeSample = 0.025; // 25 millisegundos
 	private double proportionalTerm;
 	private double derivativeTerm;
 
@@ -32,19 +32,23 @@ public class ControlePID {
 		this.outputMax = outputMax;
 	}
 
-	public double calculate(double currentValue, double setPoint) {
+	public double calculate(double measurement, double setPoint) {
 		double now = this.getCurrentTime();
 		double changeInTime = now - lastTime;
-		System.out.println(changeInTime);
 
 		if (changeInTime >= timeSample) {
-			double error = setPoint - currentValue;
+			// Error signal
+			double error = setPoint - measurement;
+			// Proportional
 			proportionalTerm = kp * error;
 
-			integralTerm += ki * error;
+			// Integral
+			// integralTerm += 0.5f * ki * timeSample * (error + previousError);
+			// integralTerm += ki * (error + previousError);
+			integralTerm = ki * (integralTerm + (error * timeSample));
 			integralTerm = limitOutput(integralTerm);
 
-			derivativeTerm = kd * (error - previousError);
+			derivativeTerm = kd * ((error - previousError) / timeSample);
 			previousError = error;
 			lastTime = now;
 		}
