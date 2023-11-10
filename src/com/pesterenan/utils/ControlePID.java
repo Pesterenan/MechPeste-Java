@@ -32,6 +32,14 @@ public class ControlePID {
 		this.outputMax = outputMax;
 	}
 
+	public void reset() {
+		this.previousError = 0;
+		this.previousMeasurement = 0;
+		this.proportionalTerm = 0;
+		this.integralTerm = 0;
+		this.derivativeTerm = 0;
+	}
+
 	public double calculate(double measurement, double setPoint) {
 		double now = this.getCurrentTime();
 		double changeInTime = now - lastTime;

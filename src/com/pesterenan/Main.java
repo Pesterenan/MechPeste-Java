@@ -2,7 +2,6 @@ package com.pesterenan;
 
 import java.io.IOException;
 
-import com.pesterenan.utils.ControlePID;
 import com.pesterenan.utils.Utilities;
 import com.pesterenan.utils.Vector;
 
@@ -21,11 +20,6 @@ public class Main {
     private static Connection connection;
     private static SpaceCenter spaceCenter;
     private static Drawing drawing;
-    private static ControlePID speedCtrl;
-    private static ControlePID distCtrl;
-    private static ControlePID RCSForwardsCtrl;
-    private static ControlePID RCSSidewaysCtrl;
-    private static ControlePID RCSUpwardsCtrl;
     private static Control control;
 
     private static Vessel activeVessel;
@@ -34,8 +28,8 @@ public class Main {
     private static ReferenceFrame orbitalRefVessel;
     private static ReferenceFrame vesselRefFrame;
     private static ReferenceFrame orbitalRefBody;
-    private static final double SPEED_LIMIT = 5.0;
-    private static final double DISTANCE_LIMIT = 50.0;
+    private static final double SPEED_LIMIT = 3.0;
+    private static final double DISTANCE_LIMIT = 25.0;
     private static Line distanceLine;
     private static Line distLineXAxis;
     private static Line distLineYAxis;
@@ -55,14 +49,6 @@ public class Main {
             vesselRefFrame = activeVessel.getReferenceFrame();
             orbitalRefVessel = activeVessel.getOrbitalReferenceFrame();
             orbitalRefBody = activeVessel.getOrbit().getBody().getReferenceFrame();
-
-            speedCtrl = new ControlePID(spaceCenter, 50);
-            distCtrl = new ControlePID(spaceCenter, 50);
-            RCSForwardsCtrl = new ControlePID(spaceCenter, 50);
-            RCSSidewaysCtrl = new ControlePID(spaceCenter, 50);
-            RCSUpwardsCtrl = new ControlePID(spaceCenter, 50);
-            distCtrl.setPIDValues(1, 0.001, 0.1);
-            adjustPID(25);
 
             myDockingPort = activeVessel.getParts().getDockingPorts().get(0);
             targetDockingPort = targetVessel.getParts().getDockingPorts().get(0);
@@ -88,49 +74,58 @@ public class Main {
             control.setRCS(false);
             control.setSASMode(SASMode.STABILITY_ASSIST);
 
-            double loopTimeInSeconds = 0;
-            Vector targetDirection = positionMyDockingPort.subtract(positionTargetDockingPort).multiply(-1);
-            activeVessel.getAutoPilot().engage();
+            Vector targetDirection = new Vector(activeVessel.position(orbitalRefVessel))
+                    .subtract(new Vector(targetVessel.position(orbitalRefVessel))).multiply(-1);
             activeVessel.getAutoPilot().setReferenceFrame(orbitalRefVessel);
             activeVessel.getAutoPilot().setTargetDirection(targetDirection.toTriplet());
             activeVessel.getAutoPilot().setTargetRoll(90);
-            activeVessel.getAutoPilot().wait_();
+            activeVessel.getAutoPilot().engage();
+            // Fazer a nave apontar usando o piloto automático, na marra
+            while (Math.abs(activeVessel.getAutoPilot().getError()) > 1) {
+                activeVessel.getAutoPilot().wait_();
+            }
             control.setRCS(true);
+            activeVessel.getAutoPilot().disengage();
+            control.setSAS(true);
+            control.setSASMode(SASMode.STABILITY_ASSIST);
+
             // PRIMEIRA PARTE DO DOCKING: APROXIMAÇÃO
-            positionMyDockingPort = new Vector(myDockingPort.position(vesselRefFrame));
-            positionTargetDockingPort = new Vector(targetDockingPort.position(vesselRefFrame));
 
-            targetDirection = positionMyDockingPort.subtract(positionTargetDockingPort);
-
-            double lastYTargetPos = targetDirection.y;
-            System.out.println(lastYTargetPos + " LAST Y POS");
+            Vector targetPosition = new Vector(targetVessel.position(vesselRefFrame));
+            double lastXTargetPos = targetPosition.x;
+            double lastYTargetPos = targetPosition.y;
+            double lastZTargetPos = targetPosition.z;
             long sleepTime = 25;
+            double currentXAxisSpeed = 0;
+            double currentYAxisSpeed = 0;
+            double currentZAxisSpeed = 0;
             while (Math.abs(lastYTargetPos) >= DISTANCE_LIMIT) {
-                // Calcular distancia:
-                double distanceBetweenPortsInMeters = positionTargetDockingPort.subtract(positionMyDockingPort)
-                        .magnitude();
-                double currentRelativeVelocity = new Vector(activeVessel.velocity(
-                        targetDockingPort.getReferenceFrame())).magnitude();
-                // Buscar posições atuais:
+                targetPosition = new Vector(targetVessel.position(vesselRefFrame));
+
+                // Atualizar posições para linhas
                 positionMyDockingPort = new Vector(myDockingPort.position(vesselRefFrame));
                 positionTargetDockingPort = new Vector(targetDockingPort.position(vesselRefFrame));
-
-                targetDirection = positionMyDockingPort.subtract(positionTargetDockingPort);
+                updateLines(positionMyDockingPort, positionTargetDockingPort);
 
                 // Calcular velocidade de cada eixo:
-                double currentYAxisSpeed = (targetDirection.y - lastYTargetPos) * sleepTime;
+                currentXAxisSpeed = (targetPosition.x - lastXTargetPos) * sleepTime;
+                currentYAxisSpeed = (targetPosition.y - lastYTargetPos) * sleepTime;
+                currentZAxisSpeed = (targetPosition.z - lastZTargetPos) * sleepTime;
 
-                // Calcular o valor PID de cada eixo:
-                float forwardsError = (float) RCSForwardsCtrl.calculate(targetDirection.y,
-                        Math.signum(targetDirection.y) * DISTANCE_LIMIT);
-                float speedError = (float) speedCtrl.calculate(currentYAxisSpeed / 10, 0);
+                // Calcular a aceleração para cada eixo no RCS:
+                float forwardsError = calculateThrottle(DISTANCE_LIMIT, DISTANCE_LIMIT * 2, currentYAxisSpeed,
+                        targetPosition.y, SPEED_LIMIT);
+                float sidewaysError = calculateThrottle(0, 10, currentXAxisSpeed, targetPosition.x, SPEED_LIMIT);
+                float upwardsError = calculateThrottle(0, 10, currentZAxisSpeed, targetPosition.z, SPEED_LIMIT);
+                control.setForward((float) forwardsError);
+                control.setRight((float) sidewaysError);
+                control.setUp((float) -upwardsError);
 
-                control.setForward(forwardsError);
-
-                updateLines(positionMyDockingPort, positionTargetDockingPort);
+                // Guardar últimas posições:
+                lastXTargetPos = targetPosition.x;
+                lastYTargetPos = targetPosition.y;
+                lastZTargetPos = targetPosition.z;
                 Thread.sleep(sleepTime);
-                loopTimeInSeconds += 0.05;
-                lastYTargetPos = targetDirection.y;
             }
 
             // SEGUNDA PARTE APONTAR PRO LADO CONTRARIO:
@@ -142,60 +137,40 @@ public class Main {
             activeVessel.getAutoPilot().setReferenceFrame(orbitalRefVessel);
             activeVessel.getAutoPilot().setTargetDirection(direcaoContrariaDockingPortAlvo.toTriplet());
             activeVessel.getAutoPilot().setTargetRoll(90);
-            activeVessel.getAutoPilot().wait_();
+            while (Math.abs(activeVessel.getAutoPilot().getError()) > 1) {
+                activeVessel.getAutoPilot().wait_();
+            }
             activeVessel.getAutoPilot().disengage();
             control.setSAS(true);
             control.setSASMode(SASMode.STABILITY_ASSIST);
-
             Thread.sleep(1000);
             control.setRCS(true);
-            positionMyDockingPort = new Vector(myDockingPort.position(vesselRefFrame));
-            positionTargetDockingPort = new Vector(targetDockingPort.position(vesselRefFrame));
-            Vector distanceBetweenPorts = positionMyDockingPort.subtract(positionTargetDockingPort);
 
-            loopTimeInSeconds = 0;
-            double lastXTargetPos = distanceBetweenPorts.x;
-            lastYTargetPos = distanceBetweenPorts.y;
-            double lastZTargetPos = distanceBetweenPorts.z;
-            sleepTime = 50;
-            while (true) {
-                // Buscar posições atuais:
+            while (targetVessel != null) {
+                targetPosition = new Vector(targetDockingPort.position(vesselRefFrame));
+
+                // Atualizar posições para linhas
                 positionMyDockingPort = new Vector(myDockingPort.position(vesselRefFrame));
-                positionTargetDockingPort = new Vector(targetDockingPort.position(vesselRefFrame));
-                distanceBetweenPorts = positionMyDockingPort.subtract(positionTargetDockingPort);
+                updateLines(positionMyDockingPort, targetPosition);
 
                 // Calcular velocidade de cada eixo:
-                double currentXAxisSpeed = (distanceBetweenPorts.x - lastXTargetPos) * sleepTime;
-                double currentYAxisSpeed = (distanceBetweenPorts.y - lastYTargetPos) * sleepTime;
-                double currentZAxisSpeed = (distanceBetweenPorts.z - lastZTargetPos) * sleepTime;
+                currentXAxisSpeed = (targetPosition.x - lastXTargetPos) * sleepTime;
+                currentYAxisSpeed = (targetPosition.y - lastYTargetPos) * sleepTime;
+                currentZAxisSpeed = (targetPosition.z - lastZTargetPos) * sleepTime;
 
-                // Calcular o valor PID de cada eixo:
-                float sidewaysError = (float) RCSSidewaysCtrl.calculate(distanceBetweenPorts.x, 0);
-                float upwardsError = (float) RCSUpwardsCtrl.calculate(distanceBetweenPorts.z, 0);
-                float forwardsError = (float) RCSForwardsCtrl.calculate(distanceBetweenPorts.y, 0);
-                float speedError = (float) speedCtrl.calculate(currentYAxisSpeed / 10, 0);
+                // Calcular a aceleração para cada eixo no RCS:
+                float forwardsError = calculateThrottle(5, 10, currentYAxisSpeed,
+                        targetPosition.y, SPEED_LIMIT);
+                float sidewaysError = calculateThrottle(-1, 10, currentXAxisSpeed, targetPosition.x, SPEED_LIMIT);
+                float upwardsError = calculateThrottle(-1, 10, currentZAxisSpeed, targetPosition.z, SPEED_LIMIT);
+                control.setForward((float) forwardsError);
+                control.setRight((float) sidewaysError);
+                control.setUp((float) -upwardsError);
 
-                boolean shouldGetCloser = Math.abs(distanceBetweenPorts.x) < 0.3
-                        && Math.abs(distanceBetweenPorts.z) < 0.3;
-
-                if (shouldGetCloser) {
-                    control.setForward(forwardsError);
-                    control.setRight(0);
-                    control.setUp(0);
-                } else {
-                    control.setForward(speedError);
-                    control.setRight(sidewaysError);
-                    control.setUp(-upwardsError);
-                }
-
-                // Guardando últimas posições:
-                lastXTargetPos = distanceBetweenPorts.x;
-                lastYTargetPos = distanceBetweenPorts.y;
-                lastZTargetPos = distanceBetweenPorts.z;
-
-                adjustPID(sleepTime);
-                updateLines(positionMyDockingPort, positionTargetDockingPort);
-                loopTimeInSeconds += 0.05;
+                // Guardar últimas posições:
+                lastXTargetPos = targetPosition.x;
+                lastYTargetPos = targetPosition.y;
+                lastZTargetPos = targetPosition.z;
                 Thread.sleep(sleepTime);
             }
             // // Close the connection when finished
@@ -205,31 +180,12 @@ public class Main {
         }
     }
 
-    // distancia x5 , p: 0.05, i: 0.0001, d: p x2
-    private static void adjustPID(double timeSample) {
-        double ms = 1000 / timeSample;
-        double pGain = 4 / ms;
-        double iGain = pGain / 500;
-        double dGain = pGain * 2;
-        speedCtrl.setTimeSample(timeSample);
-        speedCtrl.setPIDValues(pGain, iGain, dGain);
-        RCSUpwardsCtrl.setTimeSample(timeSample);
-        RCSUpwardsCtrl.setPIDValues(pGain, iGain, dGain);
-        RCSSidewaysCtrl.setTimeSample(timeSample);
-        RCSSidewaysCtrl.setPIDValues(pGain, iGain, dGain);
-        RCSForwardsCtrl.setTimeSample(timeSample);
-        RCSForwardsCtrl.setPIDValues(pGain, iGain, dGain);
-    }
-
-    private static void setDirection(double distance) {
-        try {
-            if (distance > DISTANCE_LIMIT) {
-                control.setSASMode(SASMode.TARGET);
-            } else {
-                control.setSASMode(SASMode.STABILITY_ASSIST);
-            }
-        } catch (RPCException e) {
-        }
+    private static float calculateThrottle(double minDistance, double maxDistance, double currentSpeed,
+            double currentPosition, double speedLimit) {
+        double limiter = Utilities.remap(minDistance, maxDistance, 0, 1, Math.abs(currentPosition), true);
+        double change = (Utilities.remap(-speedLimit, speedLimit, -1.0, 1.0,
+                currentSpeed + (Math.signum(currentPosition) * (limiter * speedLimit)), true));
+        return (float) change;
     }
 
     private static void createLines(Vector start, Vector end) {
