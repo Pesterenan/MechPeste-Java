@@ -6,6 +6,7 @@ import com.pesterenan.controllers.LandingController;
 import com.pesterenan.controllers.LiftoffController;
 import com.pesterenan.controllers.ManeuverController;
 import com.pesterenan.controllers.RoverController;
+import com.pesterenan.controllers.DockingController;
 import com.pesterenan.resources.Bundle;
 import com.pesterenan.utils.Modulos;
 import com.pesterenan.utils.Telemetry;
@@ -190,6 +191,11 @@ public class ActiveVessel {
 			controller = new RoverController(commands);
 			runningModule = true;
 		}
+		if (currentFunction.equals(Modulos.MODULO_DOCKING.get())) {
+			controller = new DockingController(commands);
+			System.out.println("escolheu modulo docking");
+			runningModule = true;
+		}
 		controllerThread = new Thread(controller, currentVesselId + " - " + currentFunction);
 		controllerThread.start();
 	}
@@ -227,7 +233,7 @@ public class ActiveVessel {
 		}
 	}
 
-    public boolean hasModuleRunning() {
-        return runningModule;
-    }
+	public boolean hasModuleRunning() {
+		return runningModule;
+	}
 }

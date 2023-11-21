@@ -21,7 +21,7 @@ public class FunctionsAndTelemetryJPanel extends JPanel implements UIMethods {
 	private static final long serialVersionUID = 0L;
 
 	private final Dimension btnFuncDimension = new Dimension(140, 25);
-	private JButton btnLiftoff, btnLanding, btnManeuvers, btnRover, btnCancel;
+	private JButton btnLiftoff, btnLanding, btnManeuvers, btnDocking, btnRover, btnCancel;
 	private static JLabel lblAltitude, lblSurfaceAlt, lblApoapsis, lblPeriapsis, lblVertSpeed, lblHorzSpeed;
 	private static JLabel lblAltitudeValue, lblSurfaceAltValue, lblApoapsisValue;
 	private static JLabel lblPeriapsisValue, lblVertSpeedValue, lblHorzSpeedValue;
@@ -53,6 +53,7 @@ public class FunctionsAndTelemetryJPanel extends JPanel implements UIMethods {
 		btnLanding = new JButton(Bundle.getString("btn_func_landing"));
 		btnManeuvers = new JButton(Bundle.getString("btn_func_maneuver"));
 		btnRover = new JButton(Bundle.getString("btn_func_rover"));
+		btnDocking = new JButton(Bundle.getString("btn_func_docking"));
 		btnCancel = new JButton(Bundle.getString("pnl_tel_btn_cancel"));
 	}
 
@@ -83,6 +84,10 @@ public class FunctionsAndTelemetryJPanel extends JPanel implements UIMethods {
 		btnRover.setActionCommand(Modulos.MODULO_ROVER.get());
 		btnRover.setMaximumSize(btnFuncDimension);
 		btnRover.setPreferredSize(btnFuncDimension);
+		btnDocking.addActionListener(this::changeFunctionPanel);
+		btnDocking.setActionCommand(Modulos.MODULO_DOCKING.get());
+		btnDocking.setMaximumSize(btnFuncDimension);
+		btnDocking.setPreferredSize(btnFuncDimension);
 	}
 
 	@Override
@@ -94,6 +99,7 @@ public class FunctionsAndTelemetryJPanel extends JPanel implements UIMethods {
 		pnlFunctionControls.add(btnLiftoff);
 		pnlFunctionControls.add(btnLanding);
 		pnlFunctionControls.add(btnRover);
+		pnlFunctionControls.add(btnDocking);
 		pnlFunctionControls.add(btnManeuvers);
 		pnlFunctionControls.add(Box.createVerticalGlue());
 

@@ -33,6 +33,7 @@ public class MainGui extends JFrame implements ActionListener, UIMethods {
 	private CreateManeuverJPanel pnlCreateManeuvers;
 	private RunManeuverJPanel pnlRunManeuvers;
 	private RoverJPanel pnlRover;
+	private DockingJPanel pnlDocking;
 
 	private MainGui() {
 		initComponents();
@@ -75,6 +76,7 @@ public class MainGui extends JFrame implements ActionListener, UIMethods {
 		pnlCreateManeuvers = new CreateManeuverJPanel();
 		pnlRunManeuvers = new RunManeuverJPanel();
 		pnlRover = new RoverJPanel();
+		pnlDocking = new DockingJPanel();
 		pnlStatus = new StatusJPanel();
 	}
 
@@ -130,6 +132,7 @@ public class MainGui extends JFrame implements ActionListener, UIMethods {
 		cardJPanels.add(pnlLanding, Modulos.MODULO_POUSO.get());
 		cardJPanels.add(pnlManeuverJTabbedPane, Modulos.MODULE_MANEUVER.get());
 		cardJPanels.add(pnlRover, Modulos.MODULO_ROVER.get());
+		cardJPanels.add(pnlDocking, Modulos.MODULO_DOCKING.get());
 	}
 
 	public void actionPerformed(ActionEvent e) {
