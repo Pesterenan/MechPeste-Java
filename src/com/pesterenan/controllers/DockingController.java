@@ -46,6 +46,7 @@ public class DockingController extends Controller {
 	private double lastYTargetPos = 0.0;
 	private double lastZTargetPos = 0.0;
 	private long sleepTime = 25;
+	private DOCKING_STEPS dockingStep;
 
 	public DockingController(Map<String, String> commands) {
 		super();
@@ -58,6 +59,7 @@ public class DockingController extends Controller {
 			SPEED_LIMIT = Double.parseDouble(commands.get(Modulos.VELOCIDADE_MAX.get()));
 			drawing = Drawing.newInstance(getConnection());
 			targetVessel = getSpaceCenter().getTargetVessel();
+			control = getNaveAtual().getControl();
 			vesselRefFrame = getNaveAtual().getReferenceFrame();
 			orbitalRefVessel = getNaveAtual().getOrbitalReferenceFrame();
 			orbitalRefBody = getNaveAtual().getOrbit().getBody().getReferenceFrame();
@@ -78,74 +80,69 @@ public class DockingController extends Controller {
 		}
 	}
 
+	private void pointToTarget(Vector targetDirection) throws RPCException, InterruptedException {
+		getNaveAtual().getAutoPilot().setReferenceFrame(orbitalRefVessel);
+		getNaveAtual().getAutoPilot().setTargetDirection(targetDirection.toTriplet());
+		getNaveAtual().getAutoPilot().setTargetRoll(90);
+		getNaveAtual().getAutoPilot().engage();
+		// Fazer a nave apontar usando o piloto automático, na marra
+		while (Math.abs(getNaveAtual().getAutoPilot().getError()) > 3) {
+			if (Thread.interrupted()) {
+				throw new InterruptedException();
+			}
+			Thread.sleep(100);
+			System.out.println(getNaveAtual().getAutoPilot().getError());
+		}
+		getNaveAtual().getAutoPilot().disengage();
+		control.setSAS(true);
+		control.setSASMode(SASMode.STABILITY_ASSIST);
+	}
+
+	private void getCloserToTarget(Vector targetPosition) throws InterruptedException, RPCException {
+		lastXTargetPos = targetPosition.x;
+		lastYTargetPos = targetPosition.y;
+		lastZTargetPos = targetPosition.z;
+
+		while (Math.abs(lastYTargetPos) >= DISTANCE_LIMIT) {
+			if (Thread.interrupted()) {
+				throw new InterruptedException();
+			}
+			targetPosition = new Vector(targetVessel.position(vesselRefFrame));
+			controlShipRCS(targetPosition, DISTANCE_LIMIT);
+			Thread.sleep(sleepTime);
+		}
+
+	}
+
 	public void startDocking() {
 		try {
-			// Initialize parameters for the script, connection and setup:
-			initializeParameters();
-
 			// Setting up the control
-			control = getNaveAtual().getControl();
 			control.setSAS(true);
 			control.setRCS(false);
-			control.setSASMode(SASMode.STABILITY_ASSIST);
-
-			Vector targetDirection = new Vector(getNaveAtual().position(orbitalRefVessel))
-					.subtract(new Vector(targetVessel.position(orbitalRefVessel))).multiply(-1);
-			getNaveAtual().getAutoPilot().setReferenceFrame(orbitalRefVessel);
-			getNaveAtual().getAutoPilot().setTargetDirection(targetDirection.toTriplet());
-			getNaveAtual().getAutoPilot().setTargetRoll(90);
-			getNaveAtual().getAutoPilot().engage();
-			// Fazer a nave apontar usando o piloto automático, na marra
-			while (Math.abs(getNaveAtual().getAutoPilot().getError()) > 3) {
-				if (Thread.interrupted()) {
-					throw new InterruptedException();
-				}
-				Thread.sleep(100);
-				System.out.println(getNaveAtual().getAutoPilot().getError());
-			}
-			control.setRCS(true);
-			getNaveAtual().getAutoPilot().disengage();
-			control.setSAS(true);
 			control.setSASMode(SASMode.STABILITY_ASSIST);
 			createLines(positionMyDockingPort, positionTargetDockingPort);
 
 			// PRIMEIRA PARTE DO DOCKING: APROXIMAÇÃO
-
 			Vector targetPosition = new Vector(targetVessel.position(vesselRefFrame));
-			lastXTargetPos = targetPosition.x;
-			lastYTargetPos = targetPosition.y;
-			lastZTargetPos = targetPosition.z;
+			if (targetPosition.magnitude() > DISTANCE_LIMIT) {
+				// Apontar para o alvo:
+				Vector targetDirection = new Vector(getNaveAtual().position(orbitalRefVessel))
+						.subtract(new Vector(targetVessel.position(orbitalRefVessel))).multiply(-1);
+				pointToTarget(targetDirection);
 
-			while (Math.abs(lastYTargetPos) >= DISTANCE_LIMIT) {
-				if (Thread.interrupted()) {
-					throw new InterruptedException();
-				}
-				targetPosition = new Vector(targetVessel.position(vesselRefFrame));
-				controlShipRCS(targetPosition, DISTANCE_LIMIT);
-				Thread.sleep(sleepTime);
+				control.setRCS(true);
+
+				getCloserToTarget(targetPosition);
 			}
 
-			// SEGUNDA PARTE APONTAR PRO LADO CONTRARIO:
-			Vector direcaoContrariaDockingPortAlvo = new Vector(targetDockingPort.direction(orbitalRefVessel))
-					.multiply(-1);
 			control.setSAS(false);
 			control.setRCS(false);
-			getNaveAtual().getAutoPilot().engage();
-			getNaveAtual().getAutoPilot().setReferenceFrame(orbitalRefVessel);
-			getNaveAtual().getAutoPilot().setTargetDirection(direcaoContrariaDockingPortAlvo.toTriplet());
-			getNaveAtual().getAutoPilot().setTargetRoll(90);
 
-			while (Math.abs(getNaveAtual().getAutoPilot().getError()) > 1) {
-				if (Thread.interrupted()) {
-					throw new InterruptedException();
-				}
-				Thread.sleep(100);
-				System.out.println(getNaveAtual().getAutoPilot().getError());
-			}
+			// SEGUNDA PARTE FICAR DE FRENTE COM A DOCKING PORT:
+			Vector targetDockingPortDirection = new Vector(targetDockingPort.direction(orbitalRefVessel))
+					.multiply(-1);
+			pointToTarget(targetDockingPortDirection);
 
-			getNaveAtual().getAutoPilot().disengage();
-			control.setSAS(true);
-			control.setSASMode(SASMode.STABILITY_ASSIST);
 			Thread.sleep(1000);
 			control.setRCS(true);
 
@@ -153,13 +150,51 @@ public class DockingController extends Controller {
 				if (Thread.interrupted()) {
 					throw new InterruptedException();
 				}
-				targetPosition = new Vector(targetDockingPort.position(vesselRefFrame));
+				targetPosition = new Vector(targetDockingPort.position(vesselRefFrame))
+						.subtract(new Vector(myDockingPort.position(vesselRefFrame)));
 				controlShipRCS(targetPosition, 2);
 				Thread.sleep(sleepTime);
 			}
-		} catch (RPCException | InterruptedException e) {
+		} catch (RPCException | InterruptedException | IllegalArgumentException e) {
 			StatusJPanel.setStatusMessage("Docking aborted.");
 		}
+	}
+
+	/*
+	 * Possibilidades do docking:
+	 * primeiro: a nave ta na orientação certa, e só precisa seguir em frente X e Z
+	 * = 0, Y positivo
+	 * segundo: a nave ta na orientação certa, mas precisa corrigir a posição X e Z,
+	 * Y positivo
+	 * terceiro: a nave está atrás da docking port, precisa corrigir Y primeiro, Y
+	 * negativo
+	 * quarto: a nave está atrás da docking port, precisa afastar X e Z longe da
+	 * nave primeiro, Y negativo
+	 */
+
+	private enum DOCKING_STEPS {
+		APPROACH, CORRECT_SIDEWAYS, CORRECT_UPWARDS, CORRECT_FORWARDS
+	}
+
+	private DOCKING_STEPS checkDockingStep(Vector targetPosition) {
+		double sidewaysDistance = Math.abs(targetPosition.x);
+		double upwardsDistance = Math.abs(targetPosition.z);
+		boolean isInFrontOfTarget = Math.signum(targetPosition.y) == 1;
+		boolean isOnTheBackOfTarget = Math.signum(targetPosition.y) == -1;
+
+		if (isInFrontOfTarget && sidewaysDistance < 5 && upwardsDistance < 5) {
+			return DOCKING_STEPS.APPROACH;
+		}
+		if (isOnTheBackOfTarget) {
+			return DOCKING_STEPS.CORRECT_FORWARDS;
+		}
+		if (isInFrontOfTarget && sidewaysDistance > 5) {
+			return DOCKING_STEPS.CORRECT_SIDEWAYS;
+		}
+		if (isInFrontOfTarget && upwardsDistance > 5) {
+			return DOCKING_STEPS.CORRECT_UPWARDS;
+		}
+		return DOCKING_STEPS.APPROACH;
 	}
 
 	private void controlShipRCS(Vector targetPosition, double distanceLimit) {
@@ -173,14 +208,40 @@ public class DockingController extends Controller {
 			currentYAxisSpeed = (targetPosition.y - lastYTargetPos) * sleepTime;
 			currentZAxisSpeed = (targetPosition.z - lastZTargetPos) * sleepTime;
 
-			// Calcular a aceleração para cada eixo no RCS:
-			float forwardsError = calculateThrottle(distanceLimit, distanceLimit * 2, currentYAxisSpeed,
-					targetPosition.y, SPEED_LIMIT);
-			float sidewaysError = calculateThrottle(0, 10, currentXAxisSpeed, targetPosition.x, SPEED_LIMIT);
-			float upwardsError = calculateThrottle(0, 10, currentZAxisSpeed, targetPosition.z, SPEED_LIMIT);
-			control.setForward((float) forwardsError);
-			control.setRight((float) sidewaysError);
-			control.setUp((float) -upwardsError);
+			dockingStep = checkDockingStep(targetPosition);
+			float forwardsError, upwardsError, sidewaysError = 0;
+			switch (dockingStep) {
+				case APPROACH:
+					// Calcular a aceleração para cada eixo no RCS:
+					forwardsError = calculateThrottle(distanceLimit, distanceLimit * 2, currentYAxisSpeed,
+							targetPosition.y, SPEED_LIMIT);
+					sidewaysError = calculateThrottle(0, 5, currentXAxisSpeed, targetPosition.x, SPEED_LIMIT);
+					upwardsError = calculateThrottle(0, 5, currentZAxisSpeed, targetPosition.z, SPEED_LIMIT);
+					control.setForward((float) forwardsError);
+					control.setRight((float) sidewaysError);
+					control.setUp((float) -upwardsError);
+					break;
+				case CORRECT_SIDEWAYS:
+					sidewaysError = calculateThrottle(0, 10, currentXAxisSpeed, targetPosition.x, SPEED_LIMIT);
+					control.setForward(0);
+					control.setRight((float) sidewaysError);
+					control.setUp(0);
+					break;
+				case CORRECT_UPWARDS:
+					upwardsError = calculateThrottle(0, 10, currentZAxisSpeed, targetPosition.z, SPEED_LIMIT);
+					control.setForward(0);
+					control.setRight(0);
+					control.setUp((float) -upwardsError);
+					break;
+				case CORRECT_FORWARDS:
+					forwardsError = calculateThrottle(-10, 20, currentYAxisSpeed,
+							targetPosition.y, SPEED_LIMIT);
+					control.setForward((float) forwardsError);
+					control.setRight(0);
+					control.setUp(0);
+					break;
+			}
+			System.out.println(dockingStep);
 
 			// Guardar últimas posições:
 			lastXTargetPos = targetPosition.x;
