@@ -145,14 +145,17 @@ public class DockingController extends Controller {
 
 			Thread.sleep(1000);
 			control.setRCS(true);
-
+			double safeDistance = 10;
 			while (true) {
 				if (Thread.interrupted()) {
 					throw new InterruptedException();
 				}
 				targetPosition = new Vector(targetDockingPort.position(vesselRefFrame))
 						.subtract(new Vector(myDockingPort.position(vesselRefFrame)));
-				controlShipRCS(targetPosition, 2);
+				if (targetPosition.magnitude() < safeDistance) {
+					safeDistance = 1;
+				}
+				controlShipRCS(targetPosition, safeDistance);
 				Thread.sleep(sleepTime);
 			}
 		} catch (RPCException | InterruptedException | IllegalArgumentException e) {
@@ -173,31 +176,25 @@ public class DockingController extends Controller {
 	 */
 
 	private enum DOCKING_STEPS {
-		APPROACH, CORRECT_SIDEWAYS, CORRECT_UPWARDS, CORRECT_FORWARDS
+		APPROACH, LINE_UP_WITH_TARGET, GO_IN_FRONT_OF_TARGET
 	}
 
-	private DOCKING_STEPS checkDockingStep(Vector targetPosition) {
+	private DOCKING_STEPS checkDockingStep(Vector targetPosition, double forwardsDistanceLimit) {
 		double sidewaysDistance = Math.abs(targetPosition.x);
 		double upwardsDistance = Math.abs(targetPosition.z);
 		boolean isInFrontOfTarget = Math.signum(targetPosition.y) == 1;
-		boolean isOnTheBackOfTarget = Math.signum(targetPosition.y) == -1;
+		boolean isOnTheBackOfTarget = Math.signum(targetPosition.y) == -1 && targetPosition.y < forwardsDistanceLimit;
 
-		if (isInFrontOfTarget && sidewaysDistance < 5 && upwardsDistance < 5) {
-			return DOCKING_STEPS.APPROACH;
-		}
 		if (isOnTheBackOfTarget) {
-			return DOCKING_STEPS.CORRECT_FORWARDS;
+			return DOCKING_STEPS.GO_IN_FRONT_OF_TARGET;
 		}
-		if (isInFrontOfTarget && sidewaysDistance > 5) {
-			return DOCKING_STEPS.CORRECT_SIDEWAYS;
-		}
-		if (isInFrontOfTarget && upwardsDistance > 5) {
-			return DOCKING_STEPS.CORRECT_UPWARDS;
+		if (isInFrontOfTarget && (sidewaysDistance > 5 || upwardsDistance > 5)) {
+			return DOCKING_STEPS.LINE_UP_WITH_TARGET;
 		}
 		return DOCKING_STEPS.APPROACH;
 	}
 
-	private void controlShipRCS(Vector targetPosition, double distanceLimit) {
+	private void controlShipRCS(Vector targetPosition, double forwardsDistanceLimit) {
 		try {
 			// Atualizar posições para linhas
 			positionMyDockingPort = new Vector(myDockingPort.position(vesselRefFrame));
@@ -208,37 +205,36 @@ public class DockingController extends Controller {
 			currentYAxisSpeed = (targetPosition.y - lastYTargetPos) * sleepTime;
 			currentZAxisSpeed = (targetPosition.z - lastZTargetPos) * sleepTime;
 
-			dockingStep = checkDockingStep(targetPosition);
+			dockingStep = checkDockingStep(targetPosition, forwardsDistanceLimit);
 			float forwardsError, upwardsError, sidewaysError = 0;
 			switch (dockingStep) {
 				case APPROACH:
 					// Calcular a aceleração para cada eixo no RCS:
-					forwardsError = calculateThrottle(distanceLimit, distanceLimit * 2, currentYAxisSpeed,
+					forwardsError = calculateThrottle(forwardsDistanceLimit, forwardsDistanceLimit * 3, currentYAxisSpeed,
 							targetPosition.y, SPEED_LIMIT);
 					sidewaysError = calculateThrottle(0, 5, currentXAxisSpeed, targetPosition.x, SPEED_LIMIT);
 					upwardsError = calculateThrottle(0, 5, currentZAxisSpeed, targetPosition.z, SPEED_LIMIT);
-					control.setForward((float) forwardsError);
-					control.setRight((float) sidewaysError);
-					control.setUp((float) -upwardsError);
+					control.setForward(forwardsError);
+					control.setRight(sidewaysError);
+					control.setUp(-upwardsError);
 					break;
-				case CORRECT_SIDEWAYS:
+				case LINE_UP_WITH_TARGET:
+					forwardsError = calculateThrottle(forwardsDistanceLimit, forwardsDistanceLimit * 3, currentYAxisSpeed,
+							targetPosition.y, 0);
 					sidewaysError = calculateThrottle(0, 10, currentXAxisSpeed, targetPosition.x, SPEED_LIMIT);
-					control.setForward(0);
-					control.setRight((float) sidewaysError);
-					control.setUp(0);
-					break;
-				case CORRECT_UPWARDS:
 					upwardsError = calculateThrottle(0, 10, currentZAxisSpeed, targetPosition.z, SPEED_LIMIT);
-					control.setForward(0);
-					control.setRight(0);
-					control.setUp((float) -upwardsError);
+					control.setForward(forwardsError);
+					control.setRight(sidewaysError);
+					control.setUp(-upwardsError);
 					break;
-				case CORRECT_FORWARDS:
-					forwardsError = calculateThrottle(-10, 20, currentYAxisSpeed,
+				case GO_IN_FRONT_OF_TARGET:
+					forwardsError = calculateThrottle(-20, -10, currentYAxisSpeed,
 							targetPosition.y, SPEED_LIMIT);
-					control.setForward((float) forwardsError);
-					control.setRight(0);
-					control.setUp(0);
+					sidewaysError = calculateThrottle(0, 5, currentXAxisSpeed, targetPosition.x, 0);
+					upwardsError = calculateThrottle(0, 5, currentZAxisSpeed, targetPosition.z, 0);
+					control.setForward(forwardsError);
+					control.setRight(sidewaysError);
+					control.setUp(-upwardsError);
 					break;
 			}
 			System.out.println(dockingStep);
