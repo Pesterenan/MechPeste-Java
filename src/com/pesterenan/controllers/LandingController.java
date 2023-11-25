@@ -143,11 +143,12 @@ public class LandingController extends Controller {
 				double threshold = Utilities.clamp(
 						((currentVelocity + zeroVelocity) - landingDistanceThreshold) / landingDistanceThreshold, 0,
 						1);
-				altPID = altitudeCtrl.calculate(currentVelocity, zeroVelocity);
-				velPID = velocityCtrl.calculate(velVertical.get(), -Utilities.clamp(altitudeSup.get() * 0.1, 1, 10));
+				altPID = altitudeCtrl.calculate(currentVelocity / sleepTime, zeroVelocity / sleepTime);
+				velPID = velocityCtrl.calculate(velVertical.get() / sleepTime,
+						(-Utilities.clamp(altitudeSup.get() * 0.1, 3, 20) / sleepTime));
 				throttle(Utilities.linearInterpolation(velPID, altPID, threshold));
 				navigation.aimForLanding();
-				if (threshold < 0.10 || altitudeSup.get() < landingDistanceThreshold) {
+				if (threshold < 0.15 || altitudeSup.get() < landingDistanceThreshold) {
 					hoverAltitude = landingDistanceThreshold;
 					getNaveAtual().getControl().setGear(true);
 					if (hoverAfterApproximation) {
