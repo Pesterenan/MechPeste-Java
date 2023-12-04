@@ -3,13 +3,11 @@ package com.pesterenan.views;
 import com.pesterenan.MechPeste;
 import com.pesterenan.resources.Bundle;
 import com.pesterenan.utils.ControlePID;
-import com.pesterenan.utils.Vector;
 import com.pesterenan.utils.Modulos;
 
 import krpc.client.RPCException;
 import krpc.client.services.SpaceCenter.Node;
 import krpc.client.services.SpaceCenter.Orbit;
-import krpc.client.services.SpaceCenter.ReferenceFrame;
 import krpc.client.services.SpaceCenter.Vessel;
 import krpc.client.services.SpaceCenter.VesselSituation;
 
@@ -65,7 +63,7 @@ public class RunManeuverJPanel extends JPanel implements ActionListener, UIMetho
 		} catch (RPCException e) {
 		}
 	}
-	
+
 	public static void createManeuver(double atFutureTime) {
 		System.out.println("Create maneuver overloaded");
 		try {

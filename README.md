@@ -73,3 +73,11 @@ texto e também a velocidade máxima que o rover pode alcançar.
 
 A velocidade mínima permitida é de 3m/s. Clique em Pilotar e ele comecará a se
 mover para o alvo, desviando dos obstáculos à frente.
+
+### Desenvolvimento com Maven
+
+Instalar a biblioteca krpc 0.5.2:
+
+``` bash
+mvn install:install-file -Dfile=C:\Users\renan\Documents\git\MechPeste-Java\src\com\pesterenan\resources\krpc-java-0.5.2.jar -DgroupId=io.github.krpc -DartifactId=krpc-java -Dversion=0.5.2 -Dpackaging=jar
+```

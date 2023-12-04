@@ -5,7 +5,6 @@ import com.pesterenan.resources.Bundle;
 import com.pesterenan.utils.Modulos;
 
 import javax.swing.*;
-import javax.swing.border.EtchedBorder;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
