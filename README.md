@@ -74,10 +74,24 @@ texto e também a velocidade máxima que o rover pode alcançar.
 A velocidade mínima permitida é de 3m/s. Clique em Pilotar e ele comecará a se
 mover para o alvo, desviando dos obstáculos à frente.
 
-### Desenvolvimento com Maven
+### Desenvolvimento do MechPeste com Maven
 
-Instalar a biblioteca krpc 0.5.2:
+Agora o MechPeste tem como base o gerenciador de dependências Maven. Para poder instalar a biblioteca
+do KRPC no entanto, como não está disponível no repositório público do Maven, é necessário fazer o download
+e instalar a biblioteca KRPC em sua versão 0.5.2 com o seguinte comando:
 
 ``` bash
-mvn install:install-file -Dfile=C:\Users\renan\Documents\git\MechPeste-Java\src\com\pesterenan\resources\krpc-java-0.5.2.jar -DgroupId=io.github.krpc -DartifactId=krpc-java -Dversion=0.5.2 -Dpackaging=jar
+mvn install:install-file \
+    -Dfile=<CAMINHO_DO_DOWNLOAD>\krpc-java-0.5.2.jar \
+    -DgroupId=io.github.krpc \
+    -DartifactId=krpc-java \
+    -Dversion=0.5.2 \
+    -Dpackaging=jar \
+```
+Substitua `<CAMINHO_DO_DOWNLOAD>` pela pasta onde está o arquivo do KRPC. Isso instalará essa biblioteca 
+no seu repositório local. 
+
+Agora você poderá usar comandos do Maven para instalar e construir a aplicação:
+```bash
+mvn clean install package
 ```
