@@ -11,7 +11,7 @@ manobras, e pilotar rovers.
 ---
 É necessário ter o [Java](https://java.com/pt-BR/) instalado para utilizar o "MechPeste.jar".
 Uma versão mais atualizada do
-mod [KRPC](https://github.com/krpc/krpc/releases/download/v0.5.1/krpc-0.5.1.zip)
+mod [KRPC](https://github.com/krpc/krpc/releases/download/v0.5.2/krpc-0.5.2.zip)
 pode ser instalada diretamente do aplicativo MechPeste pelo menu Arquivo > Instalar KRPC.
 
 ## **Como instalar:**
@@ -73,3 +73,25 @@ texto e também a velocidade máxima que o rover pode alcançar.
 
 A velocidade mínima permitida é de 3m/s. Clique em Pilotar e ele comecará a se
 mover para o alvo, desviando dos obstáculos à frente.
+
+### Desenvolvimento do MechPeste com Maven
+
+Agora o MechPeste tem como base o gerenciador de dependências Maven. Para poder instalar a biblioteca
+do KRPC no entanto, como não está disponível no repositório público do Maven, é necessário fazer o download
+e instalar a biblioteca KRPC em sua versão 0.5.2 com o seguinte comando:
+
+``` bash
+mvn install:install-file \
+    -Dfile=<CAMINHO_DO_DOWNLOAD>\krpc-java-0.5.2.jar \
+    -DgroupId=io.github.krpc \
+    -DartifactId=krpc-java \
+    -Dversion=0.5.2 \
+    -Dpackaging=jar \
+```
+Substitua `<CAMINHO_DO_DOWNLOAD>` pela pasta onde está o arquivo do KRPC. Isso instalará essa biblioteca 
+no seu repositório local. 
+
+Agora você poderá usar comandos do Maven para instalar e construir a aplicação:
+```bash
+mvn clean install package
+```
