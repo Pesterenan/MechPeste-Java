@@ -99,7 +99,6 @@ public class ChangeVesselDialog extends JDialog implements UIMethods {
 		pnlScroll.add(scrollPane);
 		pnlScroll.add(Box.createHorizontalStrut(190));
 
-
 		JPanel pnlOptionsAndList = new JPanel();
 		pnlOptionsAndList.setLayout(new BoxLayout(pnlOptionsAndList, BoxLayout.X_AXIS));
 		pnlOptions.setAlignmentY(TOP_ALIGNMENT);

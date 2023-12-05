@@ -9,6 +9,8 @@ import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
+import com.pesterenan.utils.VersionUtil;
+
 import static com.pesterenan.views.MainGui.BTN_DIMENSION;
 import static com.pesterenan.views.MainGui.centerDialogOnScreen;
 import static com.pesterenan.views.MainGui.createMarginComponent;
@@ -28,7 +30,7 @@ public class AboutJFrame extends JDialog implements UIMethods {
 	@Override
 	public void initComponents() {
 		// Labels:
-		lblMechpeste = new JLabel("MechPeste - v.0.6.2");
+		lblMechpeste = new JLabel("MechPeste - v." + VersionUtil.getVersion());
 		lblAboutInfo = new JLabel(
 				"<html>Esse app foi desenvolvido com o intuito de auxiliar o controle de naves<br>no game Kerbal Space Program.<br><br>"
 						+ "Não há garantias sobre o controle exato do app, portanto fique atento <br>"

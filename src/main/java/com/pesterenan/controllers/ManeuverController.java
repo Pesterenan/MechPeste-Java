@@ -209,13 +209,11 @@ public class ManeuverController extends Controller {
 			RunManeuverJPanel.positionManeuverAt(closestIsAN ? "ascending" : "descending");
 			double currentInclination = Math
 					.toDegrees(currentManeuver.getOrbit().relativeInclination(targetVesselOrbit));
-
 			ctrlManeuver.setTimeSample(25);
 			while (currentInclination > 0.05) {
 				currentInclination = Math
 						.toDegrees(currentManeuver.getOrbit().relativeInclination(targetVesselOrbit));
 				double ctrlOutput = ctrlManeuver.calculate(currentInclination * 100, 0);
-
 				currentManeuver.setNormal(currentManeuver.getNormal() + (closestIsAN ? ctrlOutput : -ctrlOutput));
 				Thread.sleep(25);
 			}
@@ -228,7 +226,6 @@ public class ManeuverController extends Controller {
 		try {
 			boolean hasManeuverNodes = getNaveAtual().getControl().getNodes().size() > 0;
 			List<Node> currentManeuvers = getNaveAtual().getControl().getNodes();
-
 			Node lastManeuverNode;
 			double lastManeuverNodeUT = 60;
 			if (hasManeuverNodes) {
@@ -331,7 +328,10 @@ public class ManeuverController extends Controller {
 			// }
 			// lastManeuverNode.setUT(lastManeuverNode.getUT() -
 			// lastManeuverNode.getOrbit().getPeriod() / 2);
-		} catch (Exception err) {}
+		} catch (
+
+		Exception err) {
+		}
 	}
 
 	private double compareOrbitParameter(Orbit maneuverOrbit, Orbit targetOrbit, Compare parameter) {
@@ -476,7 +476,6 @@ public class ManeuverController extends Controller {
 				throttle(ctrlManeuver.calculate((noDeManobra.getDeltaV() - Math.floor(burnDvLeft)) /
 						noDeManobra.getDeltaV() * limitValue, limitValue));
 				Thread.sleep(25);
-
 			}
 			throttle(0.0f);
 			if (fineAdjustment) {

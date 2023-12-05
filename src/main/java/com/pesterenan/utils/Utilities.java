@@ -27,7 +27,7 @@ public class Utilities {
 	}
 
 	public static double remap(double inputMin, double inputMax, double outputMin, double outputMax, double value,
-	                           boolean clampOutput) {
+			boolean clampOutput) {
 		double between = inverseLinearInterpolation(inputMin, inputMax, value);
 		double remappedOutput = linearInterpolation(outputMin, outputMax, between);
 		return clampOutput ? clamp(remappedOutput, outputMin, outputMax) : remappedOutput;
@@ -78,7 +78,6 @@ public class Utilities {
 		int minutes = (totalSeconds.intValue() % 3600) / 60;
 		int seconds = totalSeconds.intValue() % 60;
 		return String.format(Bundle.getString("pnl_tel_lbl_date_template"), years, days, hours, minutes,
-		                     seconds
-		                    ); //$NON-NLS-1$
+				seconds); // $NON-NLS-1$
 	}
 }

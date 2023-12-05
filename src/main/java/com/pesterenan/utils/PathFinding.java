@@ -44,8 +44,8 @@ public class PathFinding extends Controller {
 
 	public void addWaypointsOnSameBody(String waypointName) throws RPCException {
 		this.waypointName = waypointName;
-		this.waypointsToReach =
-				waypointManager.getWaypoints().stream().filter(this::hasSameName).collect(Collectors.toList());
+		this.waypointsToReach = waypointManager.getWaypoints().stream().filter(this::hasSameName)
+				.collect(Collectors.toList());
 	}
 
 	private boolean hasSameName(Waypoint waypoint) {
@@ -63,26 +63,25 @@ public class PathFinding extends Controller {
 			double w2Distance = 0;
 			try {
 				w1Distance = Vector.distance(new Vector(getNaveAtual().position(orbitalReferenceFrame)),
-				                             waypointPosOnSurface(w1)
-				                            );
+						waypointPosOnSurface(w1));
 				w2Distance = Vector.distance(new Vector(getNaveAtual().position(orbitalReferenceFrame)),
-				                             waypointPosOnSurface(w2)
-				                            );
+						waypointPosOnSurface(w2));
 			} catch (RPCException e) {
 			}
 			return w1Distance > w2Distance ? 1 : -1;
 		}).collect(Collectors.toList());
 		waypointsToReach.forEach(System.out::println);
 		Waypoint currentWaypoint = waypointsToReach.get(0);
-//		for (Waypoint waypoint : waypointsToReach) {
-//			double waypointDistance = Vector.distance(new Vector(getNaveAtual().position(orbitalReferenceFrame)),
-//			                                          waypointPosOnSurface(waypoint)
-//			                                         );
-//			if (currentDistance > waypointDistance) {
-//				currentDistance = waypointDistance;
-//				currentWaypoint = waypoint;
-//			}
-//		}
+		// for (Waypoint waypoint : waypointsToReach) {
+		// double waypointDistance = Vector.distance(new
+		// Vector(getNaveAtual().position(orbitalReferenceFrame)),
+		// waypointPosOnSurface(waypoint)
+		// );
+		// if (currentDistance > waypointDistance) {
+		// currentDistance = waypointDistance;
+		// currentWaypoint = waypoint;
+		// }
+		// }
 		return waypointPosOnSurface(currentWaypoint);
 	}
 
@@ -125,7 +124,8 @@ public class PathFinding extends Controller {
 	}
 
 	/**
-	 * Builds the path to the targetPosition, on the Celestial Body Reference ( Orbital Ref )
+	 * Builds the path to the targetPosition, on the Celestial Body Reference (
+	 * Orbital Ref )
 	 *
 	 * @param targetPosition the target pos to build the path to
 	 * @throws IOException
@@ -133,10 +133,11 @@ public class PathFinding extends Controller {
 	 * @throws InterruptedException
 	 */
 	public void buildPathToTarget(Vector targetPosition) throws IOException, RPCException, InterruptedException {
-		// Get current rover Position on Orbital Ref, transform to Surf Ref and add 20 centimeters on height:
+		// Get current rover Position on Orbital Ref, transform to Surf Ref and add 20
+		// centimeters on height:
 		Vector roverHeight = new Vector(0.2, 0.0, 0.0);
-		Vector currentRoverPos =
-				transformSurfToOrb(new Vector(getNaveAtual().position(surfaceReferenceFrame)).sum(roverHeight));
+		Vector currentRoverPos = transformSurfToOrb(
+				new Vector(getNaveAtual().position(surfaceReferenceFrame)).sum(roverHeight));
 		// Calculate distance from rover to target on Orbital Ref:
 		double distanceToTarget = Vector.distance(currentRoverPos, targetPosition);
 		// Add rover pos as first point, on Orbital Ref
@@ -148,14 +149,12 @@ public class PathFinding extends Controller {
 				throw new InterruptedException();
 			}
 			Vector currentPoint = pathToTarget.get(index);
-			Vector targetDirection =
-					transformOrbToSurf(targetPosition).subtract(transformOrbToSurf(currentPoint)).normalize();
-			Vector nextPoint =
-					transformSurfToOrb(calculateNextPoint(transformOrbToSurf(currentPoint), targetDirection));
+			Vector targetDirection = transformOrbToSurf(targetPosition).subtract(transformOrbToSurf(currentPoint))
+					.normalize();
+			Vector nextPoint = transformSurfToOrb(calculateNextPoint(transformOrbToSurf(currentPoint), targetDirection));
 			pathToTarget.add(nextPoint);
 			index++;
-			double distanceBetweenPoints =
-					Vector.distance(transformOrbToSurf(currentPoint), transformOrbToSurf(nextPoint));
+			double distanceBetweenPoints = Vector.distance(transformOrbToSurf(currentPoint), transformOrbToSurf(nextPoint));
 			distanceToTarget -= distanceBetweenPoints;
 		}
 		pathToTarget.add(getPosOnSurface(targetPosition));
@@ -163,12 +162,11 @@ public class PathFinding extends Controller {
 	}
 
 	private void drawPathToTarget(List<Vector> path) throws RPCException {
-		Deque<Triplet<Double, Double, Double>> drawablePath =
-				path.stream().map(Vector::toTriplet).collect(Collectors.toCollection(ArrayDeque::new));
+		Deque<Triplet<Double, Double, Double>> drawablePath = path.stream().map(Vector::toTriplet)
+				.collect(Collectors.toCollection(ArrayDeque::new));
 		drawablePath.offerFirst(new Triplet<>(0.0, 0.0, 0.0));
 		drawablePath.offerLast(new Triplet<>(0.0, 0.0, 0.0));
-		polygonPath =
-				drawing.addPolygon(drawablePath.stream().collect(Collectors.toList()), orbitalReferenceFrame, true);
+		polygonPath = drawing.addPolygon(drawablePath.stream().collect(Collectors.toList()), orbitalReferenceFrame, true);
 		polygonPath.setThickness(0.5f);
 		polygonPath.setColor(new Triplet<>(1.0, 0.5, 0.0));
 	}
@@ -184,25 +182,22 @@ public class PathFinding extends Controller {
 		// PONTO REF SUPERFICIE: X = CIMA, Y = NORTE, Z = LESTE;
 		double stepDistance = 100.0;
 		// Calculate the next point position on surface:
-		Vector nextPoint =
-				getPosOnSurface(transformSurfToOrb(currentPoint.sum(targetDirection.multiply(stepDistance))));
+		Vector nextPoint = getPosOnSurface(transformSurfToOrb(currentPoint.sum(targetDirection.multiply(stepDistance))));
 		return transformOrbToSurf(nextPoint).sum(new Vector(0.2, 0.0, 0.0));
 	}
 
 	public double raycastDistance(Vector currentPoint, Vector targetDirection, SpaceCenter.ReferenceFrame reference,
-	                              double searchDistance) throws RPCException {
+			double searchDistance) throws RPCException {
 		return Math.min(
 				getSpaceCenter().raycastDistance(currentPoint.toTriplet(), targetDirection.toTriplet(), reference),
-				searchDistance
-		               );
+				searchDistance);
 	}
 
 	private Vector getPosOnSurface(Vector vector) throws RPCException {
 		return new Vector(
 				currentBody.surfacePosition(currentBody.latitudeAtPosition(vector.toTriplet(), orbitalReferenceFrame),
-				                            currentBody.longitudeAtPosition(vector.toTriplet(), orbitalReferenceFrame),
-				                            orbitalReferenceFrame
-				                           ));
+						currentBody.longitudeAtPosition(vector.toTriplet(), orbitalReferenceFrame),
+						orbitalReferenceFrame));
 	}
 
 	private Vector transformSurfToOrb(Vector vector) throws IOException, RPCException {
