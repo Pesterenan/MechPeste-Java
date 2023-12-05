@@ -1,25 +1,29 @@
 package com.pesterenan;
 
-import com.pesterenan.model.ActiveVessel;
-import com.pesterenan.resources.Bundle;
-import com.pesterenan.utils.Vector;
-import com.pesterenan.views.FunctionsAndTelemetryJPanel;
-import com.pesterenan.views.MainGui;
-import krpc.client.Connection;
-import krpc.client.RPCException;
-import krpc.client.services.KRPC;
-import krpc.client.services.SpaceCenter;
-import krpc.client.services.SpaceCenter.Vessel;
+import static com.pesterenan.views.StatusJPanel.isBtnConnectVisible;
+import static com.pesterenan.views.StatusJPanel.setStatusMessage;
 
-import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static com.pesterenan.views.StatusJPanel.isBtnConnectVisible;
-import static com.pesterenan.views.StatusJPanel.setStatusMessage;
+import javax.swing.*;
+
+import com.pesterenan.model.ActiveVessel;
+import com.pesterenan.resources.Bundle;
+import com.pesterenan.utils.Vector;
+import com.pesterenan.views.CreateManeuverJPanel;
+import com.pesterenan.views.FunctionsAndTelemetryJPanel;
+import com.pesterenan.views.MainGui;
+
+import krpc.client.Connection;
+import krpc.client.RPCException;
+import krpc.client.services.KRPC;
+import krpc.client.services.SpaceCenter;
+import krpc.client.services.SpaceCenter.Node;
+import krpc.client.services.SpaceCenter.Vessel;
 
 public class MechPeste {
 	private static KRPC krpc;
@@ -70,6 +74,24 @@ public class MechPeste {
 		return list;
 	}
 
+	public static ListModel<String> getCurrentManeuvers() {
+		DefaultListModel<String> list = new DefaultListModel<>();
+		try {
+			List<Node> maneuvers = getSpaceCenter().getActiveVessel().getControl().getNodes();
+			maneuvers.forEach(m -> {
+				try {
+					String maneuverStr = String.format("%d - Dv: %.1f {P: %.1f, N: %.1f, R: %.1f} AP: %.1f, PE: %.1f",
+							maneuvers.indexOf(m) + 1, m.getDeltaV(), m.getPrograde(), m.getNormal(), m.getRadial(),
+							m.getOrbit().getApoapsisAltitude(), m.getOrbit().getPeriapsisAltitude());
+					list.addElement(maneuverStr);
+				} catch (RPCException ignored) {
+				}
+			});
+		} catch (RPCException | NullPointerException ignored) {
+		}
+		return list;
+	}
+
 	private static boolean filterVessels(Vessel vessel, String search) {
 		if (search == "all") {
 			return true;
@@ -98,13 +120,13 @@ public class MechPeste {
 
 	public static String getVesselInfo(int selectedIndex) {
 		try {
-			Vessel naveAtual =
-					spaceCenter.getVessels().stream().filter(v -> v.hashCode() == selectedIndex).findFirst().get();
+			Vessel naveAtual = spaceCenter.getVessels().stream().filter(v -> v.hashCode() == selectedIndex).findFirst()
+					.get();
 			String name = naveAtual.getName().length() > 40
-			              ? naveAtual.getName().substring(0, 40) + "..."
-			              : naveAtual.getName();
-			String vesselInfo =
-					String.format("Nome: %s\t\t\t | Corpo: %s", name, naveAtual.getOrbit().getBody().getName());
+					? naveAtual.getName().substring(0, 40) + "..."
+					: naveAtual.getName();
+			String vesselInfo = String.format("Nome: %s\t\t\t | Corpo: %s", name,
+					naveAtual.getOrbit().getBody().getName());
 			return vesselInfo;
 		} catch (RPCException | NullPointerException ignored) {
 		}
@@ -113,8 +135,8 @@ public class MechPeste {
 
 	public static void changeToVessel(int selectedIndex) {
 		try {
-			Vessel naveAtual =
-					spaceCenter.getVessels().stream().filter(v -> v.hashCode() == selectedIndex).findFirst().get();
+			Vessel naveAtual = spaceCenter.getVessels().stream().filter(v -> v.hashCode() == selectedIndex).findFirst()
+					.get();
 			spaceCenter.setActiveVessel(naveAtual);
 		} catch (RPCException | NullPointerException e) {
 			System.out.println(Bundle.getString("status_couldnt_switch_vessel"));
@@ -140,10 +162,11 @@ public class MechPeste {
 				}
 				if (currentVesselId != -1) {
 					currentVessel.recordTelemetryData();
-					if (currentVessel.hasModuleRunning()){
+					if (currentVessel.hasModuleRunning()) {
 						setStatusMessage(currentVessel.getCurrentStatus());
 					}
 					FunctionsAndTelemetryJPanel.updateTelemetry(currentVessel.getTelemetryData());
+					CreateManeuverJPanel.updatePanel(getCurrentManeuvers());
 				}
 				Thread.sleep(100);
 			} catch (RPCException | InterruptedException ignored) {
