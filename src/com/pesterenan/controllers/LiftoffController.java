@@ -1,5 +1,7 @@
 package com.pesterenan.controllers;
 
+import static com.pesterenan.MechPeste.getSpaceCenter;
+
 import com.pesterenan.MechPeste;
 import com.pesterenan.resources.Bundle;
 import com.pesterenan.utils.ControlePID;
@@ -18,7 +20,7 @@ import java.util.Map;
 public class LiftoffController extends Controller {
 
 	private static final float PITCH_UP = 90;
-	private final ControlePID thrControl = new ControlePID();
+	private ControlePID thrControl;
 	private float currentPitch;
 	private float finalApoapsisAlt;
 	private float heading;
@@ -45,7 +47,8 @@ public class LiftoffController extends Controller {
 		setGravityCurveModel(commands.get(Modulos.INCLINACAO.get()));
 		willOpenPanelsAndAntenna = Boolean.parseBoolean(commands.get(Modulos.ABRIR_PAINEIS.get()));
 		willDecoupleStages = Boolean.parseBoolean(commands.get(Modulos.USAR_ESTAGIOS.get()));
-		thrControl.adjustOutput(0.0, 1.0);
+		thrControl = new ControlePID(getSpaceCenter(), 25);
+		thrControl.setOutput(0.0, 1.0);
 	}
 
 	@Override
@@ -79,7 +82,7 @@ public class LiftoffController extends Controller {
 			currentPitch = (float) (calculateCurrentPitch(altitudeProgress));
 			double currentMaxTWR = calculateTWRBasedOnPressure(currentPitch);
 			ap.setTargetPitch(currentPitch);
-			throttle(Math.min(thrControl.calcPID(apoastro.get() / getFinalApoapsis() * 1000, 1000),
+			throttle(Math.min(thrControl.calculate(apoastro.get() / getFinalApoapsis() * 1000, 1000),
 					getMaxThrottleForTWR(currentMaxTWR)));
 
 			if (willDecoupleStages && isCurrentStageWithoutFuel()) {
@@ -87,7 +90,7 @@ public class LiftoffController extends Controller {
 			}
 			setCurrentStatus(String.format(Bundle.getString("status_liftoff_inclination") + " %.1f", currentPitch));
 
-			Thread.sleep(250);
+			Thread.sleep(25);
 			if (Thread.interrupted()) {
 				throw new InterruptedException();
 			}
@@ -111,8 +114,8 @@ public class LiftoffController extends Controller {
 				throw new InterruptedException();
 			}
 			navigation.aimAtPrograde();
-			throttle(thrControl.calcPID(apoastro.get() / getFinalApoapsis() * 1000, 1000));
-			Thread.sleep(100);
+			throttle(thrControl.calculate(apoastro.get() / getFinalApoapsis() * 1000, 1000));
+			Thread.sleep(25);
 		}
 		throttle(0.0f);
 		if (willDecoupleStages) {

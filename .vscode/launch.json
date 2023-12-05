@@ -2,6 +2,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "Main",
+            "request": "launch",
+            "mainClass": "com.pesterenan.Main",
+            "projectName": "MechPeste-Java"
+        },
+        {
+            "type": "java",
             "name": "Launch MechPeste",
             "request": "launch",
             "mainClass": "com.pesterenan.MechPeste",

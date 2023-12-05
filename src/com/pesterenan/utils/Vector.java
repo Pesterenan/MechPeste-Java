@@ -66,7 +66,7 @@ public class Vector {
 	 * @param start - Vetor contendo os componentes da posição do ponto de origem.
 	 * @param end   - Vetor contendo os componentes da posição do alvo.
 	 * @return - Vetor com a soma dos valores do ponto de origem com os valores do
-	 * alvo.
+	 *         alvo.
 	 */
 	public static Vector targetDirection(Vector start, Vector end) {
 		return end.subtract(start).normalize();
@@ -78,7 +78,7 @@ public class Vector {
 	 * @param start - Tupla contendo os componentes da posição do ponto de origem.
 	 * @param end   - Tupla contendo os componentes da posição do alvo.
 	 * @return - Vetor inverso, com a soma dos valores do ponto de origem com o
-	 * negativo dos valores do alvo.
+	 *         negativo dos valores do alvo.
 	 */
 	public static Vector targetOppositeDirection(Vector start, Vector end) {
 		return end.subtract(start).multiply(-1).normalize();
@@ -151,12 +151,13 @@ public class Vector {
 	 * @param otherVector - Vetor para somar os componentes
 	 * @return Novo vetor com a soma dos componentes dos dois
 	 */
-	public double dotP(Vector otherVector) {
+
+	public double dotProduct(Vector otherVector) {
 		return (x * otherVector.x + y * otherVector.y + z * otherVector.z);
 	}
 
 	public double determinant(Vector otherVector) {
-		return (x * otherVector.y - y * otherVector.x - z * otherVector.z);
+		return (x * otherVector.z - y * otherVector.y - z * otherVector.x);
 	}
 
 	/**
@@ -184,8 +185,8 @@ public class Vector {
 	 *
 	 * @param scalar - Fator para multiplicar os componentes
 	 * @return Novo vetor com os componentes multiplicados pela escalar. Caso a
-	 * escalar informada for 0, o Vetor retornado terá 0 como seus
-	 * componentes.
+	 *         escalar informada for 0, o Vetor retornado terá 0 como seus
+	 *         componentes.
 	 */
 	public Vector multiply(double scalar) {
 		if (scalar != 0) {
@@ -199,7 +200,7 @@ public class Vector {
 	 *
 	 * @param scalar - Fator para dividir os componentes
 	 * @return Novo vetor com os componentes divididos pela escalar. Caso a escalar
-	 * informada for 0, o Vetor retornado terá 0 como seus componentes.
+	 *         informada for 0, o Vetor retornado terá 0 como seus componentes.
 	 */
 	public Vector divide(double scalar) {
 		if (scalar != 0) {

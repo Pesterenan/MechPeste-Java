@@ -80,7 +80,8 @@ public class CreateManeuverJPanel extends JPanel implements ActionListener, UIMe
         sliderValues.put(4, 100f);
         sliderValues.put(5, 1000f);
 
-        ctrlManeuver.adjustOutput(-100, 100);
+        ctrlManeuver.setOutput(-100, 100);
+
     }
 
     @Override

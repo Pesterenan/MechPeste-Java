@@ -1,24 +1,28 @@
 package com.pesterenan.controllers;
 
+import static com.pesterenan.MechPeste.getSpaceCenter;
+
+import java.util.Map;
+
 import com.pesterenan.resources.Bundle;
 import com.pesterenan.utils.ControlePID;
 import com.pesterenan.utils.Modulos;
 import com.pesterenan.utils.Navigation;
 import com.pesterenan.utils.Utilities;
+
 import krpc.client.RPCException;
 import krpc.client.StreamException;
 import krpc.client.services.SpaceCenter.VesselSituation;
 
-import java.util.Map;
-
 public class LandingController extends Controller {
 
 	public static final double MAX_VELOCITY = 5;
-	private static final double velP = 0.025;
-	private static final double velI = 0.001;
-	private static final double velD = 0.01;
-	private final ControlePID altitudeCtrl = new ControlePID();
-	private final ControlePID velocityCtrl = new ControlePID();
+	private static final long sleepTime = 50;
+	private static final double velP = 0.05;
+	private static final double velI = 0.005;
+	private static final double velD = 0.001;
+	private ControlePID altitudeCtrl;
+	private ControlePID velocityCtrl;
 	private Navigation navigation;
 	private final int HUNDRED_PERCENT = 100;
 	private double hoverAltitude;
@@ -37,8 +41,10 @@ public class LandingController extends Controller {
 	}
 
 	private void initializeParameters() {
-		altitudeCtrl.adjustOutput(0, 1);
-		velocityCtrl.adjustOutput(0, 1);
+		altitudeCtrl = new ControlePID(getSpaceCenter(), sleepTime);
+		velocityCtrl = new ControlePID(getSpaceCenter(), sleepTime);
+		altitudeCtrl.setOutput(0, 1);
+		velocityCtrl.setOutput(0, 1);
 	}
 
 	@Override
@@ -70,12 +76,11 @@ public class LandingController extends Controller {
 						currentMode = MODE.GOING_UP;
 					} else {
 						currentMode = MODE.HOVERING;
-						currentMode = MODE.HOVERING;
 					}
 					changeControlMode();
 				} catch (RPCException | StreamException ignored) {
 				}
-				Thread.sleep(50);
+				Thread.sleep(sleepTime);
 			}
 		} catch (InterruptedException | RPCException ignored) {
 			// disengageAfterException(Bundle.getString("status_liftoff_abort"));
@@ -103,7 +108,7 @@ public class LandingController extends Controller {
 				}
 				getNaveAtual().getControl().setBrakes(true);
 				changeControlMode();
-				Thread.sleep(100);
+				Thread.sleep(sleepTime);
 			}
 		} catch (RPCException | StreamException | InterruptedException e) {
 			setCurrentStatus(Bundle.getString("status_ready"));
@@ -112,7 +117,7 @@ public class LandingController extends Controller {
 
 	private void changeControlMode() throws RPCException, StreamException, InterruptedException {
 		adjustPIDbyTWR();
-		double velPID, altPID;
+		double velPID, altPID = 0;
 		// Change vessel behavior depending on which mode is active
 		switch (currentMode) {
 			case DEORBITING:
@@ -128,19 +133,22 @@ public class LandingController extends Controller {
 				}
 				break;
 			case APPROACHING:
-				altitudeCtrl.adjustOutput(0, 1);
-				velocityCtrl.adjustOutput(0, 1);
+				altitudeCtrl.reset();
+				velocityCtrl.reset();
+				altitudeCtrl.setOutput(0, 1);
+				velocityCtrl.setOutput(0, 1);
 				double currentVelocity = calculateCurrentVelocityMagnitude();
 				double zeroVelocity = calculateZeroVelocityMagnitude();
 				double landingDistanceThreshold = Math.max(hoverAltitude, getMaxAcel(maxTWR) * 3);
 				double threshold = Utilities.clamp(
 						((currentVelocity + zeroVelocity) - landingDistanceThreshold) / landingDistanceThreshold, 0,
 						1);
-				altPID = altitudeCtrl.calcPID(currentVelocity / zeroVelocity * HUNDRED_PERCENT, HUNDRED_PERCENT);
-				velPID = velocityCtrl.calcPID(velVertical.get(), -Utilities.clamp(altitudeSup.get() * 0.1, 1, 10));
+				altPID = altitudeCtrl.calculate(currentVelocity / sleepTime, zeroVelocity / sleepTime);
+				velPID = velocityCtrl.calculate(velVertical.get() / sleepTime,
+						(-Utilities.clamp(altitudeSup.get() * 0.1, 3, 20) / sleepTime));
 				throttle(Utilities.linearInterpolation(velPID, altPID, threshold));
 				navigation.aimForLanding();
-				if (threshold < 0.25 || altitudeSup.get() < landingDistanceThreshold) {
+				if (threshold < 0.15 || altitudeSup.get() < landingDistanceThreshold) {
 					hoverAltitude = landingDistanceThreshold;
 					getNaveAtual().getControl().setGear(true);
 					if (hoverAfterApproximation) {
@@ -153,31 +161,39 @@ public class LandingController extends Controller {
 				setCurrentStatus("Se aproximando do momento do pouso...");
 				break;
 			case GOING_UP:
-				altitudeCtrl.adjustOutput(-0.5, 0.5);
-				velocityCtrl.adjustOutput(-0.5, 0.5);
-				altPID = altitudeCtrl.calcPID(altitudeErrorPercentage, HUNDRED_PERCENT);
-				velPID = velocityCtrl.calcPID(velVertical.get(), MAX_VELOCITY);
+				altitudeCtrl.reset();
+				velocityCtrl.reset();
+				altitudeCtrl.setOutput(-0.5, 0.5);
+				velocityCtrl.setOutput(-0.5, 0.5);
+				altPID = altitudeCtrl.calculate(altitudeErrorPercentage, HUNDRED_PERCENT);
+				velPID = velocityCtrl.calculate(velVertical.get(), MAX_VELOCITY);
 				throttle(altPID + velPID);
 				navigation.aimAtRadialOut();
 				setCurrentStatus("Subindo altitude...");
 				break;
 			case GOING_DOWN:
+				altitudeCtrl.reset();
+				velocityCtrl.reset();
 				controlThrottleByMatchingVerticalVelocity(-MAX_VELOCITY);
 				navigation.aimAtRadialOut();
 				setCurrentStatus("Baixando altitude...");
 				break;
 			case LANDING:
+				altitudeCtrl.reset();
+				velocityCtrl.reset();
 				controlThrottleByMatchingVerticalVelocity(
-						velHorizontal.get() > 2 ? 0 : -Utilities.clamp(altitudeSup.get() * 0.1, 1, 10));
+						velHorizontal.get() > 4 ? 0 : -Utilities.clamp(altitudeSup.get() * 0.1, 1, 10));
 				navigation.aimForLanding();
 				setCurrentStatus("Pousando...");
 				hasTheVesselLanded();
 				break;
 			case HOVERING:
-				altitudeCtrl.adjustOutput(-0.5, 0.5);
-				velocityCtrl.adjustOutput(-0.5, 0.5);
-				altPID = altitudeCtrl.calcPID(altitudeErrorPercentage, HUNDRED_PERCENT);
-				velPID = velocityCtrl.calcPID(velVertical.get(), 0);
+				altitudeCtrl.reset();
+				velocityCtrl.reset();
+				altitudeCtrl.setOutput(-0.5, 0.5);
+				velocityCtrl.setOutput(-0.5, 0.5);
+				altPID = altitudeCtrl.calculate(altitudeErrorPercentage, HUNDRED_PERCENT);
+				velPID = velocityCtrl.calculate(velVertical.get(), 0);
 				throttle(altPID + velPID);
 				navigation.aimAtRadialOut();
 				setCurrentStatus("Sobrevoando area...");
@@ -187,8 +203,8 @@ public class LandingController extends Controller {
 
 	private void controlThrottleByMatchingVerticalVelocity(double velocityToMatch) throws RPCException,
 			StreamException {
-		velocityCtrl.adjustOutput(0, 1);
-		throttle(velocityCtrl.calcPID(velVertical.get(), velocityToMatch));
+		velocityCtrl.setOutput(0, 1);
+		throttle(velocityCtrl.calculate(velVertical.get(), velocityToMatch + velHorizontal.get()));
 	}
 
 	private void deOrbitShip() throws RPCException, StreamException, InterruptedException {
@@ -202,15 +218,15 @@ public class LandingController extends Controller {
 				navigation.aimForLanding();
 				setCurrentStatus(Bundle.getString("status_orienting_ship"));
 				ap.wait_();
-				Thread.sleep(100);
+				Thread.sleep(sleepTime);
 			}
 			double targetPeriapsis = currentBody.getAtmosphereDepth();
 			targetPeriapsis = targetPeriapsis > 0 ? targetPeriapsis / 2 : -currentBody.getEquatorialRadius() / 2;
 			while (periastro.get() > -apoastro.get()) {
 				navigation.aimForLanding();
-				throttle(altitudeCtrl.calcPID(targetPeriapsis, periastro.get()));
+				throttle(altitudeCtrl.calculate(targetPeriapsis, periastro.get()));
 				setCurrentStatus(Bundle.getString("status_lowering_periapsis"));
-				Thread.sleep(100);
+				Thread.sleep(sleepTime);
 			}
 			getNaveAtual().getControl().setRCS(false);
 			throttle(0.0f);
@@ -222,14 +238,11 @@ public class LandingController extends Controller {
 	 */
 	private void adjustPIDbyTWR() throws RPCException, StreamException {
 		double currentTWR = Math.min(getTWR(), maxTWR);
-		velocityCtrl.adjustPID(currentTWR * velP, velI, velD);
-		altitudeCtrl.adjustPID(currentTWR * velP, velI, velD);
-	}
-
-	private double calculateCurrentVelocityMagnitude() throws RPCException, StreamException {
-		double timeToGround = altitudeSup.get() / velVertical.get();
-		double horizontalDistance = velHorizontal.get() * timeToGround;
-		return calculateEllipticTrajectory(horizontalDistance, altitudeSup.get());
+		// double currentTWR = getMaxAcel(maxTWR);
+		double pGain = currentTWR / (sleepTime);
+		System.out.println(pGain);
+		altitudeCtrl.setPIDValues(pGain * 0.1, 0.0002, pGain * 0.1 * 2);
+		velocityCtrl.setPIDValues(pGain * 0.1, 0.1, 0.001);
 	}
 
 	private boolean hasTheVesselLanded() throws RPCException {
@@ -246,6 +259,12 @@ public class LandingController extends Controller {
 			return true;
 		}
 		return false;
+	}
+
+	private double calculateCurrentVelocityMagnitude() throws RPCException, StreamException {
+		double timeToGround = altitudeSup.get() / velVertical.get();
+		double horizontalDistance = velHorizontal.get() * timeToGround;
+		return calculateEllipticTrajectory(horizontalDistance, altitudeSup.get());
 	}
 
 	private double calculateZeroVelocityMagnitude() throws RPCException, StreamException {
