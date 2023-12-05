@@ -22,6 +22,7 @@ public class FunctionsAndTelemetryJPanel extends JPanel implements UIMethods {
 
 	private final Dimension btnFuncDimension = new Dimension(140, 25);
 	private JButton btnLiftoff, btnLanding, btnManeuvers, btnDocking, btnRover, btnCancel;
+
 	private static JLabel lblAltitude, lblSurfaceAlt, lblApoapsis, lblPeriapsis, lblVertSpeed, lblHorzSpeed;
 	private static JLabel lblAltitudeValue, lblSurfaceAltValue, lblApoapsisValue;
 	private static JLabel lblPeriapsisValue, lblVertSpeedValue, lblHorzSpeedValue;
@@ -100,6 +101,7 @@ public class FunctionsAndTelemetryJPanel extends JPanel implements UIMethods {
 		pnlFunctionControls.add(btnLanding);
 		pnlFunctionControls.add(btnRover);
 		pnlFunctionControls.add(btnDocking);
+
 		pnlFunctionControls.add(btnManeuvers);
 		pnlFunctionControls.add(Box.createVerticalGlue());
 
