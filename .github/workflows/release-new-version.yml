@@ -33,11 +33,19 @@ jobs:
     - name: Build MechPeste with Maven
       run: mvn -B package --file pom.xml
 
+    - name: Get Maven version
+      id: maven
+      run: echo "::set-output name=version::$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)"
+
+    - name: Create Tag
+      run: git tag -a v${{ steps.maven.outputs.version }} -m "Version ${{ steps.maven.outputs.version }}"
+      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+
+    - name: Push Tag
+      run: git push origin v${{ steps.maven.outputs.version }}
+      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+
     - name: Upload Release Artifact
       uses: softprops/action-gh-release@v0.1.15
       with:
         files: ./target/MechPeste-*.jar
-
-    - name: Get Maven version
-      id: maven
-      run: echo "::set-output name=version::$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)"
