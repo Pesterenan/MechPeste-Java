@@ -33,17 +33,14 @@ jobs:
     - name: Build MechPeste with Maven
       run: mvn -B package --file pom.xml
 
-    - name: Get Maven version
-      id: maven
-      run: echo "VERSION=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)" >> $GITHUB_ENV
-
-    - name: Create Tag
-      run: git tag -a v${{ env.VERSION }} -m "Version ${{ env.VERSION }}"
-      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-
-    - name: Push Tag
-      run: git push origin v${{ env.VERSION }}
-      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    - name: Create Tag and Push Tag
+      if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/master'
+      run: |
+        echo "VERSION=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)" >> $GITHUB_ENV
+        git config --global user.email "github-actions@github.com"
+        git config --global user.name "GitHub Actions"
+        git tag -a ${{ env.VERSION }} -m "Version ${{ env.VERSION }}"
+        git push origin ${{ env.VERSION }}
 
     - name: Upload Release Artifact
       uses: softprops/action-gh-release@v0.1.15
