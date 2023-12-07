@@ -1,4 +1,4 @@
-name: Java CI with Maven
+name: MechPeste CI workflow
 
 on:
   push:
@@ -28,6 +28,7 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
           cache: maven
+
       - name: Build MechPeste with Maven
         run: mvn -B package --file pom.xml
 
