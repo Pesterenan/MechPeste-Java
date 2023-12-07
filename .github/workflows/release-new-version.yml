@@ -34,12 +34,9 @@ jobs:
       run: mvn -B package --file pom.xml
 
     - name: Upload Release Artifact
-      uses: actions/upload-release-asset@v1
+      uses: softprops/action-gh-release@v0.1.15
       with:
-        upload_url: ${{ github.event.release.upload_url }}
-        asset_path: ./target/MechPeste-${{ steps.maven.outputs.version }}.jar
-        asset_name: MechPeste-${{ steps.maven.outputs.version }}.jar
-        asset_content_type: application/java-archive
+        files: ./target/MechPeste-*.jar
 
     - name: Get Maven version
       id: maven
