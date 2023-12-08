@@ -11,38 +11,43 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Check out the code
-      uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - name: Cache the Maven packages to speed up build
+        uses: actions/cache@v1
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2      
 
-    - name: Install KRPC as a Local Library
-      run: |
-        mvn install:install-file \
-        -Dfile=./src/main/resources/krpc-java-0.5.2.jar \
-        -DgroupId=io.github.krpc \
-        -DartifactId=krpc-java \
-        -Dversion=0.5.2 \
-        -Dpackaging=jar
+      - name: Install KRPC as a Local Library
+        run: |
+          mvn install:install-file \
+          -Dfile=./src/main/resources/krpc-java-0.5.2.jar \
+          -DgroupId=io.github.krpc \
+          -DartifactId=krpc-java \
+          -Dversion=0.5.2 \
+          -Dpackaging=jar
 
-    - name: Set up JDK 17
-      uses: actions/setup-java@v3
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-        cache: maven
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
 
-    - name: Build MechPeste with Maven
-      run: mvn -B package --file pom.xml
+      - name: Build MechPeste with Maven
+        run: mvn -B package --file pom.xml
 
-    - name: Create Tag and Push Tag
-      if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/master'
-      run: |
-        echo "VERSION=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)" >> $GITHUB_ENV
-        git config --global user.email "github-actions@github.com"
-        git config --global user.name "GitHub Actions"
-        git tag -a ${{ env.VERSION }} -m "Version ${{ env.VERSION }}"
-        git push origin ${{ env.VERSION }}
+      - name: Create Tag and Push Tag
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/dev'
+        run: |
+          echo "VERSION=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)" >> $GITHUB_ENV
+          git config --global user.email "github-actions@github.com"
+          git config --global user.name "GitHub Actions"
+          git tag -a ${{ env.VERSION }} -m "Version ${{ env.VERSION }}"
+          git push origin ${{ env.VERSION }}
 
-    - name: Upload Release Artifact
-      uses: softprops/action-gh-release@v0.1.15
-      with:
-        files: ./target/MechPeste-*.jar
+      - name: Upload Release Artifact
+        uses: softprops/action-gh-release@v0.1.15
+        with:
+          files: ./target/MechPeste-*.jar
