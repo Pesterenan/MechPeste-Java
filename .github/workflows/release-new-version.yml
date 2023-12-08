@@ -2,9 +2,8 @@ name: Release a new MechPeste version
 
 on:
   workflow_dispatch:
-  pull_request:
-    types:
-      - closed
+  push:
+    branches: ['master']
 
 jobs:
   release:
@@ -39,15 +38,15 @@ jobs:
         run: mvn -B package --file pom.xml
 
       - name: Set Version Environment Variable
-        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/dev'
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/master'
         run: echo "VERSION=v$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)" >> $GITHUB_ENV
 
       - name: Create Tag and Push Tag
-        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/dev'
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/master'
         run: |
           git config --global user.email "github-actions@github.com"
           git config --global user.name "GitHub Actions"
-          git tag -a ${{ env.VERSION }} -m "Version ${{ env.VERSION }}"
+          git tag -a ${{ env.VERSION }} -m "MechPeste - ${{ env.VERSION }}"
           git push origin ${{ env.VERSION }}
 
       - name: Upload Release Artifact
