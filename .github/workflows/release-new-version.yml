@@ -40,7 +40,7 @@ jobs:
 
       - name: Set Version Environment Variable
         if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/dev'
-        run: echo "VERSION=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)" >> $GITHUB_ENV
+        run: echo "VERSION=v$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)" >> $GITHUB_ENV
 
       - name: Create Tag and Push Tag
         if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/dev'
@@ -53,4 +53,5 @@ jobs:
       - name: Upload Release Artifact
         uses: softprops/action-gh-release@v0.1.15
         with:
+          tag_name: ${{ env.VERSION }}
           files: ./target/MechPeste-*.jar
