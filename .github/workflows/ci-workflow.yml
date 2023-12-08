@@ -13,6 +13,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      - name: Cache the Maven packages to speed up build
+        uses: actions/cache@v1
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2      
+
       - name: Install KRPC as a Local Library
         run: |
           mvn install:install-file \
