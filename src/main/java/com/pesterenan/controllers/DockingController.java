@@ -5,9 +5,11 @@ import static com.pesterenan.MechPeste.getSpaceCenter;
 
 import java.util.Map;
 
+import com.pesterenan.resources.Bundle;
 import com.pesterenan.utils.Modulos;
 import com.pesterenan.utils.Utilities;
 import com.pesterenan.utils.Vector;
+import com.pesterenan.views.DockingJPanel;
 import com.pesterenan.views.StatusJPanel;
 
 import krpc.client.RPCException;
@@ -27,7 +29,6 @@ public class DockingController extends Controller {
 
 	private ReferenceFrame orbitalRefVessel;
 	private ReferenceFrame vesselRefFrame;
-	private ReferenceFrame orbitalRefBody;
 	private Line distanceLine;
 	private Line distLineXAxis;
 	private Line distLineYAxis;
@@ -37,8 +38,8 @@ public class DockingController extends Controller {
 	private Vector positionMyDockingPort;
 	private Vector positionTargetDockingPort;
 
-	private final double DISTANCE_LIMIT = 25.0;
-	private double SPEED_LIMIT = 3.0;
+	private double DOCKING_MAX_SPEED = 3.0;
+	private double SAFE_DISTANCE = 25.0;
 	private double currentXAxisSpeed = 0.0;
 	private double currentYAxisSpeed = 0.0;
 	private double currentZAxisSpeed = 0.0;
@@ -56,16 +57,17 @@ public class DockingController extends Controller {
 
 	private void initializeParameters() {
 		try {
-			SPEED_LIMIT = Double.parseDouble(commands.get(Modulos.VELOCIDADE_MAX.get()));
+			DOCKING_MAX_SPEED = Double.parseDouble(commands.get(Modulos.VELOCIDADE_MAX.get()));
+			SAFE_DISTANCE = Double.parseDouble(commands.get(Modulos.DISTANCIA_SEGURA.get()));
 			drawing = Drawing.newInstance(getConnection());
 			targetVessel = getSpaceCenter().getTargetVessel();
 			control = getNaveAtual().getControl();
 			vesselRefFrame = getNaveAtual().getReferenceFrame();
 			orbitalRefVessel = getNaveAtual().getOrbitalReferenceFrame();
-			orbitalRefBody = getNaveAtual().getOrbit().getBody().getReferenceFrame();
 
 			myDockingPort = getNaveAtual().getParts().getDockingPorts().get(0);
 			targetDockingPort = targetVessel.getParts().getDockingPorts().get(0);
+			dockingStep = DOCKING_STEPS.STOP_RELATIVE_SPEED;
 
 			positionMyDockingPort = new Vector(myDockingPort.position(orbitalRefVessel));
 			positionTargetDockingPort = new Vector(targetDockingPort.position(orbitalRefVessel));
@@ -103,12 +105,12 @@ public class DockingController extends Controller {
 		lastYTargetPos = targetPosition.y;
 		lastZTargetPos = targetPosition.z;
 
-		while (Math.abs(lastYTargetPos) >= DISTANCE_LIMIT) {
+		while (Math.abs(lastYTargetPos) >= SAFE_DISTANCE) {
 			if (Thread.interrupted()) {
 				throw new InterruptedException();
 			}
 			targetPosition = new Vector(targetVessel.position(vesselRefFrame));
-			controlShipRCS(targetPosition, DISTANCE_LIMIT);
+			controlShipRCS(targetPosition, SAFE_DISTANCE);
 			Thread.sleep(sleepTime);
 		}
 
@@ -124,7 +126,7 @@ public class DockingController extends Controller {
 
 			// PRIMEIRA PARTE DO DOCKING: APROXIMAÇÃO
 			Vector targetPosition = new Vector(targetVessel.position(vesselRefFrame));
-			if (targetPosition.magnitude() > DISTANCE_LIMIT) {
+			if (targetPosition.magnitude() > SAFE_DISTANCE) {
 				// Apontar para o alvo:
 				Vector targetDirection = new Vector(getNaveAtual().position(orbitalRefVessel))
 						.subtract(new Vector(targetVessel.position(orbitalRefVessel))).multiply(-1);
@@ -159,7 +161,7 @@ public class DockingController extends Controller {
 				Thread.sleep(sleepTime);
 			}
 		} catch (RPCException | InterruptedException | IllegalArgumentException e) {
-			StatusJPanel.setStatusMessage("Docking aborted.");
+			StatusJPanel.setStatusMessage("Docking interrupted.");
 		}
 	}
 
@@ -176,22 +178,7 @@ public class DockingController extends Controller {
 	 */
 
 	private enum DOCKING_STEPS {
-		APPROACH, LINE_UP_WITH_TARGET, GO_IN_FRONT_OF_TARGET
-	}
-
-	private DOCKING_STEPS checkDockingStep(Vector targetPosition, double forwardsDistanceLimit) {
-		double sidewaysDistance = Math.abs(targetPosition.x);
-		double upwardsDistance = Math.abs(targetPosition.z);
-		boolean isInFrontOfTarget = Math.signum(targetPosition.y) == 1;
-		boolean isOnTheBackOfTarget = Math.signum(targetPosition.y) == -1 && targetPosition.y < forwardsDistanceLimit;
-
-		if (isOnTheBackOfTarget) {
-			return DOCKING_STEPS.GO_IN_FRONT_OF_TARGET;
-		}
-		if (isInFrontOfTarget && (sidewaysDistance > 5 || upwardsDistance > 5)) {
-			return DOCKING_STEPS.LINE_UP_WITH_TARGET;
-		}
-		return DOCKING_STEPS.APPROACH;
+		APPROACH, STOP_RELATIVE_SPEED, LINE_UP_WITH_TARGET, GO_IN_FRONT_OF_TARGET
 	}
 
 	private void controlShipRCS(Vector targetPosition, double forwardsDistanceLimit) {
@@ -205,36 +192,61 @@ public class DockingController extends Controller {
 			currentYAxisSpeed = (targetPosition.y - lastYTargetPos) * sleepTime;
 			currentZAxisSpeed = (targetPosition.z - lastZTargetPos) * sleepTime;
 
-			dockingStep = checkDockingStep(targetPosition, forwardsDistanceLimit);
+			double sidewaysDistance = Math.abs(targetPosition.x);
+			double upwardsDistance = Math.abs(targetPosition.z);
+			boolean isInFrontOfTarget = Math.signum(targetPosition.y) == 1;
+			boolean isOnTheBackOfTarget = Math.signum(targetPosition.y) == -1 && targetPosition.y < forwardsDistanceLimit;
 			float forwardsError, upwardsError, sidewaysError = 0;
+
 			switch (dockingStep) {
 				case APPROACH:
 					// Calcular a aceleração para cada eixo no RCS:
 					forwardsError = calculateThrottle(forwardsDistanceLimit, forwardsDistanceLimit * 3, currentYAxisSpeed,
-							targetPosition.y, SPEED_LIMIT);
-					sidewaysError = calculateThrottle(0, 5, currentXAxisSpeed, targetPosition.x, SPEED_LIMIT);
-					upwardsError = calculateThrottle(0, 5, currentZAxisSpeed, targetPosition.z, SPEED_LIMIT);
+							targetPosition.y, DOCKING_MAX_SPEED);
+					sidewaysError = calculateThrottle(0, 5, currentXAxisSpeed, targetPosition.x, DOCKING_MAX_SPEED);
+					upwardsError = calculateThrottle(0, 5, currentZAxisSpeed, targetPosition.z, DOCKING_MAX_SPEED);
 					control.setForward(forwardsError);
 					control.setRight(sidewaysError);
 					control.setUp(-upwardsError);
+					DockingJPanel.setDockingStep(Bundle.getString("pnl_docking_step_approach"));
 					break;
 				case LINE_UP_WITH_TARGET:
 					forwardsError = calculateThrottle(forwardsDistanceLimit, forwardsDistanceLimit * 3, currentYAxisSpeed,
 							targetPosition.y, 0);
-					sidewaysError = calculateThrottle(0, 10, currentXAxisSpeed, targetPosition.x, SPEED_LIMIT);
-					upwardsError = calculateThrottle(0, 10, currentZAxisSpeed, targetPosition.z, SPEED_LIMIT);
+					sidewaysError = calculateThrottle(0, 10, currentXAxisSpeed, targetPosition.x, DOCKING_MAX_SPEED);
+					upwardsError = calculateThrottle(0, 10, currentZAxisSpeed, targetPosition.z, DOCKING_MAX_SPEED);
 					control.setForward(forwardsError);
 					control.setRight(sidewaysError);
 					control.setUp(-upwardsError);
+					DockingJPanel.setDockingStep(Bundle.getString("pnl_docking_step_line_up_with_target"));
 					break;
 				case GO_IN_FRONT_OF_TARGET:
 					forwardsError = calculateThrottle(-20, -10, currentYAxisSpeed,
-							targetPosition.y, SPEED_LIMIT);
+							targetPosition.y, DOCKING_MAX_SPEED);
 					sidewaysError = calculateThrottle(0, 5, currentXAxisSpeed, targetPosition.x, 0);
 					upwardsError = calculateThrottle(0, 5, currentZAxisSpeed, targetPosition.z, 0);
 					control.setForward(forwardsError);
 					control.setRight(sidewaysError);
 					control.setUp(-upwardsError);
+					if (isInFrontOfTarget) {
+						dockingStep = DOCKING_STEPS.STOP_RELATIVE_SPEED;
+						break;
+					}
+					DockingJPanel.setDockingStep(Bundle.getString("pnl_docking_step_go_in_front_of_target"));
+					break;
+				case STOP_RELATIVE_SPEED:
+					forwardsError = calculateThrottle(0, 5, currentYAxisSpeed, targetPosition.y, 0);
+					sidewaysError = calculateThrottle(0, 5, currentXAxisSpeed, targetPosition.x, 0);
+					upwardsError = calculateThrottle(0, 5, currentZAxisSpeed, targetPosition.z, 0);
+					control.setForward(forwardsError);
+					control.setRight(sidewaysError);
+					control.setUp(-upwardsError);
+					if ((Math.abs(currentXAxisSpeed) < 1) && (Math.abs(currentYAxisSpeed) < 1)
+							&& (Math.abs(currentZAxisSpeed) < 1)) {
+						dockingStep = DOCKING_STEPS.APPROACH;
+						break;
+					}
+					DockingJPanel.setDockingStep(Bundle.getString("pnl_docking_step_stop_relative_speed"));
 					break;
 			}
 			System.out.println(dockingStep);
