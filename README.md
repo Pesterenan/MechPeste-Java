@@ -11,7 +11,7 @@ manobras, e pilotar rovers.
 ---
 É necessário ter o [Java](https://java.com/pt-BR/) instalado para utilizar o "MechPeste.jar".
 Uma versão mais atualizada do
-mod [KRPC](https://github.com/krpc/krpc/releases/download/v0.5.2/krpc-0.5.2.zip)
+mod [KRPC](https://github.com/krpc/krpc)
 pode ser instalada diretamente do aplicativo MechPeste pelo menu Arquivo > Instalar KRPC.
 
 ## **Como instalar:**
@@ -78,14 +78,14 @@ mover para o alvo, desviando dos obstáculos à frente.
 
 Agora o MechPeste tem como base o gerenciador de dependências Maven. Para poder instalar a biblioteca
 do KRPC no entanto, como não está disponível no repositório público do Maven, é necessário fazer o download
-e instalar a biblioteca KRPC em sua versão 0.5.2 com o seguinte comando:
+e instalar a biblioteca KRPC em sua versão 0.5.4 com o seguinte comando:
 
 ``` bash
 mvn install:install-file \
-    -Dfile=<CAMINHO_DO_DOWNLOAD>\krpc-java-0.5.2.jar \
+    -Dfile=<CAMINHO_DO_DOWNLOAD>\krpc-java-0.5.4.jar \
     -DgroupId=io.github.krpc \
     -DartifactId=krpc-java \
-    -Dversion=0.5.2 \
+    -Dversion=0.5.4 \
     -Dpackaging=jar \
 ```
 Substitua `<CAMINHO_DO_DOWNLOAD>` pela pasta onde está o arquivo do KRPC. Isso instalará essa biblioteca 
