@@ -19,8 +19,10 @@ public class DockingJPanel extends JPanel implements UIMethods {
 
 	private static final long serialVersionUID = 0L;
 
-	private JLabel lblMaxSpeed;
-	private JTextField txfMaxSpeed;
+	private JLabel lblMaxSpeed, lblSafeDistance, lblCurrentDockingStepText;
+	private static JLabel lblDockingStep;
+
+	private JTextField txfMaxSpeed, txfSafeDistance;
 	private JButton btnBack, btnStartDocking;
 
 	public DockingJPanel() {
@@ -32,10 +34,13 @@ public class DockingJPanel extends JPanel implements UIMethods {
 	@Override
 	public void initComponents() {
 		// Labels:
-		lblMaxSpeed = new JLabel(Bundle.getString("pnl_rover_lbl_max_speed"));
-
+		lblMaxSpeed = new JLabel(Bundle.getString("pnl_docking_max_speed"));
+		lblSafeDistance = new JLabel(Bundle.getString("pnl_docking_safe_distance"));
+		lblDockingStep = new JLabel(Bundle.getString("pnl_docking_step_ready"));
+		lblCurrentDockingStepText = new JLabel(Bundle.getString("pnl_docking_current_step"));
 		// Textfields:
 		txfMaxSpeed = new JTextField("3");
+		txfSafeDistance = new JTextField("50");
 
 		// Buttons:
 		btnBack = new JButton(Bundle.getString("pnl_rover_btn_back"));
@@ -51,6 +56,9 @@ public class DockingJPanel extends JPanel implements UIMethods {
 		txfMaxSpeed.setHorizontalAlignment(SwingConstants.RIGHT);
 		txfMaxSpeed.setMaximumSize(BTN_DIMENSION);
 		txfMaxSpeed.setPreferredSize(BTN_DIMENSION);
+		txfSafeDistance.setHorizontalAlignment(SwingConstants.RIGHT);
+		txfSafeDistance.setMaximumSize(BTN_DIMENSION);
+		txfSafeDistance.setPreferredSize(BTN_DIMENSION);
 
 		btnBack.addActionListener(MainGui::backToTelemetry);
 		btnBack.setMaximumSize(BTN_DIMENSION);
@@ -74,12 +82,27 @@ public class DockingJPanel extends JPanel implements UIMethods {
 		pnlMaxSpeed.add(Box.createHorizontalGlue());
 		pnlMaxSpeed.add(txfMaxSpeed);
 
-		JPanel pnlRoverControls = new JPanel();
-		pnlRoverControls.setLayout(new BoxLayout(pnlRoverControls, BoxLayout.Y_AXIS));
-		pnlRoverControls.setBorder(MARGIN_BORDER_10_PX_LR);
-		pnlRoverControls.add(MainGui.createMarginComponent(0, 6));
-		pnlRoverControls.add(pnlMaxSpeed);
-		pnlRoverControls.add(Box.createVerticalGlue());
+		JPanel pnlSafeDistance = new JPanel();
+		pnlSafeDistance.setLayout(new BoxLayout(pnlSafeDistance, BoxLayout.X_AXIS));
+		pnlSafeDistance.add(lblSafeDistance);
+		pnlSafeDistance.add(Box.createHorizontalGlue());
+		pnlSafeDistance.add(txfSafeDistance);
+
+		JPanel pnlDockingStep = new JPanel();
+		pnlDockingStep.setLayout(new BoxLayout(pnlDockingStep, BoxLayout.X_AXIS));
+		pnlDockingStep.add(lblCurrentDockingStepText);
+		pnlDockingStep.add(Box.createHorizontalGlue());
+		pnlDockingStep.add(lblDockingStep);
+
+		JPanel pnlDockingControls = new JPanel();
+		pnlDockingControls.setLayout(new BoxLayout(pnlDockingControls, BoxLayout.Y_AXIS));
+		pnlDockingControls.setBorder(MARGIN_BORDER_10_PX_LR);
+		pnlDockingControls.add(MainGui.createMarginComponent(0, 6));
+		pnlDockingControls.add(pnlMaxSpeed);
+		pnlDockingControls.add(pnlSafeDistance);
+		pnlDockingControls.add(Box.createVerticalGlue());
+		pnlDockingControls.add(pnlDockingStep);
+		pnlDockingControls.add(Box.createVerticalGlue());
 
 		JPanel pnlButtons = new JPanel();
 		pnlButtons.setLayout(new BoxLayout(pnlButtons, BoxLayout.X_AXIS));
@@ -89,29 +112,40 @@ public class DockingJPanel extends JPanel implements UIMethods {
 
 		JPanel pnlMain = new JPanel();
 		pnlMain.setLayout(new BoxLayout(pnlMain, BoxLayout.X_AXIS));
-		pnlRoverControls.setAlignmentY(TOP_ALIGNMENT);
-		pnlMain.add(pnlRoverControls);
+		pnlDockingControls.setAlignmentY(TOP_ALIGNMENT);
+		pnlMain.add(pnlDockingControls);
 
 		setLayout(new BorderLayout());
 		add(pnlMain, BorderLayout.CENTER);
 		add(pnlButtons, BorderLayout.SOUTH);
 	}
 
+	public static void setDockingStep(String step) {
+		lblDockingStep.setText(step);
+	}
+
 	private void handleStartDocking(ActionEvent e) {
-		System.out.println("chamou startdocking");
-		Map<String, String> commands = new HashMap<>();
-		commands.put(Modulos.MODULO.get(), Modulos.MODULO_DOCKING.get());
-		commands.put(Modulos.VELOCIDADE_MAX.get(), txfMaxSpeed.getText());
-		MechPeste.newInstance().startModule(commands);
+		if (validateTextFields()) {
+			Map<String, String> commands = new HashMap<>();
+			commands.put(Modulos.MODULO.get(), Modulos.MODULO_DOCKING.get());
+			commands.put(Modulos.DISTANCIA_SEGURA.get(), txfSafeDistance.getText());
+			commands.put(Modulos.VELOCIDADE_MAX.get(), txfMaxSpeed.getText());
+			MechPeste.newInstance().startModule(commands);
+		}
 	}
 
 	private boolean validateTextFields() {
 		try {
 			if (Float.parseFloat(txfMaxSpeed.getText()) > 10) {
-				throw new NumberFormatException();
+				StatusJPanel.setStatusMessage("Velocidade de acoplagem muito alta. Tem que ser menor que 10m/s.");
+				return false;
+			}
+			if (Float.parseFloat(txfSafeDistance.getText()) > 200) {
+				StatusJPanel.setStatusMessage("Distância segura muito alta. Tem que ser menor que 200m.");
+				return false;
 			}
 		} catch (NumberFormatException e) {
-			StatusJPanel.setStatusMessage(Bundle.getString("pnl_rover_max_speed_above_3"));
+			StatusJPanel.setStatusMessage(Bundle.getString("pnl_lift_stat_only_numbers"));
 			return false;
 		} catch (IllegalArgumentException e) {
 			StatusJPanel.setStatusMessage(Bundle.getString("pnl_rover_waypoint_name_not_empty"));
