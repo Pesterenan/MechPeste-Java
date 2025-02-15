@@ -16,7 +16,7 @@ import java.util.zip.ZipInputStream;
 
 public class KrpcInstaller {
     static final int BUFFER = 2048;
-    private static final String KRPC_GITHUB_LINK = "https://github.com/krpc/krpc/releases/download/v0.5.2/krpc-0.5.2.zip";
+    private static final String KRPC_GITHUB_LINK = "https://github.com/krpc/krpc/releases/download/v0.5.4/krpc-0.5.4.zip";
     private static String KSP_FOLDER = null;
 
     public static String getKspFolder() {
@@ -39,13 +39,11 @@ public class KrpcInstaller {
     public static void downloadKrpc() {
         URL krpcLink;
         try {
-
             krpcLink = new URL(KRPC_GITHUB_LINK);
             ReadableByteChannel readableByteChannel = Channels.newChannel(krpcLink.openStream());
-            FileOutputStream fos = new FileOutputStream(KSP_FOLDER + "\\krpc-0.5.2.zip");
+            FileOutputStream fos = new FileOutputStream(KSP_FOLDER + "\\krpc-0.5.4.zip");
             fos.getChannel().transferFrom(readableByteChannel, 0, Long.MAX_VALUE);
             fos.close();
-
         } catch (IOException e) {
             InstallKrpcDialog.setStatus("Não foi possível fazer o download do KRPC");
         }
@@ -59,7 +57,7 @@ public class KrpcInstaller {
             }
             BufferedOutputStream dest;
             // zipped input
-            FileInputStream fis = new FileInputStream(KSP_FOLDER + "\\krpc-0.5.2.zip");
+            FileInputStream fis = new FileInputStream(KSP_FOLDER + "\\krpc-0.5.4.zip");
             ZipInputStream zis = new ZipInputStream(new BufferedInputStream(fis));
             ZipEntry entry;
             while ((entry = zis.getNextEntry()) != null) {
@@ -89,5 +87,4 @@ public class KrpcInstaller {
             InstallKrpcDialog.setStatus("Não foi possível fazer instalar o KRPC");
         }
     }
-
 }

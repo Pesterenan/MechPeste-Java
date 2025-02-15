@@ -23,10 +23,10 @@ jobs:
       - name: Install KRPC as a Local Library
         run: |
           mvn install:install-file \
-          -Dfile=./src/main/resources/krpc-java-0.5.2.jar \
+          -Dfile=./src/main/resources/krpc-java-0.5.4.jar \
           -DgroupId=io.github.krpc \
           -DartifactId=krpc-java \
-          -Dversion=0.5.2 \
+          -Dversion=0.5.4 \
           -Dpackaging=jar
 
       - name: Set up JDK 17
