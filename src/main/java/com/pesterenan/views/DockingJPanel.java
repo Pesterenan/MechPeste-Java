@@ -2,7 +2,7 @@ package com.pesterenan.views;
 
 import com.pesterenan.MechPeste;
 import com.pesterenan.resources.Bundle;
-import com.pesterenan.utils.Modulos;
+import com.pesterenan.utils.Module;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
@@ -127,9 +127,9 @@ public class DockingJPanel extends JPanel implements UIMethods {
 	private void handleStartDocking(ActionEvent e) {
 		if (validateTextFields()) {
 			Map<String, String> commands = new HashMap<>();
-			commands.put(Modulos.MODULO.get(), Modulos.MODULO_DOCKING.get());
-			commands.put(Modulos.DISTANCIA_SEGURA.get(), txfSafeDistance.getText());
-			commands.put(Modulos.VELOCIDADE_MAX.get(), txfMaxSpeed.getText());
+			commands.put(Module.MODULO.get(), Module.DOCKING.get());
+			commands.put(Module.SAFE_DISTANCE.get(), txfSafeDistance.getText());
+			commands.put(Module.MAX_SPEED.get(), txfMaxSpeed.getText());
 			MechPeste.newInstance().startModule(commands);
 		}
 	}

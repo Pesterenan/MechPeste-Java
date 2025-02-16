@@ -2,7 +2,7 @@ package com.pesterenan.views;
 
 import com.pesterenan.MechPeste;
 import com.pesterenan.resources.Bundle;
-import com.pesterenan.utils.Modulos;
+import com.pesterenan.utils.Module;
 import com.pesterenan.utils.Telemetry;
 import com.pesterenan.utils.Utilities;
 
@@ -69,23 +69,23 @@ public class FunctionsAndTelemetryJPanel extends JPanel implements UIMethods {
 		btnCancel.setMaximumSize(btnFuncDimension);
 		btnCancel.setPreferredSize(btnFuncDimension);
 		btnLanding.addActionListener(this::changeFunctionPanel);
-		btnLanding.setActionCommand(Modulos.MODULO_POUSO.get());
+		btnLanding.setActionCommand(Module.LANDING.get());
 		btnLanding.setMaximumSize(btnFuncDimension);
 		btnLanding.setPreferredSize(btnFuncDimension);
 		btnLiftoff.addActionListener(this::changeFunctionPanel);
-		btnLiftoff.setActionCommand(Modulos.MODULO_DECOLAGEM.get());
+		btnLiftoff.setActionCommand(Module.LIFTOFF.get());
 		btnLiftoff.setMaximumSize(btnFuncDimension);
 		btnLiftoff.setPreferredSize(btnFuncDimension);
 		btnManeuvers.addActionListener(this::changeFunctionPanel);
-		btnManeuvers.setActionCommand(Modulos.MODULE_MANEUVER.get());
+		btnManeuvers.setActionCommand(Module.MANEUVER.get());
 		btnManeuvers.setMaximumSize(btnFuncDimension);
 		btnManeuvers.setPreferredSize(btnFuncDimension);
 		btnRover.addActionListener(this::changeFunctionPanel);
-		btnRover.setActionCommand(Modulos.MODULO_ROVER.get());
+		btnRover.setActionCommand(Module.ROVER.get());
 		btnRover.setMaximumSize(btnFuncDimension);
 		btnRover.setPreferredSize(btnFuncDimension);
 		btnDocking.addActionListener(this::changeFunctionPanel);
-		btnDocking.setActionCommand(Modulos.MODULO_DOCKING.get());
+		btnDocking.setActionCommand(Module.DOCKING.get());
 		btnDocking.setMaximumSize(btnFuncDimension);
 		btnDocking.setPreferredSize(btnFuncDimension);
 	}

@@ -2,7 +2,7 @@ package com.pesterenan.views;
 
 import com.pesterenan.MechPeste;
 import com.pesterenan.resources.Bundle;
-import com.pesterenan.utils.Modulos;
+import com.pesterenan.utils.Module;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
@@ -86,8 +86,8 @@ public class LiftoffJPanel extends JPanel implements UIMethods {
 		txfLimitTWR.setHorizontalAlignment(JTextField.RIGHT);
 
 		cbGravityCurveModel.setModel(new DefaultComboBoxModel<>(
-				new String[] { Modulos.SINUSOIDAL.get(), Modulos.QUADRATICA.get(), Modulos.CUBICA.get(),
-						Modulos.CIRCULAR.get(), Modulos.EXPONENCIAL.get() }));
+				new String[] { Module.SINUSOIDAL.get(), Module.QUADRATIC.get(), Module.CUBIC.get(),
+						Module.CIRCULAR.get(), Module.EXPONENCIAL.get() }));
 		cbGravityCurveModel.setSelectedIndex(3);
 		cbGravityCurveModel.setPreferredSize(BTN_DIMENSION);
 		cbGravityCurveModel.setMaximumSize(BTN_DIMENSION);
@@ -200,14 +200,14 @@ public class LiftoffJPanel extends JPanel implements UIMethods {
 	private void handleLiftoff(ActionEvent e) {
 		if (validateTextFields()) {
 			Map<String, String> commands = new HashMap<>();
-			commands.put(Modulos.MODULO.get(), Modulos.MODULO_DECOLAGEM.get());
-			commands.put(Modulos.APOASTRO.get(), txfFinalApoapsis.getText());
-			commands.put(Modulos.DIRECAO.get(), txfHeading.getText());
-			commands.put(Modulos.MAX_TWR.get(), txfLimitTWR.getText());
-			commands.put(Modulos.ROLAGEM.get(), String.valueOf(sldRoll.getValue()));
-			commands.put(Modulos.INCLINACAO.get(), cbGravityCurveModel.getSelectedItem().toString());
-			commands.put(Modulos.USAR_ESTAGIOS.get(), String.valueOf(chkDecoupleStages.isSelected()));
-			commands.put(Modulos.ABRIR_PAINEIS.get(), String.valueOf(chkOpenPanels.isSelected()));
+			commands.put(Module.MODULO.get(), Module.LIFTOFF.get());
+			commands.put(Module.APOAPSIS.get(), txfFinalApoapsis.getText());
+			commands.put(Module.DIRECTION.get(), txfHeading.getText());
+			commands.put(Module.MAX_TWR.get(), txfLimitTWR.getText());
+			commands.put(Module.ROLL.get(), String.valueOf(sldRoll.getValue()));
+			commands.put(Module.INCLINATION.get(), cbGravityCurveModel.getSelectedItem().toString());
+			commands.put(Module.STAGE.get(), String.valueOf(chkDecoupleStages.isSelected()));
+			commands.put(Module.OPEN_PANELS.get(), String.valueOf(chkOpenPanels.isSelected()));
 			MechPeste.newInstance().startModule(commands);
 			MainGui.backToTelemetry(e);
 		}
