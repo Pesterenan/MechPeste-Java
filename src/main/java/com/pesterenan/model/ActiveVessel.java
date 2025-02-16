@@ -37,7 +37,7 @@ public class ActiveVessel {
 	protected Stream<Float> massaTotal;
 	public ReferenceFrame surfaceReferenceFrame;
 	public float bateriaTotal;
-	public float gravityAcel;
+	public double gravityAcel;
 	public CelestialBody currentBody;
 	public Stream<Double> altitude;
 	public Stream<Double> altitudeSup;
