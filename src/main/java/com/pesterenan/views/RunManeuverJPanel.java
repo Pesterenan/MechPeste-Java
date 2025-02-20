@@ -3,7 +3,7 @@ package com.pesterenan.views;
 import com.pesterenan.MechPeste;
 import com.pesterenan.resources.Bundle;
 import com.pesterenan.utils.ControlePID;
-import com.pesterenan.utils.Modulos;
+import com.pesterenan.utils.Module;
 
 import krpc.client.RPCException;
 import krpc.client.services.SpaceCenter.Node;
@@ -208,22 +208,22 @@ public class RunManeuverJPanel extends JPanel implements ActionListener, UIMetho
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		if (e.getSource() == btnExecute) {
-			handleManeuverFunction(Modulos.EXECUTAR.get());
+			handleManeuverFunction(Module.EXECUTE.get());
 		}
 		if (e.getSource() == btnLowerOrbit) {
-			handleManeuverFunction(Modulos.ORBITA_BAIXA.get());
+			handleManeuverFunction(Module.LOW_ORBIT.get());
 		}
 		if (e.getSource() == btnApoapsis) {
-			handleManeuverFunction(Modulos.APOASTRO.get());
+			handleManeuverFunction(Module.APOAPSIS.get());
 		}
 		if (e.getSource() == btnPeriapsis) {
-			handleManeuverFunction(Modulos.PERIASTRO.get());
+			handleManeuverFunction(Module.PERIAPSIS.get());
 		}
 		if (e.getSource() == btnAlignPlanes) {
-			handleManeuverFunction(Modulos.AJUSTAR.get());
+			handleManeuverFunction(Module.ADJUST.get());
 		}
 		if (e.getSource() == btnRendezvous) {
-			handleManeuverFunction(Modulos.RENDEZVOUS.get());
+			handleManeuverFunction(Module.RENDEZVOUS.get());
 		}
 		if (e.getSource() == btnBack) {
 			MainGui.backToTelemetry(e);
@@ -232,9 +232,9 @@ public class RunManeuverJPanel extends JPanel implements ActionListener, UIMetho
 
 	protected void handleManeuverFunction(String maneuverFunction) {
 		Map<String, String> commands = new HashMap<>();
-		commands.put(Modulos.MODULO.get(), Modulos.MODULE_MANEUVER.get());
-		commands.put(Modulos.FUNCAO.get(), maneuverFunction.toString());
-		commands.put(Modulos.AJUSTE_FINO.get(), String.valueOf(chkFineAdjusment.isSelected()));
+		commands.put(Module.MODULO.get(), Module.MANEUVER.get());
+		commands.put(Module.FUNCTION.get(), maneuverFunction.toString());
+		commands.put(Module.FINE_ADJUST.get(), String.valueOf(chkFineAdjusment.isSelected()));
 		MechPeste.newInstance().startModule(commands);
 	}
 }

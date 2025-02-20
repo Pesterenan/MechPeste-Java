@@ -61,8 +61,8 @@ public class MechPeste {
 			vessels = vessels.stream().filter(v -> filterVessels(v, search)).collect(Collectors.toList());
 			vessels.forEach(v -> {
 				try {
-					String naveStr = v.hashCode() + " - \t" + v.getName();
-					list.addElement(naveStr);
+					String vesselName = v.hashCode() + " - \t" + v.getName();
+					list.addElement(vesselName);
 				} catch (RPCException ignored) {
 				}
 			});
@@ -91,13 +91,13 @@ public class MechPeste {
 
 	public static String getVesselInfo(int selectedIndex) {
 		try {
-			Vessel naveAtual = spaceCenter.getVessels().stream().filter(v -> v.hashCode() == selectedIndex).findFirst()
+			Vessel activeVessel = spaceCenter.getVessels().stream().filter(v -> v.hashCode() == selectedIndex).findFirst()
 					.get();
-			String name = naveAtual.getName().length() > 40
-					? naveAtual.getName().substring(0, 40) + "..."
-					: naveAtual.getName();
+			String name = activeVessel.getName().length() > 40
+					? activeVessel.getName().substring(0, 40) + "..."
+					: activeVessel.getName();
 			String vesselInfo = String.format("Nome: %s\t\t\t | Corpo: %s", name,
-					naveAtual.getOrbit().getBody().getName());
+					activeVessel.getOrbit().getBody().getName());
 			return vesselInfo;
 		} catch (RPCException | NullPointerException ignored) {
 		}
@@ -106,9 +106,9 @@ public class MechPeste {
 
 	public static void changeToVessel(int selectedIndex) {
 		try {
-			Vessel naveAtual = spaceCenter.getVessels().stream().filter(v -> v.hashCode() == selectedIndex).findFirst()
+			Vessel activeVessel = spaceCenter.getVessels().stream().filter(v -> v.hashCode() == selectedIndex).findFirst()
 					.get();
-			spaceCenter.setActiveVessel(naveAtual);
+			spaceCenter.setActiveVessel(activeVessel);
 		} catch (RPCException | NullPointerException e) {
 			System.out.println(Bundle.getString("status_couldnt_switch_vessel"));
 		}

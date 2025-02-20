@@ -2,7 +2,7 @@ package com.pesterenan.views;
 
 import com.pesterenan.MechPeste;
 import com.pesterenan.resources.Bundle;
-import com.pesterenan.utils.Modulos;
+import com.pesterenan.utils.Module;
 
 import javax.swing.*;
 import javax.swing.border.EtchedBorder;
@@ -66,9 +66,9 @@ public class RoverJPanel extends JPanel implements UIMethods {
 		txfMaxSpeed.setPreferredSize(BTN_DIMENSION);
 
 		rbTargetVessel.setSelected(true);
-		rbTargetVessel.setActionCommand(Modulos.NAVE_ALVO.get());
+		rbTargetVessel.setActionCommand(Module.TARGET_VESSEL.get());
 		rbTargetVessel.addActionListener(this::handleTargetSelection);
-		rbWaypointOnMap.setActionCommand(Modulos.MARCADOR_MAPA.get());
+		rbWaypointOnMap.setActionCommand(Module.MAP_MARKER.get());
 		rbWaypointOnMap.addActionListener(this::handleTargetSelection);
 
 		bgTargetChoice = new ButtonGroup();
@@ -144,10 +144,10 @@ public class RoverJPanel extends JPanel implements UIMethods {
 	private void handleDriveTo(ActionEvent e) {
 		if (validateTextFields()) {
 			Map<String, String> commands = new HashMap<>();
-			commands.put(Modulos.MODULO.get(), Modulos.MODULO_ROVER.get());
-			commands.put(Modulos.TIPO_ALVO_ROVER.get(), bgTargetChoice.getSelection().getActionCommand());
-			commands.put(Modulos.NOME_MARCADOR.get(), txfWaypointName.getText());
-			commands.put(Modulos.VELOCIDADE_MAX.get(), txfMaxSpeed.getText());
+			commands.put(Module.MODULO.get(), Module.ROVER.get());
+			commands.put(Module.ROVER_TARGET_TYPE.get(), bgTargetChoice.getSelection().getActionCommand());
+			commands.put(Module.MARKER_NAME.get(), txfWaypointName.getText());
+			commands.put(Module.MAX_SPEED.get(), txfMaxSpeed.getText());
 			MechPeste.newInstance().startModule(commands);
 		}
 	}

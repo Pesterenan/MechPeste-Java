@@ -2,7 +2,7 @@ package com.pesterenan.views;
 
 import com.pesterenan.MechPeste;
 import com.pesterenan.resources.Bundle;
-import com.pesterenan.utils.Modulos;
+import com.pesterenan.utils.Module;
 
 import javax.swing.*;
 import javax.swing.border.Border;
@@ -64,11 +64,11 @@ public class LandingJPanel extends JPanel implements UIMethods {
 		txfMaxTWR.setHorizontalAlignment(JTextField.RIGHT);
 
 		btnAutoLanding.addActionListener(this::handleLandingAction);
-		btnAutoLanding.setActionCommand(Modulos.MODULO_POUSO.get());
+		btnAutoLanding.setActionCommand(Module.LANDING.get());
 		btnAutoLanding.setPreferredSize(BTN_DIMENSION);
 		btnAutoLanding.setMaximumSize(BTN_DIMENSION);
 		btnHover.addActionListener(this::handleLandingAction);
-		btnHover.setActionCommand(Modulos.MODULO_POUSO_SOBREVOAR.get());
+		btnHover.setActionCommand(Module.HOVERING.get());
 		btnHover.setPreferredSize(BTN_DIMENSION);
 		btnHover.setMaximumSize(BTN_DIMENSION);
 		btnBack.addActionListener(MainGui::backToTelemetry);
@@ -142,11 +142,11 @@ public class LandingJPanel extends JPanel implements UIMethods {
 	private void handleLandingAction(ActionEvent e) {
 		try {
 			Map<String, String> commands = new HashMap<>();
-			commands.put(Modulos.MODULO.get(), e.getActionCommand());
+			commands.put(Module.MODULO.get(), e.getActionCommand());
 			validateTextFields();
-			commands.put(Modulos.ALTITUDE_SOBREVOO.get(), txfHover.getText());
-			commands.put(Modulos.MAX_TWR.get(), txfMaxTWR.getText());
-			commands.put(Modulos.SOBREVOO_POS_POUSO.get(), String.valueOf(chkHoverAfterLanding.isSelected()));
+			commands.put(Module.HOVER_ALTITUDE.get(), txfHover.getText());
+			commands.put(Module.MAX_TWR.get(), txfMaxTWR.getText());
+			commands.put(Module.HOVER_AFTER_LANDING.get(), String.valueOf(chkHoverAfterLanding.isSelected()));
 			MechPeste.newInstance().startModule(commands);
 			MainGui.backToTelemetry(e);
 			chkHoverAfterLanding.setSelected(false);

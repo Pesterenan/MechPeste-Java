@@ -6,7 +6,7 @@ import static com.pesterenan.MechPeste.getSpaceCenter;
 import java.util.Map;
 
 import com.pesterenan.resources.Bundle;
-import com.pesterenan.utils.Modulos;
+import com.pesterenan.utils.Module;
 import com.pesterenan.utils.Utilities;
 import com.pesterenan.utils.Vector;
 import com.pesterenan.views.DockingJPanel;
@@ -57,15 +57,15 @@ public class DockingController extends Controller {
 
 	private void initializeParameters() {
 		try {
-			DOCKING_MAX_SPEED = Double.parseDouble(commands.get(Modulos.VELOCIDADE_MAX.get()));
-			SAFE_DISTANCE = Double.parseDouble(commands.get(Modulos.DISTANCIA_SEGURA.get()));
+			DOCKING_MAX_SPEED = Double.parseDouble(commands.get(Module.MAX_SPEED.get()));
+			SAFE_DISTANCE = Double.parseDouble(commands.get(Module.SAFE_DISTANCE.get()));
 			drawing = Drawing.newInstance(getConnection());
 			targetVessel = getSpaceCenter().getTargetVessel();
-			control = getNaveAtual().getControl();
-			vesselRefFrame = getNaveAtual().getReferenceFrame();
-			orbitalRefVessel = getNaveAtual().getOrbitalReferenceFrame();
+			control = getActiveVessel().getControl();
+			vesselRefFrame = getActiveVessel().getReferenceFrame();
+			orbitalRefVessel = getActiveVessel().getOrbitalReferenceFrame();
 
-			myDockingPort = getNaveAtual().getParts().getDockingPorts().get(0);
+			myDockingPort = getActiveVessel().getParts().getDockingPorts().get(0);
 			targetDockingPort = targetVessel.getParts().getDockingPorts().get(0);
 			dockingStep = DOCKING_STEPS.STOP_RELATIVE_SPEED;
 
@@ -77,25 +77,25 @@ public class DockingController extends Controller {
 
 	@Override
 	public void run() {
-		if (commands.get(Modulos.MODULO.get()).equals(Modulos.MODULO_DOCKING.get())) {
+		if (commands.get(Module.MODULO.get()).equals(Module.DOCKING.get())) {
 			startDocking();
 		}
 	}
 
 	private void pointToTarget(Vector targetDirection) throws RPCException, InterruptedException {
-		getNaveAtual().getAutoPilot().setReferenceFrame(orbitalRefVessel);
-		getNaveAtual().getAutoPilot().setTargetDirection(targetDirection.toTriplet());
-		getNaveAtual().getAutoPilot().setTargetRoll(90);
-		getNaveAtual().getAutoPilot().engage();
+		getActiveVessel().getAutoPilot().setReferenceFrame(orbitalRefVessel);
+		getActiveVessel().getAutoPilot().setTargetDirection(targetDirection.toTriplet());
+		getActiveVessel().getAutoPilot().setTargetRoll(90);
+		getActiveVessel().getAutoPilot().engage();
 		// Fazer a nave apontar usando o piloto automático, na marra
-		while (Math.abs(getNaveAtual().getAutoPilot().getError()) > 3) {
+		while (Math.abs(getActiveVessel().getAutoPilot().getError()) > 3) {
 			if (Thread.interrupted()) {
 				throw new InterruptedException();
 			}
 			Thread.sleep(100);
-			System.out.println(getNaveAtual().getAutoPilot().getError());
+			System.out.println(getActiveVessel().getAutoPilot().getError());
 		}
-		getNaveAtual().getAutoPilot().disengage();
+		getActiveVessel().getAutoPilot().disengage();
 		control.setSAS(true);
 		control.setSASMode(SASMode.STABILITY_ASSIST);
 	}
@@ -128,7 +128,7 @@ public class DockingController extends Controller {
 			Vector targetPosition = new Vector(targetVessel.position(vesselRefFrame));
 			if (targetPosition.magnitude() > SAFE_DISTANCE) {
 				// Apontar para o alvo:
-				Vector targetDirection = new Vector(getNaveAtual().position(orbitalRefVessel))
+				Vector targetDirection = new Vector(getActiveVessel().position(orbitalRefVessel))
 						.subtract(new Vector(targetVessel.position(orbitalRefVessel))).multiply(-1);
 				pointToTarget(targetDirection);
 

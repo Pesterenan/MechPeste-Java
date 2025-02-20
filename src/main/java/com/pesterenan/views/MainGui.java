@@ -1,7 +1,7 @@
 package com.pesterenan.views;
 
 import com.pesterenan.resources.Bundle;
-import com.pesterenan.utils.Modulos;
+import com.pesterenan.utils.Module;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -127,12 +127,12 @@ public class MainGui extends JFrame implements ActionListener, UIMethods {
 		pnlManeuverJTabbedPane.addTab("Executar Manobras", pnlRunManeuvers);
 
 		cardJPanels.setLayout(cardLayout);
-		cardJPanels.add(pnlFunctionsAndTelemetry, Modulos.MODULO_TELEMETRIA.get());
-		cardJPanels.add(pnlLiftoff, Modulos.MODULO_DECOLAGEM.get());
-		cardJPanels.add(pnlLanding, Modulos.MODULO_POUSO.get());
-		cardJPanels.add(pnlManeuverJTabbedPane, Modulos.MODULE_MANEUVER.get());
-		cardJPanels.add(pnlRover, Modulos.MODULO_ROVER.get());
-		cardJPanels.add(pnlDocking, Modulos.MODULO_DOCKING.get());
+		cardJPanels.add(pnlFunctionsAndTelemetry, Module.TELEMETRY.get());
+		cardJPanels.add(pnlLiftoff, Module.LIFTOFF.get());
+		cardJPanels.add(pnlLanding, Module.LANDING.get());
+		cardJPanels.add(pnlManeuverJTabbedPane, Module.MANEUVER.get());
+		cardJPanels.add(pnlRover, Module.ROVER.get());
+		cardJPanels.add(pnlDocking, Module.DOCKING.get());
 	}
 
 	public void actionPerformed(ActionEvent e) {
@@ -181,7 +181,7 @@ public class MainGui extends JFrame implements ActionListener, UIMethods {
 	}
 
 	public static void backToTelemetry(ActionEvent e) {
-		cardLayout.show(cardJPanels, Modulos.MODULO_TELEMETRIA.get());
+		cardLayout.show(cardJPanels, Module.TELEMETRY.get());
 	}
 
 	protected void handleMntmAboutActionPerformed(ActionEvent e) {

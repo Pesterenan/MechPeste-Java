@@ -62,9 +62,9 @@ public class PathFinding extends Controller {
 			double w1Distance = 0;
 			double w2Distance = 0;
 			try {
-				w1Distance = Vector.distance(new Vector(getNaveAtual().position(orbitalReferenceFrame)),
+				w1Distance = Vector.distance(new Vector(getActiveVessel().position(orbitalReferenceFrame)),
 						waypointPosOnSurface(w1));
-				w2Distance = Vector.distance(new Vector(getNaveAtual().position(orbitalReferenceFrame)),
+				w2Distance = Vector.distance(new Vector(getActiveVessel().position(orbitalReferenceFrame)),
 						waypointPosOnSurface(w2));
 			} catch (RPCException e) {
 			}
@@ -137,7 +137,7 @@ public class PathFinding extends Controller {
 		// centimeters on height:
 		Vector roverHeight = new Vector(0.2, 0.0, 0.0);
 		Vector currentRoverPos = transformSurfToOrb(
-				new Vector(getNaveAtual().position(surfaceReferenceFrame)).sum(roverHeight));
+				new Vector(getActiveVessel().position(surfaceReferenceFrame)).sum(roverHeight));
 		// Calculate distance from rover to target on Orbital Ref:
 		double distanceToTarget = Vector.distance(currentRoverPos, targetPosition);
 		// Add rover pos as first point, on Orbital Ref

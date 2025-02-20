@@ -2,7 +2,7 @@ package com.pesterenan.controllers;
 
 import com.pesterenan.resources.Bundle;
 import com.pesterenan.utils.ControlePID;
-import com.pesterenan.utils.Modulos;
+import com.pesterenan.utils.Module;
 import com.pesterenan.utils.PathFinding;
 import com.pesterenan.utils.Utilities;
 import com.pesterenan.utils.Vector;
@@ -41,9 +41,9 @@ public class RoverController extends Controller {
 
 	private void initializeParameters() {
 		try {
-			maxSpeed = Float.parseFloat(commands.get(Modulos.VELOCIDADE_MAX.get()));
-			roverReferenceFrame = getNaveAtual().getReferenceFrame();
-			roverDirection = new Vector(getNaveAtual().direction(roverReferenceFrame));
+			maxSpeed = Float.parseFloat(commands.get(Module.MAX_SPEED.get()));
+			roverReferenceFrame = getActiveVessel().getReferenceFrame();
+			roverDirection = new Vector(getActiveVessel().direction(roverReferenceFrame));
 			pathFinding = new PathFinding();
 			acelCtrl.setOutput(0, 1);
 			sterringCtrl.setOutput(-1, 1);
@@ -62,7 +62,7 @@ public class RoverController extends Controller {
 
 	@Override
 	public void run() {
-		if (commands.get(Modulos.MODULO.get()).equals(Modulos.MODULO_ROVER.get())) {
+		if (commands.get(Module.MODULO.get()).equals(Module.ROVER.get())) {
 			setTarget();
 			driveRoverToTarget();
 		}
@@ -70,12 +70,12 @@ public class RoverController extends Controller {
 
 	private void setTarget() {
 		try {
-			if (commands.get(Modulos.TIPO_ALVO_ROVER.get()).equals(Modulos.MARCADOR_MAPA.get())) {
-				pathFinding.addWaypointsOnSameBody(commands.get(Modulos.NOME_MARCADOR.get()));
+			if (commands.get(Module.ROVER_TARGET_TYPE.get()).equals(Module.MAP_MARKER.get())) {
+				pathFinding.addWaypointsOnSameBody(commands.get(Module.MARKER_NAME.get()));
 				setCurrentStatus("Calculando rota até o alvo...");
 				pathFinding.buildPathToTarget(pathFinding.findNearestWaypoint());
 			}
-			if (commands.get(Modulos.TIPO_ALVO_ROVER.get()).equals(Modulos.NAVE_ALVO.get())) {
+			if (commands.get(Module.ROVER_TARGET_TYPE.get()).equals(Module.TARGET_VESSEL.get())) {
 				Vector targetVesselPosition = new Vector(
 						getSpaceCenter().getTargetVessel().position(orbitalReferenceFrame));
 				setCurrentStatus("Calculando rota até o alvo...");
@@ -116,7 +116,7 @@ public class RoverController extends Controller {
 			}
 		} catch (InterruptedException | RPCException | IOException | StreamException ignored) {
 			try {
-				getNaveAtual().getControl().setBrakes(true);
+				getActiveVessel().getControl().setBrakes(true);
 				pathFinding.removeDrawnPath();
 				isAutoRoverRunning = false;
 				setCurrentStatus(Bundle.getString("lbl_stat_ready"));
@@ -127,9 +127,9 @@ public class RoverController extends Controller {
 
 	private void setNextPointInPath() throws RPCException, IOException, InterruptedException {
 		pathFinding.removePathsCurrentPoint();
-		getNaveAtual().getControl().setBrakes(true);
+		getActiveVessel().getControl().setBrakes(true);
 		if (pathFinding.isPathToTargetEmpty()) {
-			if (commands.get(Modulos.TIPO_ALVO_ROVER.get()).equals(Modulos.MARCADOR_MAPA.get())) {
+			if (commands.get(Module.ROVER_TARGET_TYPE.get()).equals(Module.MAP_MARKER.get())) {
 				pathFinding.removeWaypointFromList();
 				if (pathFinding.isWaypointsToReachEmpty()) {
 					throw new InterruptedException();
@@ -143,13 +143,13 @@ public class RoverController extends Controller {
 	}
 
 	private boolean isFarFromTarget() throws RPCException {
-		double distance = Vector.distance(new Vector(getNaveAtual().position(orbitalReferenceFrame)), targetPoint);
+		double distance = Vector.distance(new Vector(getActiveVessel().position(orbitalReferenceFrame)), targetPoint);
 		return distance > distanceFromTargetLimit;
 	}
 
 	private boolean needToChargeBatteries() throws RPCException, IOException, StreamException, InterruptedException {
-		float totalCharge = getNaveAtual().getResources().max("ElectricCharge");
-		float currentCharge = getNaveAtual().getResources().amount("ElectricCharge");
+		float totalCharge = getActiveVessel().getResources().max("ElectricCharge");
+		float currentCharge = getActiveVessel().getResources().amount("ElectricCharge");
 		float minChargeLevel = 10.0f;
 		float chargePercentage = (float) Math.ceil(currentCharge * 100 / totalCharge);
 		return (chargePercentage < minChargeLevel);
@@ -157,18 +157,18 @@ public class RoverController extends Controller {
 
 	private void rechargeRover() throws RPCException, StreamException, InterruptedException {
 
-		float totalCharge = getNaveAtual().getResources().max("ElectricCharge");
-		float currentCharge = getNaveAtual().getResources().amount("ElectricCharge");
+		float totalCharge = getActiveVessel().getResources().max("ElectricCharge");
+		float currentCharge = getActiveVessel().getResources().amount("ElectricCharge");
 
 		setRoverThrottle(0);
-		getNaveAtual().getControl().setLights(false);
-		getNaveAtual().getControl().setBrakes(true);
+		getActiveVessel().getControl().setLights(false);
+		getActiveVessel().getControl().setBrakes(true);
 
-		if (velHorizontal.get() < 1 && getNaveAtual().getControl().getBrakes()) {
+		if (horizontalVelocity.get() < 1 && getActiveVessel().getControl().getBrakes()) {
 			Thread.sleep(1000);
 			double chargeTime;
 			double totalEnergyFlow = 0;
-			List<SolarPanel> solarPanels = getNaveAtual().getParts()
+			List<SolarPanel> solarPanels = getActiveVessel().getParts()
 					.getSolarPanels()
 					.stream()
 					.filter(this::isSolarPanelNotBroken)
@@ -183,14 +183,14 @@ public class RoverController extends Controller {
 				chargeTime = 3600;
 			}
 			getSpaceCenter().warpTo((getSpaceCenter().getUT() + chargeTime), 10000, 4);
-			getNaveAtual().getControl().setLights(true);
+			getActiveVessel().getControl().setLights(true);
 		}
 	}
 
 	private void driveRover() throws RPCException, IOException, StreamException {
 		Vector targetDirection = posSurfToRover(posOrbToSurf(targetPoint)).normalize();
 		Vector radarSourcePosition = posRoverToSurf(
-				new Vector(getNaveAtual().position(roverReferenceFrame)).sum(new Vector(0.0, 3.0,
+				new Vector(getActiveVessel().position(roverReferenceFrame)).sum(new Vector(0.0, 3.0,
 						0.0)));
 
 		double roverAngle = (roverDirection.heading());
@@ -201,12 +201,12 @@ public class RoverController extends Controller {
 		// usar esse valor pra muiltiplicar a direcao alvo
 		double targetAndRadarAngle = (targetDirection.multiply(steeringPower)
 				.sum(directionFromRadar(
-						getNaveAtual().boundingBox(roverReferenceFrame)))
+						getActiveVessel().boundingBox(roverReferenceFrame)))
 				.normalize()).heading();
 		double deltaAngle = Math.abs(targetAndRadarAngle - roverAngle);
-		getNaveAtual().getControl().setSAS(deltaAngle < 1);
+		getActiveVessel().getControl().setSAS(deltaAngle < 1);
 		// Control Rover Throttle
-		setRoverThrottle(acelCtrl.calculate(velHorizontal.get() / maxSpeed * 50, 50));
+		setRoverThrottle(acelCtrl.calculate(horizontalVelocity.get() / maxSpeed * 50, 50));
 		// Control Rover Steering
 		if (deltaAngle > 1) {
 			setRoverSteering(sterringCtrl.calculate(roverAngle / (targetAndRadarAngle) * 100, 100));
@@ -226,47 +226,47 @@ public class RoverController extends Controller {
 		Vector RFD = new Vector(boundingBox.getValue1());
 
 		// Pre-calculated bbox positions
-		Vector lateralEsq = new Vector(LBU.x, LBU.y * 0.5 + RFD.y * 0.5, LBU.z * 0.5 + RFD.z * 0.5);
-		Vector latFrontEsq = new Vector(LBU.x, RFD.y * 0.5, LBU.z * 0.5 + RFD.z * 0.5);
-		Vector frontalEsq = new Vector(LBU.x, RFD.y, LBU.z * 0.5 + RFD.z * 0.5);
-		Vector frontalEsq2 = new Vector(LBU.x * 0.5, RFD.y, LBU.z * 0.5 + RFD.z * 0.5);
-		Vector frontal = new Vector(LBU.x * 0.5 + RFD.x * 0.5, RFD.y, LBU.z * 0.5 + RFD.z * 0.5);
-		Vector frontalDir2 = new Vector(RFD.x * 0.5, RFD.y, LBU.z * 0.5 + RFD.z * 0.5);
-		Vector frontalDir = new Vector(RFD.x, RFD.y, LBU.z * 0.5 + RFD.z * 0.5);
-		Vector latFrontDir = new Vector(RFD.x, RFD.y * 0.5, LBU.z * 0.5 + RFD.z * 0.5);
-		Vector lateralDir = new Vector(RFD.x, LBU.y * 0.5 + RFD.y * 0.5, LBU.z * 0.5 + RFD.z * 0.5);
+		Vector lateralLeft = new Vector(LBU.x, LBU.y * 0.5 + RFD.y * 0.5, LBU.z * 0.5 + RFD.z * 0.5);
+		Vector latFrontLeft = new Vector(LBU.x, RFD.y * 0.5, LBU.z * 0.5 + RFD.z * 0.5);
+		Vector frontLeft = new Vector(LBU.x, RFD.y, LBU.z * 0.5 + RFD.z * 0.5);
+		Vector frontLeft2 = new Vector(LBU.x * 0.5, RFD.y, LBU.z * 0.5 + RFD.z * 0.5);
+		Vector front = new Vector(LBU.x * 0.5 + RFD.x * 0.5, RFD.y, LBU.z * 0.5 + RFD.z * 0.5);
+		Vector frontRight2 = new Vector(RFD.x * 0.5, RFD.y, LBU.z * 0.5 + RFD.z * 0.5);
+		Vector frontRight = new Vector(RFD.x, RFD.y, LBU.z * 0.5 + RFD.z * 0.5);
+		Vector latFrontRight = new Vector(RFD.x, RFD.y * 0.5, LBU.z * 0.5 + RFD.z * 0.5);
+		Vector lateralRight = new Vector(RFD.x, LBU.y * 0.5 + RFD.y * 0.5, LBU.z * 0.5 + RFD.z * 0.5);
 
 		// Pre-calculated bbox directions
-		Vector lateralEsqAngulo = new Vector(-Math.sin(Math.toRadians(90)), Math.cos(Math.toRadians(90)), 0.0);
-		Vector latFrontEsqAngulo = new Vector(-Math.sin(Math.toRadians(67.5)), Math.cos(Math.toRadians(67.5)), 0.0);
-		Vector frontalEsqAngulo = new Vector(-Math.sin(Math.toRadians(45)), Math.cos(Math.toRadians(45)), 0.0);
-		Vector frontalEsqAngulo2 = new Vector(-Math.sin(Math.toRadians(22.5)), Math.cos(Math.toRadians(22.5)), 0.0);
-		Vector frontalAngulo = new Vector(0.0, 1.0, 0.0);
-		Vector frontalDirAngulo2 = new Vector(Math.sin(Math.toRadians(22.5)), Math.cos(Math.toRadians(22.5)), 0.0);
-		Vector frontalDirAngulo = new Vector(Math.sin(Math.toRadians(45)), Math.cos(Math.toRadians(45)), 0.0);
-		Vector latFrontDirAngulo = new Vector(Math.sin(Math.toRadians(67.5)), Math.cos(Math.toRadians(67.5)), 0.0);
-		Vector lateralDirAngulo = new Vector(Math.sin(Math.toRadians(90)), Math.cos(Math.toRadians(90)), 0.0);
+		Vector lateralLeftAngle = new Vector(-Math.sin(Math.toRadians(90)), Math.cos(Math.toRadians(90)), 0.0);
+		Vector latFrontLeftAngle = new Vector(-Math.sin(Math.toRadians(67.5)), Math.cos(Math.toRadians(67.5)), 0.0);
+		Vector frontLeftAngle = new Vector(-Math.sin(Math.toRadians(45)), Math.cos(Math.toRadians(45)), 0.0);
+		Vector frontLeftAngle2 = new Vector(-Math.sin(Math.toRadians(22.5)), Math.cos(Math.toRadians(22.5)), 0.0);
+		Vector frontAngle = new Vector(0.0, 1.0, 0.0);
+		Vector frontRightAngle2 = new Vector(Math.sin(Math.toRadians(22.5)), Math.cos(Math.toRadians(22.5)), 0.0);
+		Vector frontRightAngle = new Vector(Math.sin(Math.toRadians(45)), Math.cos(Math.toRadians(45)), 0.0);
+		Vector latFrontRightAngle = new Vector(Math.sin(Math.toRadians(67.5)), Math.cos(Math.toRadians(67.5)), 0.0);
+		Vector lateralRightAngle = new Vector(Math.sin(Math.toRadians(90)), Math.cos(Math.toRadians(90)), 0.0);
 
 		// Raytracing distance from points:
-		Vector lateralEsqRay = calculateRaycastDirection(lateralEsq, lateralEsqAngulo, 15);
-		Vector latFrontEsqRay = calculateRaycastDirection(latFrontEsq, latFrontEsqAngulo, 19);
-		Vector frontalEsqRay = calculateRaycastDirection(frontalEsq, frontalEsqAngulo, 23);
-		Vector frontalEsqRay2 = calculateRaycastDirection(frontalEsq2, frontalEsqAngulo2, 27);
-		Vector frontalRay = calculateRaycastDirection(frontal, frontalAngulo, 35);
-		Vector frontalDirRay2 = calculateRaycastDirection(frontalDir2, frontalDirAngulo2, 27);
-		Vector frontalDirRay = calculateRaycastDirection(frontalDir, frontalDirAngulo, 23);
-		Vector latFrontDirRay = calculateRaycastDirection(latFrontDir, latFrontDirAngulo, 19);
-		Vector lateralDirRay = calculateRaycastDirection(lateralDir, lateralDirAngulo, 15);
+		Vector lateralLeftRay = calculateRaycastDirection(lateralLeft, lateralLeftAngle, 15);
+		Vector lateralFrontLeftRay = calculateRaycastDirection(latFrontLeft, latFrontLeftAngle, 19);
+		Vector frontLeftRay = calculateRaycastDirection(frontLeft, frontLeftAngle, 23);
+		Vector frontLeftRay2 = calculateRaycastDirection(frontLeft2, frontLeftAngle2, 27);
+		Vector frontRay = calculateRaycastDirection(front, frontAngle, 35);
+		Vector frontRightRay2 = calculateRaycastDirection(frontRight2, frontRightAngle2, 27);
+		Vector frontRightRay = calculateRaycastDirection(frontRight, frontRightAngle, 23);
+		Vector lateralFrontRightRay = calculateRaycastDirection(latFrontRight, latFrontRightAngle, 19);
+		Vector lateralRightRay = calculateRaycastDirection(lateralRight, lateralRightAngle, 15);
 
-		Vector calculatedDirection = new Vector().sum(lateralEsqRay)
-				.sum(latFrontEsqRay)
-				.sum(frontalEsqRay)
-				.sum(frontalEsqRay2)
-				.sum(frontalRay)
-				.sum(frontalDirRay2)
-				.sum(frontalDirRay)
-				.sum(latFrontDirRay)
-				.sum(lateralDirRay);
+		Vector calculatedDirection = new Vector().sum(lateralLeftRay)
+				.sum(lateralFrontLeftRay)
+				.sum(frontLeftRay)
+				.sum(frontLeftRay2)
+				.sum(frontRay)
+				.sum(frontRightRay2)
+				.sum(frontRightRay)
+				.sum(lateralFrontRightRay)
+				.sum(lateralRightRay);
 
 		return (calculatedDirection.normalize());
 	}
@@ -299,16 +299,16 @@ public class RoverController extends Controller {
 	}
 
 	private void setRoverThrottle(double throttle) throws RPCException, StreamException {
-		if (velHorizontal.get() < (maxSpeed * 1.01)) {
-			getNaveAtual().getControl().setBrakes(false);
-			getNaveAtual().getControl().setWheelThrottle((float) throttle);
+		if (horizontalVelocity.get() < (maxSpeed * 1.01)) {
+			getActiveVessel().getControl().setBrakes(false);
+			getActiveVessel().getControl().setWheelThrottle((float) throttle);
 		} else {
-			getNaveAtual().getControl().setBrakes(true);
+			getActiveVessel().getControl().setBrakes(true);
 		}
 	}
 
 	private void setRoverSteering(double steering) throws RPCException {
-		getNaveAtual().getControl().setWheelSteering((float) steering);
+		getActiveVessel().getControl().setWheelSteering((float) steering);
 	}
 
 	private enum MODE {
