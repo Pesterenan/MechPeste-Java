@@ -159,8 +159,7 @@ public class Main {
                 currentZAxisSpeed = (targetPosition.z - lastZTargetPos) * sleepTime;
 
                 // Calcular a aceleração para cada eixo no RCS:
-                float forwardsError = calculateThrottle(5, 10, currentYAxisSpeed,
-                        targetPosition.y, SPEED_LIMIT);
+                float forwardsError = calculateThrottle(5, 10, currentYAxisSpeed, targetPosition.y, SPEED_LIMIT);
                 float sidewaysError = calculateThrottle(-1, 10, currentXAxisSpeed, targetPosition.x, SPEED_LIMIT);
                 float upwardsError = calculateThrottle(-1, 10, currentZAxisSpeed, targetPosition.z, SPEED_LIMIT);
                 control.setForward((float) forwardsError);
@@ -190,17 +189,12 @@ public class Main {
 
     private static void createLines(Vector start, Vector end) {
         try {
-            distanceLine = drawing.addLine(start.toTriplet(),
-                    end.toTriplet(), vesselRefFrame, true);
-            distLineXAxis = drawing.addLine(start.toTriplet(),
-                    new Vector(end.x, 0.0, 0.0).toTriplet(),
+            distanceLine = drawing.addLine(start.toTriplet(), end.toTriplet(), vesselRefFrame, true);
+            distLineXAxis = drawing.addLine(start.toTriplet(), new Vector(end.x, 0.0, 0.0).toTriplet(), vesselRefFrame,
+                    true);
+            distLineYAxis = drawing.addLine(start.toTriplet(), new Vector(end.x, end.y, 0.0).toTriplet(),
                     vesselRefFrame, true);
-            distLineYAxis = drawing.addLine(start.toTriplet(),
-                    new Vector(end.x, end.y, 0.0).toTriplet(),
-                    vesselRefFrame, true);
-            distLineZAxis = drawing.addLine(start.toTriplet(),
-                    end.toTriplet(),
-                    vesselRefFrame, true);
+            distLineZAxis = drawing.addLine(start.toTriplet(), end.toTriplet(), vesselRefFrame, true);
             distanceLine.setThickness(0.5f);
             distLineXAxis.setThickness(0.25f);
             distLineYAxis.setThickness(0.25f);

@@ -5,7 +5,7 @@ import java.util.Map;
 
 public class Attributes {
 
-    private static Map<String, Double> safeLowOrbitAltitudes = new HashMap<String, Double>();
+    private static Map<String,Double> safeLowOrbitAltitudes = new HashMap<String,Double>();
 
     public Attributes() {
         safeLowOrbitAltitudes.put("Bop", 10_000.0);

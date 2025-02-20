@@ -36,7 +36,7 @@ public class CreateManeuverJPanel extends JPanel implements ActionListener, UIMe
     private static int selectedManeuverIndex = 0;
     private static JRadioButton rbPrograde, rbNormal, rbRadial, rbTime;
     private static ButtonGroup bgManeuverType;
-    private static Map<Integer, Float> sliderValues = new HashMap<>();
+    private static Map<Integer,Float> sliderValues = new HashMap<>();
     private final ControlePID ctrlManeuver = new ControlePID();
 
     public CreateManeuverJPanel() {
@@ -344,18 +344,18 @@ public class CreateManeuverJPanel extends JPanel implements ActionListener, UIMe
             Node currentManeuver = vessel.getControl().getNodes().get(selectedManeuverIndex);
             double timeToNode = 0;
             switch (node) {
-                case "apoapsis":
+                case "apoapsis" :
                     timeToNode = MechPeste.getSpaceCenter().getUT() + orbit.getTimeToApoapsis();
                     break;
-                case "periapsis":
+                case "periapsis" :
                     timeToNode = MechPeste.getSpaceCenter().getUT() + orbit.getTimeToPeriapsis();
                     break;
-                case "ascending":
+                case "ascending" :
                     double ascendingAnomaly = orbit
                             .trueAnomalyAtAN(MechPeste.getSpaceCenter().getTargetVessel().getOrbit());
                     timeToNode = orbit.uTAtTrueAnomaly(ascendingAnomaly);
                     break;
-                case "descending":
+                case "descending" :
                     double descendingAnomaly = orbit
                             .trueAnomalyAtDN(MechPeste.getSpaceCenter().getTargetVessel().getOrbit());
                     timeToNode = orbit.uTAtTrueAnomaly(descendingAnomaly);
@@ -379,16 +379,16 @@ public class CreateManeuverJPanel extends JPanel implements ActionListener, UIMe
             currentSliderValue = command == "decrease" ? -currentSliderValue : currentSliderValue;
 
             switch (maneuverType) {
-                case "prograde":
+                case "prograde" :
                     currentManeuver.setPrograde(currentManeuver.getPrograde() + currentSliderValue);
                     break;
-                case "normal":
+                case "normal" :
                     currentManeuver.setNormal(currentManeuver.getNormal() + currentSliderValue);
                     break;
-                case "radial":
+                case "radial" :
                     currentManeuver.setRadial(currentManeuver.getRadial() + currentSliderValue);
                     break;
-                case "time":
+                case "time" :
                     currentManeuver.setUT(currentManeuver.getUT() + currentSliderValue);
                     break;
             }
