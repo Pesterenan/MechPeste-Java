@@ -5,7 +5,7 @@
 
   <groupId>com.pesterenan</groupId>
   <artifactId>MechPeste</artifactId>
-  <version>0.7.1</version>
+  <version>0.8.0</version>
 
   <build>
     <plugins>
@@ -85,7 +85,7 @@
     <dependency>
       <groupId>io.github.krpc</groupId>
       <artifactId>krpc-java</artifactId>
-      <version>0.5.2</version>
+      <version>0.5.4</version>
     </dependency>
     <dependency>
       <groupId>org.javatuples</groupId>
