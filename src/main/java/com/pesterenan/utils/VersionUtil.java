@@ -16,10 +16,8 @@ public class VersionUtil {
             if ((new File("pom.xml")).exists()) {
                 model = reader.read(new FileReader("pom.xml"));
             } else {
-                model = reader.read(
-                        new InputStreamReader(
-                                VersionUtil.class.getResourceAsStream(
-                                        "/META-INF/maven/com.pesterenan/MechPeste/pom.xml")));
+                model = reader.read(new InputStreamReader(
+                        VersionUtil.class.getResourceAsStream("/META-INF/maven/com.pesterenan/MechPeste/pom.xml")));
             }
             version = model.getVersion();
             return version;

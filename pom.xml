@@ -5,7 +5,7 @@
 
   <groupId>com.pesterenan</groupId>
   <artifactId>MechPeste</artifactId>
-  <version>0.7.1</version>
+  <version>0.8.0</version>
 
   <build>
     <plugins>
@@ -15,8 +15,8 @@
         <version>3.11.0</version>
         <configuration>
           <encoding>UTF-8</encoding>
-          </configuration>
-        </plugin>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
@@ -25,10 +25,10 @@
           <archive>
             <manifest>
               <mainClass>com.pesterenan.MechPeste</mainClass>
-              </manifest>
-            </archive>
-          </configuration>
-        </plugin>
+            </manifest>
+          </archive>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
@@ -37,53 +37,66 @@
           <archive>
             <manifest>
               <mainClass>com.pesterenan.MechPeste</mainClass>
-              </manifest>
-            </archive>
+            </manifest>
+          </archive>
           <descriptorRefs>
             <descriptorRef>jar-with-dependencies</descriptorRef>
-            </descriptorRefs>
+          </descriptorRefs>
           <finalName>MechPeste-${project.version}</finalName>
           <appendAssemblyId>false</appendAssemblyId>
-          </configuration>
+        </configuration>
         <executions>
           <execution>
             <id>make-assembly</id>
             <phase>package</phase>
             <goals>
               <goal>single</goal>
-              </goals>
-            </execution>
-          </executions>
-        </plugin>
-      </plugins>
-    </build>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
+        <version>2.37.0</version>
+        <configuration>
+          <java>
+            <eclipse>
+              <version>4.19</version>
+              <file>${project.basedir}/.settings/org.eclipse.jdt.core.prefs</file>
+            </eclipse>
+          </java>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 
   <properties>
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
-    </properties>
+  </properties>
 
   <dependencies>
     <dependency>
       <groupId>org.apache.maven</groupId>
       <artifactId>maven-model</artifactId>
       <version>3.3.9</version>
-      </dependency>
+    </dependency>
     <dependency>
       <groupId>io.github.krpc</groupId>
       <artifactId>krpc-java</artifactId>
-      <version>0.5.2</version>
-      </dependency>
+      <version>0.5.4</version>
+    </dependency>
     <dependency>
       <groupId>org.javatuples</groupId>
       <artifactId>javatuples</artifactId>
       <version>1.2</version>
-      </dependency>
+    </dependency>
     <dependency>
       <groupId>com.google.protobuf</groupId>
       <artifactId>protobuf-java</artifactId>
       <version>3.22.1</version>
-      </dependency>
-    </dependencies>
+    </dependency>
+  </dependencies>
 
-  </project>
+</project>
