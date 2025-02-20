@@ -1,6 +1,5 @@
 .shelf/
 .idea/
-.settings/
 bin/
 tmp/
 *.tmp
