@@ -76,7 +76,7 @@ public class ActiveVessel {
             verticalVelocity = getConnection().addStream(flightParameters, "getVerticalSpeed");
             horizontalVelocity = getConnection().addStream(flightParameters, "getHorizontalSpeed");
         } catch (RPCException | StreamException e) {
-            MechPeste.newInstance().checkConnection();
+            System.err.println("Error while initializing parameters for active vessel: " + e.getMessage());
         }
     }
 

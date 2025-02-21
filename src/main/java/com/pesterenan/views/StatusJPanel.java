@@ -70,7 +70,6 @@ public class StatusJPanel extends JPanel implements UIMethods {
     }
 
     private void handleConnect(ActionEvent e) {
-        setStatusMessage(Bundle.getString("status_connecting"));
         MechPeste.newInstance().connectToKSP();
     }
 }

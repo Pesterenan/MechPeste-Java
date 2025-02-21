@@ -5,12 +5,17 @@ import static com.pesterenan.views.StatusJPanel.setStatusMessage;
 
 import java.awt.event.ActionEvent;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import javax.swing.DefaultListModel;
 import javax.swing.ListModel;
+import javax.swing.SwingUtilities;
 
 import com.pesterenan.model.ActiveVessel;
 import com.pesterenan.resources.Bundle;
@@ -34,9 +39,15 @@ public class MechPeste {
     private static int currentVesselId = -1;
     private static ActiveVessel currentVessel = null;
 
-    public static void main(String[] args) {
-        MechPeste.newInstance().connectToKSP();
-        MechPeste.newInstance().checkActiveVessel();
+    public static Connection getConnection() {
+        return connection;
+    }
+
+    public static SpaceCenter getSpaceCenter() {
+        return spaceCenter;
+    }
+
+    private MechPeste() {
     }
 
     public static MechPeste newInstance() {
@@ -46,12 +57,16 @@ public class MechPeste {
         return mechPeste;
     }
 
-    public static Connection getConnection() {
-        return connection;
-    }
-
-    public static SpaceCenter getSpaceCenter() {
-        return spaceCenter;
+    public static void main(String[] args) {
+        MechPeste mp = MechPeste.newInstance();
+        try {
+            SwingUtilities.invokeAndWait(() -> {
+                MainGui.newInstance();
+            });
+        } catch (InvocationTargetException | InterruptedException e) {
+            System.err.println("Error while invoking GUI: " + e.getMessage());
+        }
+        mp.connectToKSP();
     }
 
     public static ListModel<String> getActiveVessels(String search) {
@@ -119,7 +134,7 @@ public class MechPeste {
     }
 
     private static boolean filterVessels(Vessel vessel, String search) {
-        if (search == "all") {
+        if ("all".equals(search)) {
             return true;
         }
         double TEN_KILOMETERS = 10000.0;
@@ -130,22 +145,18 @@ public class MechPeste {
                 final Vector vesselPos = new Vector(vessel.position(active.getSurfaceReferenceFrame()));
                 final double distance = Vector.distance(activePos, vesselPos);
                 switch (search) {
-                    case "closest" :
+                    case "closest":
                         if (distance < TEN_KILOMETERS) {
                             return true;
                         }
                         break;
-                    case "samebody" :
+                    case "samebody":
                         return true;
                 }
             }
         } catch (RPCException ignored) {
         }
         return false;
-    }
-
-    private MechPeste() {
-        MainGui.newInstance();
     }
 
     public KRPC.GameScene getCurrentGameScene() throws RPCException {
@@ -160,53 +171,94 @@ public class MechPeste {
         setStatusMessage(Bundle.getString("status_connecting"));
         try {
             connection = Connection.newInstance("MechPeste - Pesterenan");
-            krpc = KRPC.newInstance(connection);
+            krpc = KRPC.newInstance(getConnection());
             spaceCenter = SpaceCenter.newInstance(getConnection());
             setStatusMessage(Bundle.getString("status_connected"));
             isBtnConnectVisible(false);
+            this.startSchedulerLoop();
         } catch (IOException e) {
             setStatusMessage(Bundle.getString("status_error_connection"));
+            System.err.println("Error: " + e.getMessage());
             isBtnConnectVisible(true);
         }
     }
 
-    public void checkConnection() {
-        try {
-            if (!MechPeste.newInstance().getCurrentGameScene().equals(KRPC.GameScene.FLIGHT)) {
-                setStatusMessage(Bundle.getString("status_ready"));
+    private void startSchedulerLoop() {
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        scheduler.scheduleAtFixedRate(() -> {
+            if (!isConnectionAlive()) {
+                System.err.println("Connection dropped, shutting down scheduler loop.");
+                scheduler.shutdown();
+                setStatusMessage(Bundle.getString("status_error_connection"));
+                isBtnConnectVisible(true);
+            }
+
+            if (!isOnFlightScene()) {
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
                 return;
             }
-            getConnection().close();
-        } catch (RPCException | NullPointerException | IOException e) {
-            setStatusMessage(Bundle.getString("status_error_connection"));
-            isBtnConnectVisible(true);
+
+            checkAndUpdateActiveVessel();
+            updateTelemetryData();
+            updateUI();
+        }, 0, 250, TimeUnit.MILLISECONDS);
+    }
+
+    private boolean isConnectionAlive() {
+        try {
+            krpc.getStatus();
+        } catch (RPCException e) {
+            return false;
+        }
+        return true;
+    }
+
+    private boolean isOnFlightScene() {
+        try {
+            return this.getCurrentGameScene().equals(KRPC.GameScene.FLIGHT);
+        } catch (RPCException e) {
+            return false;
         }
     }
 
-    private void checkActiveVessel() {
-        while (getConnection() != null) {
-            try {
-                if (!MechPeste.newInstance().getCurrentGameScene().equals(KRPC.GameScene.FLIGHT)) {
-                    Thread.sleep(100);
-                    return;
-                }
-                int activeVesselId = spaceCenter.getActiveVessel().hashCode();
-                // If the current active vessel changes, create a new connection
-                if (currentVesselId != activeVesselId) {
-                    currentVessel = new ActiveVessel();
-                    currentVesselId = currentVessel.getCurrentVesselId();
-                }
-                if (currentVesselId != -1) {
-                    currentVessel.recordTelemetryData();
-                    if (currentVessel.hasModuleRunning()) {
-                        setStatusMessage(currentVessel.getCurrentStatus());
-                    }
-                    FunctionsAndTelemetryJPanel.updateTelemetry(currentVessel.getTelemetryData());
-                    CreateManeuverJPanel.updatePanel(getCurrentManeuvers());
-                }
-                Thread.sleep(100);
-            } catch (RPCException | InterruptedException ignored) {
+    private void checkAndUpdateActiveVessel() {
+        try {
+            int activeVesselId = spaceCenter.getActiveVessel().hashCode();
+            if (currentVesselId != activeVesselId) {
+                currentVessel = new ActiveVessel();
+                currentVesselId = currentVessel.getCurrentVesselId();
             }
+        } catch (RPCException | NullPointerException e) {
+            System.err.println("Error while updating active vessel: " + e.getMessage());
         }
+    }
+
+    private void updateTelemetryData() {
+        if (currentVesselId == -1)
+            return;
+        try {
+            currentVessel.recordTelemetryData();
+        } catch (RPCException e) {
+            System.err.println("Error while getting telemetry: " + e.getMessage());
+            currentVesselId = -1;
+        }
+    }
+
+    private void updateUI() {
+        SwingUtilities.invokeLater(() -> {
+            try {
+                if (currentVessel.hasModuleRunning()) {
+                    setStatusMessage(currentVessel.getCurrentStatus());
+                }
+                FunctionsAndTelemetryJPanel.updateTelemetry(currentVessel.getTelemetryData());
+                CreateManeuverJPanel.updatePanel(getCurrentManeuvers());
+            } catch (Error e) {
+                System.err.println("Erro ao atualizar UI: " + e.getMessage());
+            }
+        });
     }
 }
