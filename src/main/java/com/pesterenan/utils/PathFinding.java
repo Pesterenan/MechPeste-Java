@@ -1,6 +1,9 @@
 package com.pesterenan.utils;
 
 import com.pesterenan.controllers.Controller;
+import com.pesterenan.model.ConnectionManager;
+import com.pesterenan.model.VesselManager;
+
 import krpc.client.RPCException;
 import krpc.client.services.Drawing;
 import krpc.client.services.SpaceCenter;
@@ -15,9 +18,6 @@ import java.util.Deque;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.pesterenan.MechPeste.getConnection;
-import static com.pesterenan.MechPeste.getSpaceCenter;
-
 public class PathFinding extends Controller {
 
     private WaypointManager waypointManager;
@@ -27,17 +27,17 @@ public class PathFinding extends Controller {
     private Drawing drawing;
     private Drawing.Polygon polygonPath;
 
-    public PathFinding() {
-        super();
+    public PathFinding(ConnectionManager connectionManager, VesselManager vesselManager) {
+        super(connectionManager, vesselManager);
         initializeParameters();
     }
 
     private void initializeParameters() {
         try {
-            waypointManager = getSpaceCenter().getWaypointManager();
+            waypointManager = getConnectionManager().getSpaceCenter().getWaypointManager();
             waypointsToReach = new ArrayList<>();
             pathToTarget = new ArrayList<>();
-            drawing = Drawing.newInstance(getConnection());
+            drawing = Drawing.newInstance(getConnectionManager().getConnection());
         } catch (RPCException ignored) {
         }
     }
@@ -194,7 +194,8 @@ public class PathFinding extends Controller {
     public double raycastDistance(Vector currentPoint, Vector targetDirection, SpaceCenter.ReferenceFrame reference,
             double searchDistance) throws RPCException {
         return Math.min(
-                getSpaceCenter().raycastDistance(currentPoint.toTriplet(), targetDirection.toTriplet(), reference),
+                getConnectionManager().getSpaceCenter().raycastDistance(currentPoint.toTriplet(),
+                        targetDirection.toTriplet(), reference),
                 searchDistance);
     }
 
@@ -206,11 +207,13 @@ public class PathFinding extends Controller {
 
     private Vector transformSurfToOrb(Vector vector) throws IOException, RPCException {
         return new Vector(
-                getSpaceCenter().transformPosition(vector.toTriplet(), surfaceReferenceFrame, orbitalReferenceFrame));
+                getConnectionManager().getSpaceCenter().transformPosition(vector.toTriplet(), surfaceReferenceFrame,
+                        orbitalReferenceFrame));
     }
 
     private Vector transformOrbToSurf(Vector vector) throws IOException, RPCException {
         return new Vector(
-                getSpaceCenter().transformPosition(vector.toTriplet(), orbitalReferenceFrame, surfaceReferenceFrame));
+                getConnectionManager().getSpaceCenter().transformPosition(vector.toTriplet(), orbitalReferenceFrame,
+                        surfaceReferenceFrame));
     }
 }

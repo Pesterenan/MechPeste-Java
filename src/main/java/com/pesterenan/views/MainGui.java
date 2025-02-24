@@ -1,51 +1,138 @@
 package com.pesterenan.views;
 
-import com.pesterenan.resources.Bundle;
-import com.pesterenan.utils.Module;
-
-import javax.swing.*;
-import javax.swing.border.EmptyBorder;
-
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.CardLayout;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.Rectangle;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+
+import javax.swing.Box;
+import javax.swing.JFrame;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JPanel;
+import javax.swing.JSeparator;
+import javax.swing.JTabbedPane;
+import javax.swing.UIManager;
+import javax.swing.border.EmptyBorder;
+
+import com.pesterenan.model.VesselManager;
+import com.pesterenan.resources.Bundle;
+import com.pesterenan.utils.Module;
 
 public class MainGui extends JFrame implements ActionListener, UIMethods {
 
     private static final long serialVersionUID = 1L;
 
-    private final Dimension APP_DIMENSION = new Dimension(480, 300);
     public static final Dimension PNL_DIMENSION = new Dimension(464, 216);
     public static final Dimension BTN_DIMENSION = new Dimension(110, 25);
     public static final EmptyBorder MARGIN_BORDER_10_PX_LR = new EmptyBorder(0, 10, 0, 10);
-    private static MainGui mainGui = null;
-    private static StatusJPanel pnlStatus;
-    private static FunctionsAndTelemetryJPanel pnlFunctionsAndTelemetry;
-    private final JPanel ctpMainGui = new JPanel();
+    private static MainGui instance = null;
+
     private final static JPanel cardJPanels = new JPanel();
+
+    private final static CardLayout cardLayout = new CardLayout(0, 0);
+
+    public static MainGui getInstance() {
+        return instance;
+    }
+
+    public static MainGui newInstance() {
+        if (instance == null) {
+            instance = new MainGui();
+        }
+        return instance;
+    }
+
+    public static Rectangle centerDialogOnScreen() {
+        Dimension SCREEN_DIMENSIONS = Toolkit.getDefaultToolkit().getScreenSize();
+        Dimension DIALOG_DIMENSIONS = new Dimension(400, 240);
+        int w = DIALOG_DIMENSIONS.width;
+        int h = DIALOG_DIMENSIONS.height;
+        int x = (SCREEN_DIMENSIONS.width - w) / 2;
+        int y = (SCREEN_DIMENSIONS.height - h) / 2;
+        return new Rectangle(x, y, w, h);
+    }
+
+    public static JPanel getCardJPanels() {
+        return cardJPanels;
+    }
+
+    public static void changeToPage(ActionEvent e) {
+        cardLayout.show(cardJPanels, e.getActionCommand());
+    }
+
+    public static void backToTelemetry(ActionEvent e) {
+        cardLayout.show(cardJPanels, Module.TELEMETRY.get());
+    }
+
+    public static Component createMarginComponent(int width, int height) {
+        Component marginComp = Box.createRigidArea(new Dimension(width, height));
+        return marginComp;
+    }
+
+    private FunctionsAndTelemetryJPanel pnlFunctionsAndTelemetry;
+
+    private StatusJPanel pnlStatus;
+
+    private final Dimension APP_DIMENSION = new Dimension(480, 300);
+
+    private final JPanel ctpMainGui = new JPanel();
+
     private JMenuBar menuBar;
     private JMenu mnFile, mnOptions, mnHelp;
     private JMenuItem mntmInstallKrpc, mntmExit, mntmChangeVessels, mntmAbout;
-
-    private final static CardLayout cardLayout = new CardLayout(0, 0);
     private LiftoffJPanel pnlLiftoff;
     private LandingJPanel pnlLanding;
+
     private CreateManeuverJPanel pnlCreateManeuvers;
+
     private RunManeuverJPanel pnlRunManeuvers;
+
     private RoverJPanel pnlRover;
+
     private DockingJPanel pnlDocking;
 
+    private VesselManager vesselManager;
     private MainGui() {
         initComponents();
         setupComponents();
         layoutComponents();
     }
 
-    public static MainGui newInstance() {
-        if (mainGui == null) {
-            mainGui = new MainGui();
-        }
-        return mainGui;
+    public FunctionsAndTelemetryJPanel getFunctionsAndTelemetryPanel() {
+        return pnlFunctionsAndTelemetry;
+    }
+
+    public StatusJPanel getStatusPanel() {
+        return pnlStatus;
+    }
+
+    public LiftoffJPanel getLiftoffPanel() {
+        return pnlLiftoff;
+    }
+
+    public LandingJPanel getLandingPanel() {
+        return pnlLanding;
+    }
+
+    public CreateManeuverJPanel getCreateManeuverPanel() {
+        return pnlCreateManeuvers;
+    }
+
+    public void setVesselManager(VesselManager vesselManager) {
+        this.vesselManager = vesselManager;
+        pnlFunctionsAndTelemetry.setVesselManager(vesselManager);
+        pnlDocking.setVesselManager(vesselManager);
+        pnlRover.setVesselManager(vesselManager);
+        pnlLiftoff.setVesselManager(vesselManager);
+        pnlLanding.setVesselManager(vesselManager);
+        pnlCreateManeuvers.setVesselManager(vesselManager);
+        pnlRunManeuvers.setVesselManager(vesselManager);
     }
 
     @Override
@@ -70,14 +157,14 @@ public class MainGui extends JFrame implements ActionListener, UIMethods {
         mntmAbout = new JMenuItem(Bundle.getString("main_mntm_about"));
 
         // Panels
-        pnlFunctionsAndTelemetry = new FunctionsAndTelemetryJPanel();
-        pnlLiftoff = new LiftoffJPanel();
-        pnlLanding = new LandingJPanel();
-        pnlCreateManeuvers = new CreateManeuverJPanel();
-        pnlRunManeuvers = new RunManeuverJPanel();
-        pnlRover = new RoverJPanel();
-        pnlDocking = new DockingJPanel();
         pnlStatus = new StatusJPanel();
+        pnlFunctionsAndTelemetry = new FunctionsAndTelemetryJPanel(getStatusPanel());
+        pnlLiftoff = new LiftoffJPanel(getStatusPanel());
+        pnlLanding = new LandingJPanel(getStatusPanel());
+        pnlCreateManeuvers = new CreateManeuverJPanel(getStatusPanel());
+        pnlRunManeuvers = new RunManeuverJPanel(getStatusPanel());
+        pnlRover = new RoverJPanel(getStatusPanel());
+        pnlDocking = new DockingJPanel(getStatusPanel());
     }
 
     @Override
@@ -150,10 +237,6 @@ public class MainGui extends JFrame implements ActionListener, UIMethods {
         }
     }
 
-    private void handleMntmMultiControlActionPerformed(ActionEvent e) {
-        new ChangeVesselDialog();
-    }
-
     protected void handleMntmInstallKrpcActionPerformed(ActionEvent e) {
         new InstallKrpcDialog();
     }
@@ -162,34 +245,11 @@ public class MainGui extends JFrame implements ActionListener, UIMethods {
         System.exit(0);
     }
 
-    public static Rectangle centerDialogOnScreen() {
-        Dimension SCREEN_DIMENSIONS = Toolkit.getDefaultToolkit().getScreenSize();
-        Dimension DIALOG_DIMENSIONS = new Dimension(400, 240);
-        int w = DIALOG_DIMENSIONS.width;
-        int h = DIALOG_DIMENSIONS.height;
-        int x = (SCREEN_DIMENSIONS.width - w) / 2;
-        int y = (SCREEN_DIMENSIONS.height - h) / 2;
-        return new Rectangle(x, y, w, h);
-    }
-
-    public static JPanel getCardJPanels() {
-        return cardJPanels;
-    }
-
-    public static void changeToPage(ActionEvent e) {
-        cardLayout.show(cardJPanels, e.getActionCommand());
-    }
-
-    public static void backToTelemetry(ActionEvent e) {
-        cardLayout.show(cardJPanels, Module.TELEMETRY.get());
-    }
-
     protected void handleMntmAboutActionPerformed(ActionEvent e) {
         new AboutJFrame();
     }
 
-    public static Component createMarginComponent(int width, int height) {
-        Component marginComp = Box.createRigidArea(new Dimension(width, height));
-        return marginComp;
+    private void handleMntmMultiControlActionPerformed(ActionEvent e) {
+        new ChangeVesselDialog(vesselManager);
     }
 }

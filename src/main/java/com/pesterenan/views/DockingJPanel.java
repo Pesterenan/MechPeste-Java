@@ -1,19 +1,26 @@
 package com.pesterenan.views;
 
-import com.pesterenan.MechPeste;
-import com.pesterenan.resources.Bundle;
-import com.pesterenan.utils.Module;
+import static com.pesterenan.views.MainGui.BTN_DIMENSION;
+import static com.pesterenan.views.MainGui.MARGIN_BORDER_10_PX_LR;
+import static com.pesterenan.views.MainGui.PNL_DIMENSION;
 
-import javax.swing.*;
-import javax.swing.border.TitledBorder;
-import java.awt.*;
+import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.pesterenan.views.MainGui.BTN_DIMENSION;
-import static com.pesterenan.views.MainGui.MARGIN_BORDER_10_PX_LR;
-import static com.pesterenan.views.MainGui.PNL_DIMENSION;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
+import javax.swing.SwingConstants;
+import javax.swing.border.TitledBorder;
+
+import com.pesterenan.model.VesselManager;
+import com.pesterenan.resources.Bundle;
+import com.pesterenan.utils.Module;
 
 public class DockingJPanel extends JPanel implements UIMethods {
 
@@ -25,10 +32,19 @@ public class DockingJPanel extends JPanel implements UIMethods {
     private JTextField txfMaxSpeed, txfSafeDistance;
     private JButton btnBack, btnStartDocking;
 
-    public DockingJPanel() {
+    private VesselManager vesselManager;
+
+    private StatusDisplay statusDisplay;
+
+    public DockingJPanel(StatusDisplay statusDisplay) {
+        this.statusDisplay = statusDisplay;
         initComponents();
         setupComponents();
         layoutComponents();
+    }
+
+    public void setVesselManager(VesselManager vesselManager) {
+        this.vesselManager = vesselManager;
     }
 
     @Override
@@ -130,25 +146,25 @@ public class DockingJPanel extends JPanel implements UIMethods {
             commands.put(Module.MODULO.get(), Module.DOCKING.get());
             commands.put(Module.SAFE_DISTANCE.get(), txfSafeDistance.getText());
             commands.put(Module.MAX_SPEED.get(), txfMaxSpeed.getText());
-            MechPeste.newInstance().startModule(commands);
+            vesselManager.startModule(commands);
         }
     }
 
     private boolean validateTextFields() {
         try {
             if (Float.parseFloat(txfMaxSpeed.getText()) > 10) {
-                StatusJPanel.setStatusMessage("Velocidade de acoplagem muito alta. Tem que ser menor que 10m/s.");
+                statusDisplay.setStatusMessage("Velocidade de acoplagem muito alta. Tem que ser menor que 10m/s.");
                 return false;
             }
             if (Float.parseFloat(txfSafeDistance.getText()) > 200) {
-                StatusJPanel.setStatusMessage("Distância segura muito alta. Tem que ser menor que 200m.");
+                statusDisplay.setStatusMessage("Distância segura muito alta. Tem que ser menor que 200m.");
                 return false;
             }
         } catch (NumberFormatException e) {
-            StatusJPanel.setStatusMessage(Bundle.getString("pnl_lift_stat_only_numbers"));
+            statusDisplay.setStatusMessage(Bundle.getString("pnl_lift_stat_only_numbers"));
             return false;
         } catch (IllegalArgumentException e) {
-            StatusJPanel.setStatusMessage(Bundle.getString("pnl_rover_waypoint_name_not_empty"));
+            statusDisplay.setStatusMessage(Bundle.getString("pnl_rover_waypoint_name_not_empty"));
             return false;
         }
         return true;

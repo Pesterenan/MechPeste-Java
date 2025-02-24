@@ -1,16 +1,14 @@
 package com.pesterenan.controllers;
 
-import static com.pesterenan.MechPeste.getConnection;
-import static com.pesterenan.MechPeste.getSpaceCenter;
-
 import java.util.Map;
 
+import com.pesterenan.model.ConnectionManager;
+import com.pesterenan.model.VesselManager;
 import com.pesterenan.resources.Bundle;
 import com.pesterenan.utils.Module;
 import com.pesterenan.utils.Utilities;
 import com.pesterenan.utils.Vector;
 import com.pesterenan.views.DockingJPanel;
-import com.pesterenan.views.StatusJPanel;
 
 import krpc.client.RPCException;
 import krpc.client.services.Drawing;
@@ -48,9 +46,12 @@ public class DockingController extends Controller {
     private double lastZTargetPos = 0.0;
     private long sleepTime = 25;
     private DOCKING_STEPS dockingStep;
+    private ConnectionManager connectionManager;
 
-    public DockingController(Map<String,String> commands) {
-        super();
+    public DockingController(ConnectionManager connectionManager, VesselManager vesselManager,
+            Map<String,String> commands) {
+        super(connectionManager, vesselManager);
+        this.connectionManager = connectionManager;
         this.commands = commands;
         initializeParameters();
     }
@@ -59,8 +60,8 @@ public class DockingController extends Controller {
         try {
             DOCKING_MAX_SPEED = Double.parseDouble(commands.get(Module.MAX_SPEED.get()));
             SAFE_DISTANCE = Double.parseDouble(commands.get(Module.SAFE_DISTANCE.get()));
-            drawing = Drawing.newInstance(getConnection());
-            targetVessel = getSpaceCenter().getTargetVessel();
+            drawing = Drawing.newInstance(connectionManager.getConnection());
+            targetVessel = connectionManager.getSpaceCenter().getTargetVessel();
             control = getActiveVessel().getControl();
             vesselRefFrame = getActiveVessel().getReferenceFrame();
             orbitalRefVessel = getActiveVessel().getOrbitalReferenceFrame();
@@ -160,7 +161,7 @@ public class DockingController extends Controller {
                 Thread.sleep(sleepTime);
             }
         } catch (RPCException | InterruptedException | IllegalArgumentException e) {
-            StatusJPanel.setStatusMessage("Docking interrupted.");
+            setCurrentStatus("Docking interrupted.");
         }
     }
 

@@ -1,19 +1,24 @@
 package com.pesterenan.model;
 
-import com.pesterenan.MechPeste;
+import java.util.HashMap;
+import java.util.Map;
+
 import com.pesterenan.controllers.Controller;
+import com.pesterenan.controllers.DockingController;
 import com.pesterenan.controllers.LandingController;
 import com.pesterenan.controllers.LiftoffController;
 import com.pesterenan.controllers.ManeuverController;
 import com.pesterenan.controllers.RoverController;
-import com.pesterenan.controllers.DockingController;
 import com.pesterenan.resources.Bundle;
 import com.pesterenan.utils.Module;
 import com.pesterenan.utils.Telemetry;
 import com.pesterenan.utils.Vector;
+
+import krpc.client.Connection;
 import krpc.client.RPCException;
 import krpc.client.Stream;
 import krpc.client.StreamException;
+import krpc.client.services.SpaceCenter;
 import krpc.client.services.SpaceCenter.AutoPilot;
 import krpc.client.services.SpaceCenter.CelestialBody;
 import krpc.client.services.SpaceCenter.Flight;
@@ -21,15 +26,11 @@ import krpc.client.services.SpaceCenter.ReferenceFrame;
 import krpc.client.services.SpaceCenter.Vessel;
 import krpc.client.services.SpaceCenter.VesselSituation;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import static com.pesterenan.MechPeste.getConnection;
-import static com.pesterenan.MechPeste.getSpaceCenter;
-
 public class ActiveVessel {
 
     protected Vessel activeVessel;
+    protected SpaceCenter spaceCenter;
+    protected Connection connection;
     private final Map<Telemetry,Double> telemetryData = new HashMap<>();
     public AutoPilot ap;
     public Flight flightParameters;
@@ -53,31 +54,23 @@ public class ActiveVessel {
     protected long timer = 0;
     private String currentStatus = Bundle.getString("status_ready");
     private boolean runningModule;
+    private ConnectionManager connectionManager;
+    private VesselManager vesselManager;
 
-    public ActiveVessel() {
+    public ActiveVessel(ConnectionManager connectionManager, VesselManager vesselManager) {
+        this.connectionManager = connectionManager;
+        this.vesselManager = vesselManager;
+        this.connection = connectionManager.getConnection();
+        this.spaceCenter = connectionManager.getSpaceCenter();
         initializeParameters();
     }
 
-    private void initializeParameters() {
-        try {
-            setActiveVessel(getSpaceCenter().getActiveVessel());
-            currentVesselId = getActiveVessel().hashCode();
-            ap = getActiveVessel().getAutoPilot();
-            currentBody = getActiveVessel().getOrbit().getBody();
-            gravityAcel = currentBody.getSurfaceGravity();
-            orbitalReferenceFrame = currentBody.getReferenceFrame();
-            surfaceReferenceFrame = getActiveVessel().getSurfaceReferenceFrame();
-            flightParameters = getActiveVessel().flight(orbitalReferenceFrame);
-            totalMass = getConnection().addStream(getActiveVessel(), "getMass");
-            altitude = getConnection().addStream(flightParameters, "getMeanAltitude");
-            surfaceAltitude = getConnection().addStream(flightParameters, "getSurfaceAltitude");
-            apoapsis = getConnection().addStream(getActiveVessel().getOrbit(), "getApoapsisAltitude");
-            periapsis = getConnection().addStream(getActiveVessel().getOrbit(), "getPeriapsisAltitude");
-            verticalVelocity = getConnection().addStream(flightParameters, "getVerticalSpeed");
-            horizontalVelocity = getConnection().addStream(flightParameters, "getHorizontalSpeed");
-        } catch (RPCException | StreamException e) {
-            System.err.println("Error while initializing parameters for active vessel: " + e.getMessage());
-        }
+    public ConnectionManager getConnectionManager() {
+        return connectionManager;
+    }
+
+    public VesselManager getVesselManager() {
+        return vesselManager;
     }
 
     public String getCurrentStatus() {
@@ -128,31 +121,12 @@ public class ActiveVessel {
                     setCurrentStatus(String.format(Bundle.getString("status_launching_in"), count));
                     Thread.sleep(100);
                 }
-                getSpaceCenter().setActiveVessel(activeVessel);
+                spaceCenter.setActiveVessel(activeVessel);
                 getActiveVessel().getControl().activateNextStage();
             }
             setCurrentStatus(Bundle.getString("status_liftoff"));
         } catch (RPCException | InterruptedException | StreamException ignored) {
             setCurrentStatus(Bundle.getString("status_liftoff_abort"));
-        }
-    }
-
-    protected void decoupleStage() throws RPCException, InterruptedException {
-        setCurrentStatus(Bundle.getString("status_separating_stage"));
-        MechPeste.getSpaceCenter().setActiveVessel(getActiveVessel());
-        double currentThrottle = getActiveVessel().getControl().getThrottle();
-        throttle(0);
-        Thread.sleep(1000);
-        getActiveVessel().getControl().activateNextStage();
-        throttleUp(currentThrottle, 1);
-    }
-
-    protected void throttleUp(double throttleAmount, double seconds) throws RPCException, InterruptedException {
-        double secondsElapsed = 0;
-        while (secondsElapsed < seconds) {
-            throttle(secondsElapsed / seconds * throttleAmount);
-            secondsElapsed += 0.1;
-            Thread.sleep(100);
         }
     }
 
@@ -175,24 +149,23 @@ public class ActiveVessel {
             runningModule = false;
         }
         if (currentFunction.equals(Module.LIFTOFF.get())) {
-            controller = new LiftoffController(commands);
+            controller = new LiftoffController(this.connectionManager, this.vesselManager, commands);
             runningModule = true;
         }
         if (currentFunction.equals(Module.HOVERING.get()) || currentFunction.equals(Module.LANDING.get())) {
-            controller = new LandingController(commands);
+            controller = new LandingController(this.connectionManager, this.vesselManager, commands);
             runningModule = true;
         }
         if (currentFunction.equals(Module.MANEUVER.get())) {
-            controller = new ManeuverController(commands);
+            controller = new ManeuverController(this.connectionManager, this.vesselManager, commands);
             runningModule = true;
         }
         if (currentFunction.equals(Module.ROVER.get())) {
-            controller = new RoverController(commands);
+            controller = new RoverController(this.connectionManager, this.vesselManager, commands);
             runningModule = true;
         }
         if (currentFunction.equals(Module.DOCKING.get())) {
-            controller = new DockingController(commands);
-            System.out.println("escolheu modulo docking");
+            controller = new DockingController(this.connectionManager, this.vesselManager, commands);
             runningModule = true;
         }
         controllerThread = new Thread(controller, currentVesselId + " - " + currentFunction);
@@ -234,5 +207,46 @@ public class ActiveVessel {
 
     public boolean hasModuleRunning() {
         return runningModule;
+    }
+
+    protected void decoupleStage() throws RPCException, InterruptedException {
+        setCurrentStatus(Bundle.getString("status_separating_stage"));
+        spaceCenter.setActiveVessel(getActiveVessel());
+        double currentThrottle = getActiveVessel().getControl().getThrottle();
+        throttle(0);
+        Thread.sleep(1000);
+        getActiveVessel().getControl().activateNextStage();
+        throttleUp(currentThrottle, 1);
+    }
+
+    protected void throttleUp(double throttleAmount, double seconds) throws RPCException, InterruptedException {
+        double secondsElapsed = 0;
+        while (secondsElapsed < seconds) {
+            throttle(secondsElapsed / seconds * throttleAmount);
+            secondsElapsed += 0.1;
+            Thread.sleep(100);
+        }
+    }
+
+    private void initializeParameters() {
+        try {
+            setActiveVessel(spaceCenter.getActiveVessel());
+            currentVesselId = getActiveVessel().hashCode();
+            ap = getActiveVessel().getAutoPilot();
+            currentBody = getActiveVessel().getOrbit().getBody();
+            gravityAcel = currentBody.getSurfaceGravity();
+            orbitalReferenceFrame = currentBody.getReferenceFrame();
+            surfaceReferenceFrame = getActiveVessel().getSurfaceReferenceFrame();
+            flightParameters = getActiveVessel().flight(orbitalReferenceFrame);
+            totalMass = connection.addStream(getActiveVessel(), "getMass");
+            altitude = connection.addStream(flightParameters, "getMeanAltitude");
+            surfaceAltitude = connection.addStream(flightParameters, "getSurfaceAltitude");
+            apoapsis = connection.addStream(getActiveVessel().getOrbit(), "getApoapsisAltitude");
+            periapsis = connection.addStream(getActiveVessel().getOrbit(), "getPeriapsisAltitude");
+            verticalVelocity = connection.addStream(flightParameters, "getVerticalSpeed");
+            horizontalVelocity = connection.addStream(flightParameters, "getHorizontalSpeed");
+        } catch (RPCException | StreamException e) {
+            System.err.println("Error while initializing parameters for active vessel: " + e.getMessage());
+        }
     }
 }

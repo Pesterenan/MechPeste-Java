@@ -1,13 +1,24 @@
 package com.pesterenan.views;
 
-import com.pesterenan.MechPeste;
+import static com.pesterenan.views.MainGui.BTN_DIMENSION;
 
-import javax.swing.*;
-import javax.swing.border.TitledBorder;
-import javax.swing.event.ListSelectionEvent;
 import java.awt.event.ActionEvent;
 
-import static com.pesterenan.views.MainGui.BTN_DIMENSION;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.ButtonGroup;
+import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JPanel;
+import javax.swing.JRadioButton;
+import javax.swing.JScrollPane;
+import javax.swing.ListSelectionModel;
+import javax.swing.border.TitledBorder;
+import javax.swing.event.ListSelectionEvent;
+
+import com.pesterenan.model.VesselManager;
 
 public class ChangeVesselDialog extends JDialog implements UIMethods {
 
@@ -16,8 +27,10 @@ public class ChangeVesselDialog extends JDialog implements UIMethods {
     private JList<String> listActiveVessels;
     private JButton btnChangeToVessel;
     private JRadioButton rbClosestVessels, rbOnSameBody, rbAllVessels;
+    private VesselManager vesselManager;
 
-    public ChangeVesselDialog() {
+    public ChangeVesselDialog(VesselManager vesselManager) {
+        this.vesselManager = vesselManager;
         initComponents();
         setupComponents();
         layoutComponents();
@@ -36,7 +49,7 @@ public class ChangeVesselDialog extends JDialog implements UIMethods {
         rbAllVessels = new JRadioButton("Todas as naves");
 
         // Misc:
-        listActiveVessels = new JList<>(MechPeste.getActiveVessels("closest"));
+        listActiveVessels = new JList<>(vesselManager.getActiveVessels("closest"));
         listActiveVessels.setToolTipText("Aqui são mostradas as naves próximas de acordo com o filtro da esquerda.");
     }
 
@@ -132,11 +145,11 @@ public class ChangeVesselDialog extends JDialog implements UIMethods {
             return;
         }
         int vesselHashCode = Integer.parseInt(listActiveVessels.getSelectedValue().split(" - ")[0]);
-        MechPeste.changeToVessel(vesselHashCode);
+        vesselManager.changeToVessel(vesselHashCode);
     }
 
     protected void handleBuildVesselList(ActionEvent e) {
-        listActiveVessels.setModel(MechPeste.getActiveVessels(e.getActionCommand()));
+        listActiveVessels.setModel(vesselManager.getActiveVessels(e.getActionCommand()));
     }
 
     protected void handleListActiveVesselsValueChanged(ListSelectionEvent e) {
@@ -147,7 +160,7 @@ public class ChangeVesselDialog extends JDialog implements UIMethods {
             return;
         }
         int vesselId = Integer.parseInt(selectedValue.split(" - ")[0]);
-        lblVesselStatus.setText(MechPeste.getVesselInfo(vesselId));
+        lblVesselStatus.setText(vesselManager.getVesselInfo(vesselId));
         btnChangeToVessel.setEnabled(true);
     }
 }

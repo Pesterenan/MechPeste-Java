@@ -1,25 +1,27 @@
 package com.pesterenan.controllers;
 
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.javatuples.Pair;
+import org.javatuples.Triplet;
+
+import com.pesterenan.model.ConnectionManager;
+import com.pesterenan.model.VesselManager;
 import com.pesterenan.resources.Bundle;
 import com.pesterenan.utils.ControlePID;
 import com.pesterenan.utils.Module;
 import com.pesterenan.utils.PathFinding;
 import com.pesterenan.utils.Utilities;
 import com.pesterenan.utils.Vector;
+
 import krpc.client.RPCException;
 import krpc.client.StreamException;
 import krpc.client.services.SpaceCenter.ReferenceFrame;
 import krpc.client.services.SpaceCenter.SolarPanel;
 import krpc.client.services.SpaceCenter.SolarPanelState;
-import org.javatuples.Pair;
-import org.javatuples.Triplet;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import static com.pesterenan.MechPeste.getSpaceCenter;
 
 public class RoverController extends Controller {
     private final ControlePID sterringCtrl = new ControlePID();
@@ -32,9 +34,12 @@ public class RoverController extends Controller {
     private Vector targetPoint = new Vector();
     private Vector roverDirection = new Vector();
     private MODE currentMode;
+    private ConnectionManager connectionManager;
 
-    public RoverController(Map<String,String> commands) {
-        super();
+    public RoverController(ConnectionManager connectionManager, VesselManager vesselManager,
+            Map<String,String> commands) {
+        super(connectionManager, vesselManager);
+        this.connectionManager = connectionManager;
         this.commands = commands;
         initializeParameters();
     }
@@ -44,7 +49,7 @@ public class RoverController extends Controller {
             maxSpeed = Float.parseFloat(commands.get(Module.MAX_SPEED.get()));
             roverReferenceFrame = getActiveVessel().getReferenceFrame();
             roverDirection = new Vector(getActiveVessel().direction(roverReferenceFrame));
-            pathFinding = new PathFinding();
+            pathFinding = new PathFinding(getConnectionManager(), getVesselManager());
             acelCtrl.setOutput(0, 1);
             sterringCtrl.setOutput(-1, 1);
             isAutoRoverRunning = true;
@@ -77,7 +82,7 @@ public class RoverController extends Controller {
             }
             if (commands.get(Module.ROVER_TARGET_TYPE.get()).equals(Module.TARGET_VESSEL.get())) {
                 Vector targetVesselPosition = new Vector(
-                        getSpaceCenter().getTargetVessel().position(orbitalReferenceFrame));
+                        connectionManager.getSpaceCenter().getTargetVessel().position(orbitalReferenceFrame));
                 setCurrentStatus("Calculando rota até o alvo...");
                 pathFinding.buildPathToTarget(targetVesselPosition);
             }
@@ -179,7 +184,8 @@ public class RoverController extends Controller {
             if (chargeTime < 1 || chargeTime > 21600) {
                 chargeTime = 3600;
             }
-            getSpaceCenter().warpTo((getSpaceCenter().getUT() + chargeTime), 10000, 4);
+            connectionManager.getSpaceCenter().warpTo((connectionManager.getSpaceCenter().getUT() + chargeTime), 10000,
+                    4);
             getActiveVessel().getControl().setLights(true);
         }
     }
@@ -267,22 +273,26 @@ public class RoverController extends Controller {
 
     private Vector transformDirection(Vector vector) throws RPCException {
         return new Vector(
-                getSpaceCenter().transformDirection(vector.toTriplet(), roverReferenceFrame, surfaceReferenceFrame));
+                connectionManager.getSpaceCenter().transformDirection(vector.toTriplet(), roverReferenceFrame,
+                        surfaceReferenceFrame));
     }
 
     private Vector posSurfToRover(Vector vector) throws RPCException {
         return new Vector(
-                getSpaceCenter().transformPosition(vector.toTriplet(), surfaceReferenceFrame, roverReferenceFrame));
+                connectionManager.getSpaceCenter().transformPosition(vector.toTriplet(), surfaceReferenceFrame,
+                        roverReferenceFrame));
     }
 
     private Vector posRoverToSurf(Vector vector) throws RPCException {
         return new Vector(
-                getSpaceCenter().transformPosition(vector.toTriplet(), roverReferenceFrame, surfaceReferenceFrame));
+                connectionManager.getSpaceCenter().transformPosition(vector.toTriplet(), roverReferenceFrame,
+                        surfaceReferenceFrame));
     }
 
     private Vector posOrbToSurf(Vector vector) throws RPCException {
         return new Vector(
-                getSpaceCenter().transformPosition(vector.toTriplet(), orbitalReferenceFrame, surfaceReferenceFrame));
+                connectionManager.getSpaceCenter().transformPosition(vector.toTriplet(), orbitalReferenceFrame,
+                        surfaceReferenceFrame));
     }
 
     private void setRoverThrottle(double throttle) throws RPCException, StreamException {

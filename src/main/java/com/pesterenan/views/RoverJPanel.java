@@ -1,20 +1,29 @@
 package com.pesterenan.views;
 
-import com.pesterenan.MechPeste;
-import com.pesterenan.resources.Bundle;
-import com.pesterenan.utils.Module;
+import static com.pesterenan.views.MainGui.BTN_DIMENSION;
+import static com.pesterenan.views.MainGui.MARGIN_BORDER_10_PX_LR;
+import static com.pesterenan.views.MainGui.PNL_DIMENSION;
 
-import javax.swing.*;
-import javax.swing.border.EtchedBorder;
-import javax.swing.border.TitledBorder;
-import java.awt.*;
+import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.pesterenan.views.MainGui.BTN_DIMENSION;
-import static com.pesterenan.views.MainGui.MARGIN_BORDER_10_PX_LR;
-import static com.pesterenan.views.MainGui.PNL_DIMENSION;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.ButtonGroup;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JRadioButton;
+import javax.swing.JTextField;
+import javax.swing.SwingConstants;
+import javax.swing.border.EtchedBorder;
+import javax.swing.border.TitledBorder;
+
+import com.pesterenan.model.VesselManager;
+import com.pesterenan.resources.Bundle;
+import com.pesterenan.utils.Module;
 
 public class RoverJPanel extends JPanel implements UIMethods {
 
@@ -25,11 +34,19 @@ public class RoverJPanel extends JPanel implements UIMethods {
     private JButton btnBack, btnDrive;
     private ButtonGroup bgTargetChoice;
     private JRadioButton rbTargetVessel, rbWaypointOnMap;
+    private VesselManager vesselManager;
 
-    public RoverJPanel() {
+    private StatusDisplay statusDisplay;
+
+    public RoverJPanel(StatusDisplay statusDisplay) {
+        this.statusDisplay = statusDisplay;
         initComponents();
         setupComponents();
         layoutComponents();
+    }
+
+    public void setVesselManager(VesselManager vesselManager) {
+        this.vesselManager = vesselManager;
     }
 
     @Override
@@ -148,7 +165,7 @@ public class RoverJPanel extends JPanel implements UIMethods {
             commands.put(Module.ROVER_TARGET_TYPE.get(), bgTargetChoice.getSelection().getActionCommand());
             commands.put(Module.MARKER_NAME.get(), txfWaypointName.getText());
             commands.put(Module.MAX_SPEED.get(), txfMaxSpeed.getText());
-            MechPeste.newInstance().startModule(commands);
+            vesselManager.startModule(commands);
         }
     }
 
@@ -161,10 +178,10 @@ public class RoverJPanel extends JPanel implements UIMethods {
                 throw new IllegalArgumentException();
             }
         } catch (NumberFormatException e) {
-            StatusJPanel.setStatusMessage(Bundle.getString("pnl_rover_max_speed_above_3"));
+            statusDisplay.setStatusMessage(Bundle.getString("pnl_rover_max_speed_above_3"));
             return false;
         } catch (IllegalArgumentException e) {
-            StatusJPanel.setStatusMessage(Bundle.getString("pnl_rover_waypoint_name_not_empty"));
+            statusDisplay.setStatusMessage(Bundle.getString("pnl_rover_waypoint_name_not_empty"));
             return false;
         }
         return true;

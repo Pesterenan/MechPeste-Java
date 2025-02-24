@@ -1,20 +1,25 @@
 package com.pesterenan.views;
 
-import com.pesterenan.MechPeste;
-import com.pesterenan.resources.Bundle;
-import com.pesterenan.utils.Module;
-import com.pesterenan.utils.Telemetry;
-import com.pesterenan.utils.Utilities;
-
-import javax.swing.*;
-import javax.swing.border.TitledBorder;
+import static com.pesterenan.views.MainGui.PNL_DIMENSION;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.util.Map;
 
-import static com.pesterenan.views.MainGui.PNL_DIMENSION;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.border.TitledBorder;
+
+import com.pesterenan.MechPeste;
+import com.pesterenan.model.VesselManager;
+import com.pesterenan.resources.Bundle;
+import com.pesterenan.utils.Module;
+import com.pesterenan.utils.Telemetry;
+import com.pesterenan.utils.Utilities;
 
 public class FunctionsAndTelemetryJPanel extends JPanel implements UIMethods {
 
@@ -26,10 +31,20 @@ public class FunctionsAndTelemetryJPanel extends JPanel implements UIMethods {
     private static JLabel lblAltitudeValue, lblSurfaceAltValue, lblApoapsisValue;
     private static JLabel lblPeriapsisValue, lblVertSpeedValue, lblHorzSpeedValue;
 
-    public FunctionsAndTelemetryJPanel() {
+    private VesselManager vesselManager;
+
+    private StatusDisplay statusDisplay;
+
+    public FunctionsAndTelemetryJPanel(StatusDisplay statusDisplay) {
+        this.statusDisplay = statusDisplay;
         initComponents();
         setupComponents();
         layoutComponents();
+    }
+
+    public void setVesselManager(VesselManager vesselManager) {
+        this.vesselManager = vesselManager;
+        btnCancel.setEnabled(true);
     }
 
     @Override
@@ -65,9 +80,10 @@ public class FunctionsAndTelemetryJPanel extends JPanel implements UIMethods {
         setLayout(new BorderLayout());
 
         // Setting up components:
-        btnCancel.addActionListener(MechPeste::cancelControl);
+        btnCancel.addActionListener(e -> cancelCurrentAction(e));
         btnCancel.setMaximumSize(btnFuncDimension);
         btnCancel.setPreferredSize(btnFuncDimension);
+        btnCancel.setEnabled(false);
         btnLanding.addActionListener(this::changeFunctionPanel);
         btnLanding.setActionCommand(Module.LANDING.get());
         btnLanding.setMaximumSize(btnFuncDimension);
@@ -88,6 +104,11 @@ public class FunctionsAndTelemetryJPanel extends JPanel implements UIMethods {
         btnDocking.setActionCommand(Module.DOCKING.get());
         btnDocking.setMaximumSize(btnFuncDimension);
         btnDocking.setPreferredSize(btnFuncDimension);
+    }
+
+    private void cancelCurrentAction(ActionEvent e) {
+        statusDisplay.setStatusMessage("Canceling current action...");
+        vesselManager.cancelControl(e);
     }
 
     @Override
@@ -172,22 +193,22 @@ public class FunctionsAndTelemetryJPanel extends JPanel implements UIMethods {
         synchronized (telemetryData) {
             for (Telemetry key : telemetryData.keySet()) {
                 switch (key) {
-                    case ALTITUDE :
+                    case ALTITUDE:
                         lblAltitudeValue.setText(Utilities.convertToMetersMagnitudes(telemetryData.get(key)));
                         break;
-                    case ALT_SURF :
+                    case ALT_SURF:
                         lblSurfaceAltValue.setText(Utilities.convertToMetersMagnitudes(telemetryData.get(key)));
                         break;
-                    case APOAPSIS :
+                    case APOAPSIS:
                         lblApoapsisValue.setText(Utilities.convertToMetersMagnitudes(telemetryData.get(key)));
                         break;
-                    case PERIAPSIS :
+                    case PERIAPSIS:
                         lblPeriapsisValue.setText(Utilities.convertToMetersMagnitudes(telemetryData.get(key)));
                         break;
-                    case VERT_SPEED :
+                    case VERT_SPEED:
                         lblVertSpeedValue.setText(Utilities.convertToMetersMagnitudes(telemetryData.get(key)) + "/s");
                         break;
-                    case HORZ_SPEED :
+                    case HORZ_SPEED:
                         lblHorzSpeedValue.setText(Utilities.convertToMetersMagnitudes(telemetryData.get(key)) + "/s");
                         break;
                 }

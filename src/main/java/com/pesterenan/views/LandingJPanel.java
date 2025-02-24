@@ -1,21 +1,30 @@
 package com.pesterenan.views;
 
-import com.pesterenan.MechPeste;
-import com.pesterenan.resources.Bundle;
-import com.pesterenan.utils.Module;
+import static com.pesterenan.views.MainGui.BTN_DIMENSION;
+import static com.pesterenan.views.MainGui.MARGIN_BORDER_10_PX_LR;
+import static com.pesterenan.views.MainGui.PNL_DIMENSION;
 
-import javax.swing.*;
-import javax.swing.border.Border;
-import javax.swing.border.EtchedBorder;
-import javax.swing.border.TitledBorder;
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.pesterenan.views.MainGui.BTN_DIMENSION;
-import static com.pesterenan.views.MainGui.MARGIN_BORDER_10_PX_LR;
-import static com.pesterenan.views.MainGui.PNL_DIMENSION;
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
+import javax.swing.border.Border;
+import javax.swing.border.EtchedBorder;
+import javax.swing.border.TitledBorder;
+
+import com.pesterenan.model.VesselManager;
+import com.pesterenan.resources.Bundle;
+import com.pesterenan.utils.Module;
 
 public class LandingJPanel extends JPanel implements UIMethods {
     private static final long serialVersionUID = 1L;
@@ -23,11 +32,19 @@ public class LandingJPanel extends JPanel implements UIMethods {
     private JTextField txfHover, txfMaxTWR;
     private JButton btnHover, btnAutoLanding, btnBack;
     private JCheckBox chkHoverAfterLanding;
+    private VesselManager vesselManager;
 
-    public LandingJPanel() {
+    private StatusDisplay statusDisplay;
+
+    public LandingJPanel(StatusDisplay statusDisplay) {
+        this.statusDisplay = statusDisplay;
         initComponents();
         setupComponents();
         layoutComponents();
+    }
+
+    public void setVesselManager(VesselManager vesselManager) {
+        this.vesselManager = vesselManager;
     }
 
     @Override
@@ -140,6 +157,10 @@ public class LandingJPanel extends JPanel implements UIMethods {
     }
 
     private void handleLandingAction(ActionEvent e) {
+        if (vesselManager == null) {
+            statusDisplay.setStatusMessage("Conexão não estabelecida ao pousar.");
+            return;
+        }
         try {
             Map<String,String> commands = new HashMap<>();
             commands.put(Module.MODULO.get(), e.getActionCommand());
@@ -147,13 +168,13 @@ public class LandingJPanel extends JPanel implements UIMethods {
             commands.put(Module.HOVER_ALTITUDE.get(), txfHover.getText());
             commands.put(Module.MAX_TWR.get(), txfMaxTWR.getText());
             commands.put(Module.HOVER_AFTER_LANDING.get(), String.valueOf(chkHoverAfterLanding.isSelected()));
-            MechPeste.newInstance().startModule(commands);
+            vesselManager.startModule(commands);
             MainGui.backToTelemetry(e);
             chkHoverAfterLanding.setSelected(false);
         } catch (NumberFormatException nfe) {
-            StatusJPanel.setStatusMessage(Bundle.getString("pnl_land_hover_alt_err"));
+            statusDisplay.setStatusMessage(Bundle.getString("pnl_land_hover_alt_err"));
         } catch (NullPointerException npe) {
-            StatusJPanel.setStatusMessage(Bundle.getString("pnl_land_hover_alt"));
+            statusDisplay.setStatusMessage(Bundle.getString("pnl_land_hover_alt"));
         }
     }
 

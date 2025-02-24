@@ -1,19 +1,31 @@
 package com.pesterenan.views;
 
-import com.pesterenan.MechPeste;
-import com.pesterenan.resources.Bundle;
-import com.pesterenan.utils.Module;
+import static com.pesterenan.views.MainGui.BTN_DIMENSION;
+import static com.pesterenan.views.MainGui.MARGIN_BORDER_10_PX_LR;
+import static com.pesterenan.views.MainGui.PNL_DIMENSION;
 
-import javax.swing.*;
-import javax.swing.border.TitledBorder;
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.pesterenan.views.MainGui.BTN_DIMENSION;
-import static com.pesterenan.views.MainGui.MARGIN_BORDER_10_PX_LR;
-import static com.pesterenan.views.MainGui.PNL_DIMENSION;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JSlider;
+import javax.swing.JTextField;
+import javax.swing.border.TitledBorder;
+
+import com.pesterenan.model.VesselManager;
+import com.pesterenan.resources.Bundle;
+import com.pesterenan.utils.Module;
 
 public class LiftoffJPanel extends JPanel implements UIMethods {
 
@@ -25,11 +37,20 @@ public class LiftoffJPanel extends JPanel implements UIMethods {
     private JComboBox<String> cbGravityCurveModel;
     private JSlider sldRoll;
     private JCheckBox chkOpenPanels, chkDecoupleStages;
+    private VesselManager vesselManager;
 
-    public LiftoffJPanel() {
+    private StatusDisplay statusDisplay;
+
+    public LiftoffJPanel(StatusDisplay statusDisplay) {
+        this.statusDisplay = statusDisplay;
         initComponents();
         setupComponents();
         layoutComponents();
+    }
+
+    public void setVesselManager(VesselManager vesselManager) {
+        this.vesselManager = vesselManager;
+        btnLiftoff.setEnabled(true);
     }
 
     @Override
@@ -50,6 +71,7 @@ public class LiftoffJPanel extends JPanel implements UIMethods {
 
         // Buttons:
         btnLiftoff = new JButton(Bundle.getString("pnl_lift_btn_liftoff"));
+        btnLiftoff.setEnabled(false);
         btnBack = new JButton(Bundle.getString("pnl_lift_btn_back"));
 
         // Checkboxes:
@@ -190,13 +212,17 @@ public class LiftoffJPanel extends JPanel implements UIMethods {
             Float.parseFloat(txfHeading.getText());
             Float.parseFloat(txfLimitTWR.getText());
         } catch (NumberFormatException e) {
-            StatusJPanel.setStatusMessage(Bundle.getString("pnl_lift_stat_only_numbers"));
+            statusDisplay.setStatusMessage(Bundle.getString("pnl_lift_stat_only_numbers"));
             return false;
         }
         return true;
     }
 
     private void handleLiftoff(ActionEvent e) {
+        if (vesselManager == null) {
+            statusDisplay.setStatusMessage("Conexão não estabelecida.");
+            return;
+        }
         if (validateTextFields()) {
             Map<String,String> commands = new HashMap<>();
             commands.put(Module.MODULO.get(), Module.LIFTOFF.get());
@@ -207,7 +233,7 @@ public class LiftoffJPanel extends JPanel implements UIMethods {
             commands.put(Module.INCLINATION.get(), cbGravityCurveModel.getSelectedItem().toString());
             commands.put(Module.STAGE.get(), String.valueOf(chkDecoupleStages.isSelected()));
             commands.put(Module.OPEN_PANELS.get(), String.valueOf(chkOpenPanels.isSelected()));
-            MechPeste.newInstance().startModule(commands);
+            vesselManager.startModule(commands);
             MainGui.backToTelemetry(e);
         }
     }
