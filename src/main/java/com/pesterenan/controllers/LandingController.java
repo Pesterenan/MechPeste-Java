@@ -1,9 +1,9 @@
 package com.pesterenan.controllers;
 
-import static com.pesterenan.MechPeste.getSpaceCenter;
-
 import java.util.Map;
 
+import com.pesterenan.model.ConnectionManager;
+import com.pesterenan.model.VesselManager;
 import com.pesterenan.resources.Bundle;
 import com.pesterenan.utils.ControlePID;
 import com.pesterenan.utils.Module;
@@ -16,6 +16,9 @@ import krpc.client.services.SpaceCenter.VesselSituation;
 
 public class LandingController extends Controller {
 
+    private enum MODE {
+        DEORBITING, APPROACHING, GOING_UP, HOVERING, GOING_DOWN, LANDING, WAITING
+    }
     public static final double MAX_VELOCITY = 5;
     private static final long sleepTime = 50;
     private static final double velP = 0.05;
@@ -33,18 +36,12 @@ public class LandingController extends Controller {
     private double altitudeErrorPercentage;
     private float maxTWR;
 
-    public LandingController(Map<String,String> commands) {
-        super();
+    public LandingController(ConnectionManager connectionManager, VesselManager vesselManager,
+            Map<String,String> commands) {
+        super(connectionManager, vesselManager);
         this.commands = commands;
-        this.navigation = new Navigation(getActiveVessel());
+        this.navigation = new Navigation(connectionManager, getActiveVessel());
         this.initializeParameters();
-    }
-
-    private void initializeParameters() {
-        altitudeCtrl = new ControlePID(getSpaceCenter(), sleepTime);
-        velocityCtrl = new ControlePID(getSpaceCenter(), sleepTime);
-        altitudeCtrl.setOutput(0, 1);
-        velocityCtrl.setOutput(0, 1);
     }
 
     @Override
@@ -55,6 +52,13 @@ public class LandingController extends Controller {
         if (commands.get(Module.MODULO.get()).equals(Module.LANDING.get())) {
             autoLanding();
         }
+    }
+
+    private void initializeParameters() {
+        altitudeCtrl = new ControlePID(getConnectionManager().getSpaceCenter(), sleepTime);
+        velocityCtrl = new ControlePID(getConnectionManager().getSpaceCenter(), sleepTime);
+        altitudeCtrl.setOutput(0, 1);
+        velocityCtrl.setOutput(0, 1);
     }
 
     private void hoverArea() {
@@ -276,9 +280,5 @@ public class LandingController extends Controller {
         double semiMajor = Math.max(a * 2, b * 2);
         double semiMinor = Math.min(a * 2, b * 2);
         return Math.PI * Math.sqrt((semiMajor * semiMajor + semiMinor * semiMinor)) / 4;
-    }
-
-    private enum MODE {
-        DEORBITING, APPROACHING, GOING_UP, HOVERING, GOING_DOWN, LANDING, WAITING
     }
 }

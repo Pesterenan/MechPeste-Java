@@ -1,17 +1,22 @@
 package com.pesterenan.views;
 
-import com.pesterenan.MechPeste;
-import com.pesterenan.resources.Bundle;
-
-import javax.swing.*;
-
 import static com.pesterenan.views.MainGui.BTN_DIMENSION;
 import static com.pesterenan.views.MainGui.MARGIN_BORDER_10_PX_LR;
 
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 
-public class StatusJPanel extends JPanel implements UIMethods {
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+
+import com.pesterenan.MechPeste;
+import com.pesterenan.resources.Bundle;
+
+public class StatusJPanel extends JPanel implements UIMethods, StatusDisplay {
     private static final long serialVersionUID = 1L;
 
     private static JLabel lblStatus;
@@ -61,16 +66,19 @@ public class StatusJPanel extends JPanel implements UIMethods {
         add(pnlMain, BorderLayout.CENTER);
     }
 
-    public static void setStatusMessage(String newStatus) {
-        lblStatus.setText(newStatus);
+    @Override
+    public void setStatusMessage(String message) {
+        lblStatus.setText(message);
     }
 
-    public static void isBtnConnectVisible(boolean visible) {
+    @Override
+    public void setBtnConnectVisible(boolean visible) {
         btnConnect.setVisible(visible);
     }
 
     private void handleConnect(ActionEvent e) {
         setStatusMessage(Bundle.getString("status_connecting"));
-        MechPeste.newInstance().connectToKSP();
+        setBtnConnectVisible(false);
+        MechPeste.newInstance().getConnectionManager().connectAndMonitor("MechPeste - Pesterenan");
     }
 }

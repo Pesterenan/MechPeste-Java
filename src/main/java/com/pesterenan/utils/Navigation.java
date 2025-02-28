@@ -5,8 +5,8 @@ import krpc.client.Stream;
 import krpc.client.StreamException;
 import org.javatuples.Triplet;
 
-import static com.pesterenan.MechPeste.getConnection;
-import static com.pesterenan.MechPeste.getSpaceCenter;
+import com.pesterenan.model.ConnectionManager;
+
 import static krpc.client.services.SpaceCenter.*;
 
 public class Navigation {
@@ -22,8 +22,10 @@ public class Navigation {
     private Flight flightParameters;
     private Stream<Double> horizontalSpeed;
     private ReferenceFrame orbitalReference;
+    private ConnectionManager connectionManager;
 
-    public Navigation(Vessel currentVessel) {
+    public Navigation(ConnectionManager connectionManager, Vessel currentVessel) {
+        this.connectionManager = connectionManager;
         this.currentVessel = currentVessel;
         initializeParameters();
     }
@@ -33,21 +35,23 @@ public class Navigation {
             // drawing = Drawing.newInstance(getConexao());
             orbitalReference = currentVessel.getOrbit().getBody().getReferenceFrame();
             flightParameters = currentVessel.flight(orbitalReference);
-            horizontalSpeed = getConnection().addStream(flightParameters, "getHorizontalSpeed");
+            horizontalSpeed = connectionManager.getConnection().addStream(flightParameters, "getHorizontalSpeed");
         } catch (RPCException | StreamException ignored) {
         }
     }
 
     public void aimAtManeuver(Node maneuver) throws RPCException {
-        aimAtDirection(getSpaceCenter().transformDirection(PROGRADE, maneuver.getReferenceFrame(), orbitalReference));
+        aimAtDirection(connectionManager.getSpaceCenter().transformDirection(PROGRADE, maneuver.getReferenceFrame(),
+                orbitalReference));
     }
 
     public void aimForLanding() throws RPCException, StreamException {
         Vector currentPosition = new Vector(currentVessel.position(orbitalReference));
-        Vector retrograde = new Vector(getSpaceCenter().transformPosition(RETROGRADE,
+        Vector retrograde = new Vector(connectionManager.getSpaceCenter().transformPosition(RETROGRADE,
                 currentVessel.getSurfaceVelocityReferenceFrame(), orbitalReference)).subtract(currentPosition);
-        Vector radial = new Vector(getSpaceCenter().transformDirection(RADIAL, currentVessel.getSurfaceReferenceFrame(),
-                orbitalReference));
+        Vector radial = new Vector(
+                connectionManager.getSpaceCenter().transformDirection(RADIAL, currentVessel.getSurfaceReferenceFrame(),
+                        orbitalReference));
         double angleLimit = Utilities.remap(0, 10, 0, 0.9, horizontalSpeed.get(), true);
         Vector landingVector = Utilities.linearInterpolation(radial, retrograde, angleLimit);
         aimAtDirection(landingVector.toTriplet());
@@ -132,17 +136,20 @@ public class Navigation {
     // }
 
     public void aimAtPrograde() throws RPCException {
-        aimAtDirection(getSpaceCenter().transformDirection(PROGRADE, currentVessel.getSurfaceVelocityReferenceFrame(),
+        aimAtDirection(connectionManager.getSpaceCenter().transformDirection(PROGRADE,
+                currentVessel.getSurfaceVelocityReferenceFrame(),
                 orbitalReference));
     }
 
     public void aimAtRadialOut() throws RPCException {
-        aimAtDirection(getSpaceCenter().transformDirection(RADIAL, currentVessel.getSurfaceReferenceFrame(),
-                orbitalReference));
+        aimAtDirection(
+                connectionManager.getSpaceCenter().transformDirection(RADIAL, currentVessel.getSurfaceReferenceFrame(),
+                        orbitalReference));
     }
 
     public void aimAtRetrograde() throws RPCException {
-        aimAtDirection(getSpaceCenter().transformDirection(RETROGRADE, currentVessel.getSurfaceVelocityReferenceFrame(),
+        aimAtDirection(connectionManager.getSpaceCenter().transformDirection(RETROGRADE,
+                currentVessel.getSurfaceVelocityReferenceFrame(),
                 orbitalReference));
     }
 

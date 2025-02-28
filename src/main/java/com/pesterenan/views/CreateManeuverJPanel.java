@@ -1,6 +1,35 @@
 package com.pesterenan.views;
 
+import static com.pesterenan.views.MainGui.BTN_DIMENSION;
+import static com.pesterenan.views.MainGui.PNL_DIMENSION;
+
+import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.GridLayout;
+import java.awt.Insets;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.ButtonGroup;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JPanel;
+import javax.swing.JRadioButton;
+import javax.swing.JScrollPane;
+import javax.swing.JSlider;
+import javax.swing.ListModel;
+import javax.swing.ListSelectionModel;
+import javax.swing.border.TitledBorder;
+
 import com.pesterenan.MechPeste;
+import com.pesterenan.model.VesselManager;
 import com.pesterenan.resources.Bundle;
 import com.pesterenan.utils.ControlePID;
 
@@ -9,22 +38,6 @@ import krpc.client.services.SpaceCenter.Node;
 import krpc.client.services.SpaceCenter.Orbit;
 import krpc.client.services.SpaceCenter.Vessel;
 import krpc.client.services.SpaceCenter.VesselSituation;
-
-import javax.swing.*;
-import javax.swing.border.TitledBorder;
-
-import org.javatuples.Pair;
-
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.HashMap;
-import java.util.Hashtable;
-import java.util.Locale;
-import java.util.Map;
-
-import static com.pesterenan.views.MainGui.PNL_DIMENSION;
-import static com.pesterenan.views.MainGui.BTN_DIMENSION;
 
 public class CreateManeuverJPanel extends JPanel implements ActionListener, UIMethods {
 
@@ -38,11 +51,18 @@ public class CreateManeuverJPanel extends JPanel implements ActionListener, UIMe
     private static ButtonGroup bgManeuverType;
     private static Map<Integer,Float> sliderValues = new HashMap<>();
     private final ControlePID ctrlManeuver = new ControlePID();
+    private VesselManager vesselManager;
+    private StatusDisplay statusDisplay;
 
-    public CreateManeuverJPanel() {
+    public CreateManeuverJPanel(StatusDisplay statusDisplay) {
+        this.statusDisplay = statusDisplay;
         initComponents();
         setupComponents();
         layoutComponents();
+    }
+
+    public void setVesselManager(VesselManager vesselManager) {
+        this.vesselManager = vesselManager;
     }
 
     @Override
@@ -277,10 +297,10 @@ public class CreateManeuverJPanel extends JPanel implements ActionListener, UIMe
         add(pnlBackButton, BorderLayout.SOUTH);
     }
 
-    public static void updatePanel(ListModel<String> list) {
+    public void updatePanel(ListModel<String> list) {
         try {
             boolean hasManeuverNodes = list.getSize() > 0;
-            boolean hasTargetVessel = MechPeste.getSpaceCenter().getTargetVessel() != null;
+            boolean hasTargetVessel = vesselManager.getSpaceCenter().getTargetVessel() != null;
             listCurrentManeuvers.setModel(list);
             listCurrentManeuvers.setSelectedIndex(selectedManeuverIndex);
             btnDeleteManeuver.setEnabled(hasManeuverNodes);
@@ -305,20 +325,19 @@ public class CreateManeuverJPanel extends JPanel implements ActionListener, UIMe
         btnDecrease.setText("- " + formattedValue + suffix);
     }
 
-    private void createManeuver() {
+    public void createManeuver() {
         try {
-            createManeuver(MechPeste.getSpaceCenter().getUT() + 60);
+            createManeuver(vesselManager.getSpaceCenter().getUT() + 60);
         } catch (RPCException e) {
         }
     }
 
-    private void createManeuver(double atFutureTime) {
+    public void createManeuver(double atFutureTime) {
         try {
-            MechPeste.newInstance();
-            Vessel vessel = MechPeste.getSpaceCenter().getActiveVessel();
+            Vessel vessel = vesselManager.getSpaceCenter().getActiveVessel();
 
             if (vessel.getSituation() != VesselSituation.ORBITING) {
-                StatusJPanel.setStatusMessage("Não é possível criar a manobra fora de órbita.");
+                statusDisplay.setStatusMessage("Não é possível criar a manobra fora de órbita.");
                 return;
             }
             vessel.getControl().addNode(atFutureTime, 0, 0, 0);
@@ -329,35 +348,34 @@ public class CreateManeuverJPanel extends JPanel implements ActionListener, UIMe
     private void deleteManeuver() {
         try {
             MechPeste.newInstance();
-            Vessel vessel = MechPeste.getSpaceCenter().getActiveVessel();
+            Vessel vessel = vesselManager.getSpaceCenter().getActiveVessel();
             Node currentManeuver = vessel.getControl().getNodes().get(selectedManeuverIndex);
             currentManeuver.remove();
         } catch (Exception e) {
         }
     }
 
-    private void positionManeuverAt(String node) {
+    public void positionManeuverAt(String node) {
         try {
-            MechPeste.newInstance();
-            Vessel vessel = MechPeste.getSpaceCenter().getActiveVessel();
+            Vessel vessel = vesselManager.getSpaceCenter().getActiveVessel();
             Orbit orbit = vessel.getOrbit();
             Node currentManeuver = vessel.getControl().getNodes().get(selectedManeuverIndex);
             double timeToNode = 0;
             switch (node) {
                 case "apoapsis" :
-                    timeToNode = MechPeste.getSpaceCenter().getUT() + orbit.getTimeToApoapsis();
+                    timeToNode = vesselManager.getSpaceCenter().getUT() + orbit.getTimeToApoapsis();
                     break;
                 case "periapsis" :
-                    timeToNode = MechPeste.getSpaceCenter().getUT() + orbit.getTimeToPeriapsis();
+                    timeToNode = vesselManager.getSpaceCenter().getUT() + orbit.getTimeToPeriapsis();
                     break;
                 case "ascending" :
                     double ascendingAnomaly = orbit
-                            .trueAnomalyAtAN(MechPeste.getSpaceCenter().getTargetVessel().getOrbit());
+                            .trueAnomalyAtAN(vesselManager.getSpaceCenter().getTargetVessel().getOrbit());
                     timeToNode = orbit.uTAtTrueAnomaly(ascendingAnomaly);
                     break;
                 case "descending" :
                     double descendingAnomaly = orbit
-                            .trueAnomalyAtDN(MechPeste.getSpaceCenter().getTargetVessel().getOrbit());
+                            .trueAnomalyAtDN(vesselManager.getSpaceCenter().getTargetVessel().getOrbit());
                     timeToNode = orbit.uTAtTrueAnomaly(descendingAnomaly);
                     break;
             }
@@ -371,8 +389,7 @@ public class CreateManeuverJPanel extends JPanel implements ActionListener, UIMe
 
     private void changeManeuverDeltaV(String command) {
         try {
-            MechPeste.newInstance();
-            Vessel vessel = MechPeste.getSpaceCenter().getActiveVessel();
+            Vessel vessel = vesselManager.getSpaceCenter().getActiveVessel();
             Node currentManeuver = vessel.getControl().getNodes().get(selectedManeuverIndex);
             String maneuverType = bgManeuverType.getSelection().getActionCommand();
             float currentSliderValue = sliderValues.get(sldScale.getValue());
@@ -402,16 +419,17 @@ public class CreateManeuverJPanel extends JPanel implements ActionListener, UIMe
 
     private void changeOrbit(String command) {
         try {
-            MechPeste.newInstance();
             Vessel vessel;
-            vessel = MechPeste.getSpaceCenter().getActiveVessel();
+            vessel = vesselManager.getSpaceCenter().getActiveVessel();
             Node currentManeuver = vessel.getControl().getNodes().get(selectedManeuverIndex);
             double currentOrbitPeriod = vessel.getOrbit().getPeriod();
             if (command == "next_orbit") {
                 currentManeuver.setUT(currentManeuver.getUT() + currentOrbitPeriod);
             } else {
                 double newUT = currentManeuver.getUT() - currentOrbitPeriod;
-                newUT = newUT < MechPeste.getSpaceCenter().getUT() ? MechPeste.getSpaceCenter().getUT() + 60 : newUT;
+                newUT = newUT < vesselManager.getSpaceCenter().getUT()
+                        ? vesselManager.getSpaceCenter().getUT() + 60
+                        : newUT;
                 currentManeuver.setUT(newUT);
             }
         } catch (RPCException ignored) {

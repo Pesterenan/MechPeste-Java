@@ -1,12 +1,11 @@
 package com.pesterenan.controllers;
 
-import static com.pesterenan.MechPeste.getSpaceCenter;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.pesterenan.MechPeste;
+import com.pesterenan.model.ConnectionManager;
+import com.pesterenan.model.VesselManager;
 import com.pesterenan.resources.Bundle;
 import com.pesterenan.utils.ControlePID;
 import com.pesterenan.utils.Module;
@@ -32,10 +31,11 @@ public class LiftoffController extends Controller {
     private String gravityCurveModel = Module.CIRCULAR.get();
     private Navigation navigation;
 
-    public LiftoffController(Map<String,String> commands) {
-        super();
+    public LiftoffController(ConnectionManager connectionManager, VesselManager vesselManager,
+            Map<String,String> commands) {
+        super(connectionManager, vesselManager);
         this.commands = commands;
-        this.navigation = new Navigation(getActiveVessel());
+        this.navigation = new Navigation(connectionManager, getActiveVessel());
         initializeParameters();
     }
 
@@ -48,7 +48,7 @@ public class LiftoffController extends Controller {
         setGravityCurveModel(commands.get(Module.INCLINATION.get()));
         willOpenPanelsAndAntenna = Boolean.parseBoolean(commands.get(Module.OPEN_PANELS.get()));
         willDecoupleStages = Boolean.parseBoolean(commands.get(Module.STAGE.get()));
-        thrControl = new ControlePID(getSpaceCenter(), 25);
+        thrControl = new ControlePID(getConnectionManager().getSpaceCenter(), 25);
         thrControl.setOutput(0.0, 1.0);
     }
 
@@ -133,7 +133,7 @@ public class LiftoffController extends Controller {
         commands.put(Module.MODULO.get(), Module.MANEUVER.get());
         commands.put(Module.FUNCTION.get(), Module.APOAPSIS.get());
         commands.put(Module.FINE_ADJUST.get(), String.valueOf(false));
-        MechPeste.newInstance().startModule(commands);
+        getVesselManager().startModule(commands);
     }
 
     private void jettisonFairings() throws RPCException, InterruptedException {

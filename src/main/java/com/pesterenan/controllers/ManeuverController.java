@@ -1,20 +1,19 @@
 package com.pesterenan.controllers;
 
-import static com.pesterenan.MechPeste.getConnection;
-import static com.pesterenan.MechPeste.getSpaceCenter;
-
 import java.util.List;
 import java.util.Map;
 
 import org.javatuples.Triplet;
 
+import com.pesterenan.model.ConnectionManager;
+import com.pesterenan.model.VesselManager;
 import com.pesterenan.resources.Bundle;
 import com.pesterenan.utils.Attributes;
 import com.pesterenan.utils.ControlePID;
 import com.pesterenan.utils.Module;
 import com.pesterenan.utils.Navigation;
 import com.pesterenan.utils.Vector;
-import com.pesterenan.views.RunManeuverJPanel;
+import com.pesterenan.views.MainGui;
 
 import krpc.client.RPCException;
 import krpc.client.Stream;
@@ -36,16 +35,17 @@ public class ManeuverController extends Controller {
     private boolean fineAdjustment;
     private double lowOrbitAltitude;
 
-    public ManeuverController(Map<String,String> commands) {
-        super();
+    public ManeuverController(ConnectionManager connectionManager, VesselManager vesselManager,
+            Map<String,String> commands) {
+        super(connectionManager, vesselManager);
         this.commands = commands;
-        this.navigation = new Navigation(getActiveVessel());
+        this.navigation = new Navigation(connectionManager, getActiveVessel());
         initializeParameters();
     }
 
     private void initializeParameters() {
-        ctrlRCS = new ControlePID(getSpaceCenter(), 25);
-        ctrlManeuver = new ControlePID(getSpaceCenter(), 25);
+        ctrlRCS = new ControlePID(getConnectionManager().getSpaceCenter(), 25);
+        ctrlManeuver = new ControlePID(getConnectionManager().getSpaceCenter(), 25);
         ctrlManeuver.setPIDValues(1, 0.001, 0.1);
         ctrlRCS.setOutput(0.5, 1.0);
         fineAdjustment = canFineAdjust(commands.get(Module.FINE_ADJUST.get()));
@@ -178,7 +178,7 @@ public class ManeuverController extends Controller {
         double[] dv = {0, 0, 0};
         try {
             double[] incNodesUt = getTimeToIncNodes(targetOrbit);
-            uTatClosestNode = Math.min(incNodesUt[0], incNodesUt[1]) - getSpaceCenter().getUT();
+            uTatClosestNode = Math.min(incNodesUt[0], incNodesUt[1]) - getConnectionManager().getSpaceCenter().getUT();
         } catch (Exception ignored) {
         }
         return createManeuver(uTatClosestNode, dv);
@@ -195,18 +195,18 @@ public class ManeuverController extends Controller {
         try {
             Vessel vessel = getActiveVessel();
             Orbit vesselOrbit = getActiveVessel().getOrbit();
-            Orbit targetVesselOrbit = getSpaceCenter().getTargetVessel().getOrbit();
+            Orbit targetVesselOrbit = getConnectionManager().getSpaceCenter().getTargetVessel().getOrbit();
             boolean hasManeuverNodes = vessel.getControl().getNodes().size() > 0;
             System.out.println("hasManeuverNodes: " + hasManeuverNodes);
             if (!hasManeuverNodes) {
-                RunManeuverJPanel.createManeuver();
+                MainGui.newInstance().getCreateManeuverPanel().createManeuver();
             }
             java.util.List<Node> currentManeuvers = vessel.getControl().getNodes();
             Node currentManeuver = currentManeuvers.get(0);
             double[] incNodesUt = {vesselOrbit.uTAtTrueAnomaly(vesselOrbit.trueAnomalyAtAN(targetVesselOrbit)),
                     vesselOrbit.uTAtTrueAnomaly(vesselOrbit.trueAnomalyAtDN(targetVesselOrbit))};
             boolean closestIsAN = incNodesUt[0] < incNodesUt[1];
-            RunManeuverJPanel.positionManeuverAt(closestIsAN ? "ascending" : "descending");
+            MainGui.newInstance().getCreateManeuverPanel().positionManeuverAt(closestIsAN ? "ascending" : "descending");
             double currentInclination = Math
                     .toDegrees(currentManeuver.getOrbit().relativeInclination(targetVesselOrbit));
             ctrlManeuver.setTimeSample(25);
@@ -231,15 +231,15 @@ public class ManeuverController extends Controller {
                 currentManeuvers = getActiveVessel().getControl().getNodes();
                 lastManeuverNode = currentManeuvers.get(currentManeuvers.size() - 1);
                 lastManeuverNodeUT += lastManeuverNode.getUT();
-                RunManeuverJPanel.createManeuver(lastManeuverNodeUT);
+                MainGui.newInstance().getCreateManeuverPanel().createManeuver(lastManeuverNodeUT);
             } else {
-                RunManeuverJPanel.createManeuver();
+                MainGui.newInstance().getCreateManeuverPanel().createManeuver();
             }
             currentManeuvers = getActiveVessel().getControl().getNodes();
             lastManeuverNode = currentManeuvers.get(currentManeuvers.size() - 1);
 
             Orbit activeVesselOrbit = getActiveVessel().getOrbit();
-            Orbit targetVesselOrbit = getSpaceCenter().getTargetVessel().getOrbit();
+            Orbit targetVesselOrbit = getConnectionManager().getSpaceCenter().getTargetVessel().getOrbit();
             ReferenceFrame currentBodyRefFrame = activeVesselOrbit.getBody().getNonRotatingReferenceFrame();
 
             double angularDiff = 10;
@@ -271,7 +271,8 @@ public class ManeuverController extends Controller {
                 }
                 angularDiff = calculatePhaseAngle(
                         lastManeuverNode.getOrbit().positionAt(maneuverUT, currentBodyRefFrame),
-                        getSpaceCenter().getTargetVessel().getOrbit().positionAt(maneuverUT, currentBodyRefFrame));
+                        getConnectionManager().getSpaceCenter().getTargetVessel().getOrbit().positionAt(maneuverUT,
+                                currentBodyRefFrame));
                 maneuverUT = lastManeuverNode.getUT();
                 lastManeuverNode.setUT(lastManeuverNode.getUT() + ctrlManeuver.calculate(-angularDiff * 100, 0));
                 System.out.println(angularDiff);
@@ -363,11 +364,11 @@ public class ManeuverController extends Controller {
     }
 
     private Orbit getTargetOrbit() throws RPCException {
-        if (getSpaceCenter().getTargetBody() != null) {
-            return getSpaceCenter().getTargetBody().getOrbit();
+        if (getConnectionManager().getSpaceCenter().getTargetBody() != null) {
+            return getConnectionManager().getSpaceCenter().getTargetBody().getOrbit();
         }
-        if (getSpaceCenter().getTargetVessel() != null) {
-            return getSpaceCenter().getTargetVessel().getOrbit();
+        if (getConnectionManager().getSpaceCenter().getTargetVessel() != null) {
+            return getConnectionManager().getSpaceCenter().getTargetVessel().getOrbit();
         }
         return null;
     }
@@ -375,7 +376,8 @@ public class ManeuverController extends Controller {
     private Node createManeuver(double laterTime, double[] deltaV) {
         Node maneuverNode = null;
         try {
-            getActiveVessel().getControl().addNode(getSpaceCenter().getUT() + laterTime, (float) deltaV[0],
+            getActiveVessel().getControl().addNode(getConnectionManager().getSpaceCenter().getUT() + laterTime,
+                    (float) deltaV[0],
                     (float) deltaV[1], (float) deltaV[2]);
             List<Node> currentNodes = getActiveVessel().getControl().getNodes();
             maneuverNode = currentNodes.get(currentNodes.size() - 1);
@@ -440,7 +442,8 @@ public class ManeuverController extends Controller {
             double burnStartTime = maneuverNode.getTimeTo() - (burnDuration / 2.0) - (fineAdjustment ? 5 : 0);
             setCurrentStatus(Bundle.getString("status_maneuver_warp"));
             if (burnStartTime > 30) {
-                getSpaceCenter().warpTo((getSpaceCenter().getUT() + burnStartTime - 10), 100000, 4);
+                getConnectionManager().getSpaceCenter()
+                        .warpTo((getConnectionManager().getSpaceCenter().getUT() + burnStartTime - 10), 100000, 4);
             }
             // Mostrar tempo de ignição:
             setCurrentStatus(String.format(Bundle.getString("status_maneuver_duration"), burnDuration));
@@ -454,7 +457,8 @@ public class ManeuverController extends Controller {
                 Thread.sleep(100);
             }
             // Executar a manobra:
-            Stream<Triplet<Double,Double,Double>> remainingBurn = getConnection().addStream(maneuverNode,
+            Stream<Triplet<Double,Double,Double>> remainingBurn = getConnectionManager().getConnection().addStream(
+                    maneuverNode,
                     "remainingBurnVector", maneuverNode.getReferenceFrame());
             setCurrentStatus(Bundle.getString("status_maneuver_executing"));
             while (maneuverNode != null) {
