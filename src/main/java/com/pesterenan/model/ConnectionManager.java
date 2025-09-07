@@ -36,6 +36,10 @@ public class ConnectionManager {
         return spaceCenter;
     }
 
+    public KRPC getKRPC() {
+        return krpc;
+    }
+
     public void connectAndMonitor(final String connectionName) {
         if (connectionScheduler != null && !connectionScheduler.isShutdown()) {
             return;

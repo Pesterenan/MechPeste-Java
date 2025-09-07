@@ -14,6 +14,7 @@ public class ControlePID {
     private double previousError, previousMeasurement, lastTime = 0.0;
     private double timeSample = 0.025; // 25 millisegundos
     private double proportionalTerm;
+
     private double derivativeTerm;
 
     public ControlePID() {
@@ -30,6 +31,10 @@ public class ControlePID {
         this.kd = kd;
         this.outputMin = outputMin;
         this.outputMax = outputMax;
+    }
+
+    public double getTimeSample() {
+        return timeSample;
     }
 
     public void reset() {
@@ -63,10 +68,6 @@ public class ControlePID {
         return limitOutput(proportionalTerm + integralTerm + derivativeTerm);
     }
 
-    private double limitOutput(double value) {
-        return Utilities.clamp(value, outputMin, outputMax);
-    }
-
     public void setOutput(double min, double max) {
         if (min > max) {
             return;
@@ -92,13 +93,32 @@ public class ControlePID {
         timeSample = milliseconds > 0 ? milliseconds / 1000 : timeSample;
     }
 
-    private double getCurrentTime() {
+    /**
+     * Tries to return the milliseconds from the game, if it fails, returns the
+     * system time
+     * 
+     * @returns the current time in milisseconds
+     */
+    public double getCurrentTime() {
         try {
             return spaceCenter.getUT();
         } catch (RPCException | NullPointerException ignored) {
-            System.err.println("Não foi possível buscar o tempo do jogo, retornando do sistema");
             return System.currentTimeMillis();
         }
     }
 
+    /** Uses busy waiting to lock the thread until time passes the time sample */
+    public void waitForNextSample() throws InterruptedException {
+        double startTime = getCurrentTime();
+        while (getCurrentTime() - startTime < getTimeSample()) {
+            Thread.sleep(1);
+            if (Thread.interrupted()) {
+                throw new InterruptedException();
+            }
+        }
+    }
+
+    private double limitOutput(double value) {
+        return Utilities.clamp(value, outputMin, outputMax);
+    }
 }

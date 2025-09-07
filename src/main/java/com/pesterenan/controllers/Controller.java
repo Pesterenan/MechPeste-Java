@@ -11,15 +11,6 @@ public class Controller extends ActiveVessel implements Runnable {
     }
 
     public void run() {
-        try {
-            while (!Thread.interrupted()) {
-                long currentTime = System.currentTimeMillis();
-                if (currentTime > timer + 100) {
-                    recordTelemetryData();
-                    timer = currentTime;
-                }
-            }
-        } catch (Exception ignored) {
-        }
+        // This method should be overridden by subclasses.
     }
 }

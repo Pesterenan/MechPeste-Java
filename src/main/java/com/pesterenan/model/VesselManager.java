@@ -29,6 +29,11 @@ public class VesselManager {
     private ActiveVessel currentVessel;
     private int currentVesselId = -1;
     private StatusDisplay statusDisplay;
+    private FunctionsAndTelemetryJPanel telemetryPanel;
+
+    public void setTelemetryPanel(FunctionsAndTelemetryJPanel panel) {
+        this.telemetryPanel = panel;
+    }
 
     public VesselManager(ConnectionManager connectionManager, StatusDisplay statusDisplay) {
         this.connectionManager = connectionManager;
@@ -68,12 +73,11 @@ public class VesselManager {
                     return;
                 }
                 checkAndUpdateActiveVessel();
-                updateTelemetryData();
                 updateUI();
             } catch (RPCException e) {
                 System.err.println("RPC Error: " + e.getMessage());
             }
-        }, 0, 250, TimeUnit.MILLISECONDS);
+        }, 0, 100, TimeUnit.MILLISECONDS);
     }
 
     public ListModel<String> getCurrentManeuvers() {
@@ -89,7 +93,7 @@ public class VesselManager {
                 } catch (RPCException ignored) {
                 }
             });
-        } catch (RPCException | NullPointerException ignored) {
+        } catch (RPCException | NullPointerException | UnsupportedOperationException ignored) {
         }
         return list;
     }
@@ -156,22 +160,10 @@ public class VesselManager {
         }
     }
 
-    private void updateTelemetryData() {
-        if (currentVesselId == -1 || currentVessel == null)
-            return;
-        try {
-            currentVessel.recordTelemetryData();
-        } catch (RPCException e) {
-            System.err.println("Error while recording telemetry: " + e.getMessage());
-            currentVessel = null;
-            currentVesselId = -1;
-        }
-    }
-
     private void updateUI() {
         SwingUtilities.invokeLater(() -> {
-            if (currentVessel != null) {
-                FunctionsAndTelemetryJPanel.updateTelemetry(currentVessel.getTelemetryData());
+            if (currentVessel != null && telemetryPanel != null) {
+                telemetryPanel.updateTelemetry(currentVessel.getTelemetryData());
                 MainGui.getInstance().getCreateManeuverPanel().updatePanel(getCurrentManeuvers());
                 if (currentVessel.hasModuleRunning()) {
                     statusDisplay.setStatusMessage(currentVessel.getCurrentStatus());
@@ -192,12 +184,12 @@ public class VesselManager {
                 final Vector vesselPos = new Vector(vessel.position(active.getSurfaceReferenceFrame()));
                 final double distance = Vector.distance(activePos, vesselPos);
                 switch (search) {
-                    case "closest":
+                    case "closest" :
                         if (distance < TEN_KILOMETERS) {
                             return true;
                         }
                         break;
-                    case "samebody":
+                    case "samebody" :
                         return true;
                 }
             }

@@ -14,7 +14,6 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.border.TitledBorder;
 
-import com.pesterenan.MechPeste;
 import com.pesterenan.model.VesselManager;
 import com.pesterenan.resources.Bundle;
 import com.pesterenan.utils.Module;
@@ -27,9 +26,9 @@ public class FunctionsAndTelemetryJPanel extends JPanel implements UIMethods {
 
     private final Dimension btnFuncDimension = new Dimension(140, 25);
     private JButton btnLiftoff, btnLanding, btnManeuvers, btnDocking, btnRover, btnCancel;
-    private static JLabel lblAltitude, lblSurfaceAlt, lblApoapsis, lblPeriapsis, lblVertSpeed, lblHorzSpeed;
-    private static JLabel lblAltitudeValue, lblSurfaceAltValue, lblApoapsisValue;
-    private static JLabel lblPeriapsisValue, lblVertSpeedValue, lblHorzSpeedValue;
+    private JLabel lblAltitude, lblSurfaceAlt, lblApoapsis, lblPeriapsis, lblVertSpeed, lblHorzSpeed;
+    private JLabel lblAltitudeValue, lblSurfaceAltValue, lblApoapsisValue;
+    private JLabel lblPeriapsisValue, lblVertSpeedValue, lblHorzSpeedValue;
 
     private VesselManager vesselManager;
 
@@ -189,26 +188,26 @@ public class FunctionsAndTelemetryJPanel extends JPanel implements UIMethods {
         MainGui.changeToPage(e);
     }
 
-    public static void updateTelemetry(Map<Telemetry,Double> telemetryData) {
+    public void updateTelemetry(Map<Telemetry,Double> telemetryData) {
         synchronized (telemetryData) {
             for (Telemetry key : telemetryData.keySet()) {
                 switch (key) {
-                    case ALTITUDE:
+                    case ALTITUDE :
                         lblAltitudeValue.setText(Utilities.convertToMetersMagnitudes(telemetryData.get(key)));
                         break;
-                    case ALT_SURF:
+                    case ALT_SURF :
                         lblSurfaceAltValue.setText(Utilities.convertToMetersMagnitudes(telemetryData.get(key)));
                         break;
-                    case APOAPSIS:
+                    case APOAPSIS :
                         lblApoapsisValue.setText(Utilities.convertToMetersMagnitudes(telemetryData.get(key)));
                         break;
-                    case PERIAPSIS:
+                    case PERIAPSIS :
                         lblPeriapsisValue.setText(Utilities.convertToMetersMagnitudes(telemetryData.get(key)));
                         break;
-                    case VERT_SPEED:
+                    case VERT_SPEED :
                         lblVertSpeedValue.setText(Utilities.convertToMetersMagnitudes(telemetryData.get(key)) + "/s");
                         break;
-                    case HORZ_SPEED:
+                    case HORZ_SPEED :
                         lblHorzSpeedValue.setText(Utilities.convertToMetersMagnitudes(telemetryData.get(key)) + "/s");
                         break;
                 }

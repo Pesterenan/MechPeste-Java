@@ -1,7 +1,7 @@
 package com.pesterenan.model;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.pesterenan.controllers.Controller;
 import com.pesterenan.controllers.DockingController;
@@ -31,7 +31,7 @@ public class ActiveVessel {
     protected Vessel activeVessel;
     protected SpaceCenter spaceCenter;
     protected Connection connection;
-    private final Map<Telemetry,Double> telemetryData = new HashMap<>();
+    private final Map<Telemetry,Double> telemetryData = new ConcurrentHashMap<>();
     public AutoPilot ap;
     public Flight flightParameters;
     public ReferenceFrame orbitalReferenceFrame;
@@ -172,23 +172,6 @@ public class ActiveVessel {
         controllerThread.start();
     }
 
-    public void recordTelemetryData() throws RPCException {
-        if (getActiveVessel().getOrbit().getBody() != currentBody) {
-            initializeParameters();
-        }
-        synchronized (telemetryData) {
-            try {
-                telemetryData.put(Telemetry.ALTITUDE, altitude.get() < 0 ? 0 : altitude.get());
-                telemetryData.put(Telemetry.ALT_SURF, surfaceAltitude.get() < 0 ? 0 : surfaceAltitude.get());
-                telemetryData.put(Telemetry.APOAPSIS, apoapsis.get() < 0 ? 0 : apoapsis.get());
-                telemetryData.put(Telemetry.PERIAPSIS, periapsis.get() < 0 ? 0 : periapsis.get());
-                telemetryData.put(Telemetry.VERT_SPEED, verticalVelocity.get());
-                telemetryData.put(Telemetry.HORZ_SPEED, horizontalVelocity.get() < 0 ? 0 : horizontalVelocity.get());
-            } catch (RPCException | StreamException ignored) {
-            }
-        }
-    }
-
     public Map<Telemetry,Double> getTelemetryData() {
         return telemetryData;
     }
@@ -239,12 +222,33 @@ public class ActiveVessel {
             surfaceReferenceFrame = getActiveVessel().getSurfaceReferenceFrame();
             flightParameters = getActiveVessel().flight(orbitalReferenceFrame);
             totalMass = connection.addStream(getActiveVessel(), "getMass");
+            totalMass.start();
+
+            // Add callbacks to update telemetry data automatically
             altitude = connection.addStream(flightParameters, "getMeanAltitude");
+            altitude.addCallback(val -> telemetryData.put(Telemetry.ALTITUDE, val < 0 ? 0 : val));
+            altitude.start();
+
             surfaceAltitude = connection.addStream(flightParameters, "getSurfaceAltitude");
+            surfaceAltitude.addCallback(val -> telemetryData.put(Telemetry.ALT_SURF, val < 0 ? 0 : val));
+            surfaceAltitude.start();
+
             apoapsis = connection.addStream(getActiveVessel().getOrbit(), "getApoapsisAltitude");
+            apoapsis.addCallback(val -> telemetryData.put(Telemetry.APOAPSIS, val < 0 ? 0 : val));
+            apoapsis.start();
+
             periapsis = connection.addStream(getActiveVessel().getOrbit(), "getPeriapsisAltitude");
+            periapsis.addCallback(val -> telemetryData.put(Telemetry.PERIAPSIS, val < 0 ? 0 : val));
+            periapsis.start();
+
             verticalVelocity = connection.addStream(flightParameters, "getVerticalSpeed");
+            verticalVelocity.addCallback(val -> telemetryData.put(Telemetry.VERT_SPEED, val));
+            verticalVelocity.start();
+
             horizontalVelocity = connection.addStream(flightParameters, "getHorizontalSpeed");
+            horizontalVelocity.addCallback(val -> telemetryData.put(Telemetry.HORZ_SPEED, val < 0 ? 0 : val));
+            horizontalVelocity.start();
+
         } catch (RPCException | StreamException e) {
             System.err.println("Error while initializing parameters for active vessel: " + e.getMessage());
         }
