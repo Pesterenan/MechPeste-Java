@@ -13,6 +13,7 @@ import com.pesterenan.utils.Navigation;
 import com.pesterenan.utils.Utilities;
 
 import krpc.client.RPCException;
+import krpc.client.Stream;
 import krpc.client.StreamException;
 import krpc.client.services.SpaceCenter.Engine;
 import krpc.client.services.SpaceCenter.Fairing;
@@ -21,12 +22,9 @@ public class LiftoffController extends Controller {
 
     private static final float PITCH_UP = 90;
     private ControlePID thrControl;
-    private float currentPitch;
-    private float finalApoapsisAlt;
-    private float heading;
-    private float roll;
-    private float maxTWR;
-
+    private float currentPitch, finalApoapsisAlt, heading, roll, maxTWR;
+    private volatile boolean targetApoapsisReached, dynamicPressureLowEnough = false;
+    private int apoapsisCallbackTag, pressureCallbackTag;
     private boolean willDecoupleStages, willOpenPanelsAndAntenna;
     private String gravityCurveModel = Module.CIRCULAR.get();
     private Navigation navigation;
@@ -55,6 +53,25 @@ public class LiftoffController extends Controller {
     @Override
     public void run() {
         try {
+            // Apoapsis Check using Stream Callback
+            apoapsisCallbackTag = apoapsis.addCallback((apo) -> {
+                if (apo >= getFinalApoapsis()) {
+                    targetApoapsisReached = true;
+                    apoapsis.removeCallback(apoapsisCallbackTag);
+                }
+            });
+            apoapsis.start();
+
+            // Dynamic Pressure Check using Stream Callback
+            Stream<Float> pressureStream = connection.addStream(flightParameters, "getDynamicPressure");
+            pressureCallbackTag = pressureStream.addCallback((pressure) -> {
+                if (pressure <= 10) {
+                    dynamicPressureLowEnough = true;
+                    pressureStream.removeCallback(pressureCallbackTag);
+                }
+            });
+            pressureStream.start();
+
             tuneAutoPilot();
             liftoff();
             gravityCurve();
@@ -73,29 +90,22 @@ public class LiftoffController extends Controller {
         throttle(getMaxThrottleForTWR(maxTWR));
         double startCurveAlt = altitude.get();
 
-        while (currentPitch > 1) {
-            if (apoapsis.get() > getFinalApoapsis()) {
-                throttle(0);
-                break;
-            }
+        while (currentPitch > 1 && !targetApoapsisReached) {
             double altitudeProgress = Utilities.remap(startCurveAlt, getFinalApoapsis(), 1, 0.01, altitude.get(),
                     false);
             currentPitch = (float) (calculateCurrentPitch(altitudeProgress));
             double currentMaxTWR = calculateTWRBasedOnPressure(currentPitch);
             ap.setTargetPitch(currentPitch);
-            throttle(Math.min(thrControl.calculate(apoapsis.get() / getFinalApoapsis() * 1000, 1000),
-                    getMaxThrottleForTWR(currentMaxTWR)));
+            double throttleValue = Math.min(thrControl.calculate(apoapsis.get() / getFinalApoapsis() * 1000, 1000),
+                    getMaxThrottleForTWR(currentMaxTWR));
+            throttle(Utilities.clamp(throttleValue, 0.05, 1.0));
 
             if (willDecoupleStages && isCurrentStageWithoutFuel()) {
                 decoupleStage();
             }
             setCurrentStatus(String.format(Bundle.getString("status_liftoff_inclination") + " %.1f", currentPitch));
-
-            Thread.sleep(25);
-            if (Thread.interrupted()) {
-                throw new InterruptedException();
-            }
         }
+        throttle(0);
     }
 
     private double calculateTWRBasedOnPressure(float currentPitch) throws RPCException {
@@ -110,13 +120,9 @@ public class LiftoffController extends Controller {
         setCurrentStatus(Bundle.getString("status_maintaining_until_orbit"));
         getActiveVessel().getControl().setRCS(true);
 
-        while (flightParameters.getDynamicPressure() > 10) {
-            if (Thread.interrupted()) {
-                throw new InterruptedException();
-            }
+        while (!dynamicPressureLowEnough) {
             navigation.aimAtPrograde();
             throttle(thrControl.calculate(apoapsis.get() / getFinalApoapsis() * 1000, 1000));
-            Thread.sleep(25);
         }
         throttle(0.0f);
         if (willDecoupleStages) {
@@ -142,8 +148,6 @@ public class LiftoffController extends Controller {
             setCurrentStatus(Bundle.getString("status_jettisoning_shields"));
             for (Fairing f : fairings) {
                 if (f.getJettisoned()) {
-                    // Overly complicated way of getting the event from the button in the fairing
-                    // to jettison the fairing, since the jettison method doesn't work.
                     String eventName = f.getPart().getModules().get(0).getEvents().get(0);
                     f.getPart().getModules().get(0).triggerEvent(eventName);
                     Thread.sleep(10000);
