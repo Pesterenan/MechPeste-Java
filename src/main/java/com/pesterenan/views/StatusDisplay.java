@@ -1,7 +1,7 @@
 package com.pesterenan.views;
 
 public interface StatusDisplay {
-    void setStatusMessage(String message);
+  void setStatusMessage(String message);
 
-    void setBtnConnectVisible(boolean visible);
+  void setBtnConnectVisible(boolean visible);
 }
