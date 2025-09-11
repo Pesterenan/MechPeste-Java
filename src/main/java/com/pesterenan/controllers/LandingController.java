@@ -7,7 +7,6 @@ import com.pesterenan.utils.ControlePID;
 import com.pesterenan.utils.Module;
 import com.pesterenan.utils.Navigation;
 import com.pesterenan.utils.Utilities;
-import java.io.IOException;
 import java.util.Map;
 import krpc.client.RPCException;
 import krpc.client.Stream;
@@ -17,11 +16,11 @@ import krpc.client.services.SpaceCenter.VesselSituation;
 public class LandingController extends Controller {
 
   private enum MODE {
-    DEORBITING,
     APPROACHING,
+    DEORBITING,
+    GOING_DOWN,
     GOING_UP,
     HOVERING,
-    GOING_DOWN,
     LANDING,
     WAITING
   }
@@ -41,8 +40,12 @@ public class LandingController extends Controller {
   private float maxTWR;
 
   private volatile boolean isDeorbitBurnDone, isOrientedForDeorbit, isFalling = false;
-  private int isOrientedCallbackTag, isDeorbitBurnDoneCallbackTag, isFallingCallbackTag;
+  private int isOrientedCallbackTag,
+      isDeorbitBurnDoneCallbackTag,
+      isFallingCallbackTag,
+      utCallbackTag;
   private Stream<Float> apErrorStream;
+  private Stream<Double> utStream;
 
   public LandingController(
       ConnectionManager connectionManager,
@@ -56,11 +59,23 @@ public class LandingController extends Controller {
 
   @Override
   public void run() {
-    if (commands.get(Module.MODULO.get()).equals(Module.HOVERING.get())) {
-      hoverArea();
-    }
-    if (commands.get(Module.MODULO.get()).equals(Module.LANDING.get())) {
-      autoLanding();
+    try {
+      if (commands.get(Module.MODULO.get()).equals(Module.HOVERING.get())) {
+        hoverArea();
+      }
+      if (commands.get(Module.MODULO.get()).equals(Module.LANDING.get())) {
+        autoLanding();
+      }
+      while (landingMode || hoveringMode) {
+        if (Thread.interrupted()) {
+          throw new InterruptedException();
+        }
+        Thread.sleep(1000);
+      }
+    } catch (InterruptedException | RPCException | StreamException e) {
+      System.err.println("Erro no run do landingController:" + e.getMessage());
+      cleanup();
+      setCurrentStatus(Bundle.getString("status_ready"));
     }
   }
 
@@ -91,45 +106,32 @@ public class LandingController extends Controller {
         }
         changeControlMode();
       }
-    } catch (InterruptedException | RPCException | StreamException | IOException e) {
+    } catch (InterruptedException | RPCException | StreamException e) {
       cleanup();
       setCurrentStatus(Bundle.getString("status_ready"));
     }
   }
 
-  private void autoLanding() {
-    try {
-      setupCallbacks();
-      landingMode = true;
-      maxTWR = Float.parseFloat(commands.get(Module.MAX_TWR.get()));
-      hoverAfterApproximation =
-          Boolean.parseBoolean(commands.get(Module.HOVER_AFTER_LANDING.get()));
-      hoverAltitude = Double.parseDouble(commands.get(Module.HOVER_ALTITUDE.get()));
-      if (!hoverAfterApproximation) {
-        hoverAltitude = 100;
-      }
-      setCurrentStatus(
-          Bundle.getString("status_starting_landing_at") + " " + currentBody.getName());
-      currentMode = MODE.DEORBITING;
-      ap.engage();
-      changeControlMode();
-      tuneAutoPilot();
-      setCurrentStatus(Bundle.getString("status_starting_landing"));
-      while (landingMode) {
-        if (Thread.interrupted()) {
-          throw new InterruptedException();
-        }
-        getActiveVessel().getControl().setBrakes(true);
-        changeControlMode();
-      }
-    } catch (RPCException | StreamException | InterruptedException | IOException e) {
-      cleanup();
-      System.err.println("landing: " + e.getMessage());
-      setCurrentStatus(Bundle.getString("status_ready"));
+  private void autoLanding() throws RPCException, StreamException, InterruptedException {
+    landingMode = true;
+    maxTWR = Float.parseFloat(commands.get(Module.MAX_TWR.get()));
+    hoverAfterApproximation = Boolean.parseBoolean(commands.get(Module.HOVER_AFTER_LANDING.get()));
+    hoverAltitude = Double.parseDouble(commands.get(Module.HOVER_ALTITUDE.get()));
+    if (!hoverAfterApproximation) {
+      hoverAltitude = 100;
     }
+    setCurrentStatus(Bundle.getString("status_starting_landing_at") + " " + currentBody.getName());
+    currentMode = MODE.DEORBITING;
+    ap.engage();
+    tuneAutoPilot();
+    getActiveVessel().getControl().setBrakes(true);
+    setCurrentStatus(Bundle.getString("status_starting_landing"));
+    setupCallbacks();
+    altitudeCtrl.reset();
+    velocityCtrl.reset();
   }
 
-  private void setupCallbacks() throws IOException, RPCException, StreamException {
+  private void setupCallbacks() throws RPCException, StreamException {
     // Callback for ship orientation
     apErrorStream = connection.addStream(ap, "getError");
     isOrientedCallbackTag =
@@ -165,16 +167,32 @@ public class LandingController extends Controller {
               }
             });
 
+    utStream = connection.addStream(spaceCenter.getClass(), "getUT");
+    utCallbackTag =
+        utStream.addCallback(
+            (ut) -> {
+              try {
+                if (!landingMode) {
+                  utStream.removeCallback(utCallbackTag);
+                  return;
+                }
+                changeControlMode();
+              } catch (Exception e) {
+                System.err.println("UT Callback error: " + e.getMessage());
+              }
+            });
+
     // Start all streams
     apErrorStream.start();
     apoapsis.start();
     periapsis.start();
     verticalVelocity.start();
+    utStream.start();
   }
 
-  private void changeControlMode()
-      throws RPCException, StreamException, InterruptedException, IOException {
+  private void changeControlMode() throws RPCException, StreamException, InterruptedException {
     adjustPIDbyTWR();
+    double velPID, altPID = 0;
     // Change vessel behavior depending on which mode is active
     switch (currentMode) {
       case DEORBITING:
@@ -192,29 +210,29 @@ public class LandingController extends Controller {
       case APPROACHING:
         altitudeCtrl.setOutput(0, 1);
         velocityCtrl.setOutput(0, 1);
-
-        double[] currentDistanceToGround = calculateCurrentDistanceToGround();
-        double[] currentVelocities = calculateZeroVelocityMagnitude();
-        double aMax = getMaxAcel(maxTWR);
-        double landingDistanceThreshold = Math.max(hoverAltitude, aMax * 3);
-
-        double stoppingDistance = (currentVelocities[0] * currentVelocities[0]) / (2 * aMax);
-
-        double threshold = Utilities.clamp(stoppingDistance / landingDistanceThreshold, 0, 1);
-
-        double altPID =
-            altitudeCtrl.calculate(
-                (currentDistanceToGround[0]), (stoppingDistance + landingDistanceThreshold));
-        double velPID =
+        double currentVelocity = calculateCurrentVelocityMagnitude();
+        double zeroVelocity = calculateZeroVelocityMagnitude();
+        double landingDistanceThreshold = Math.max(hoverAltitude, getMaxAcel(maxTWR) * 3);
+        double threshold =
+            Utilities.clamp(
+                ((currentVelocity + zeroVelocity) - landingDistanceThreshold)
+                    / landingDistanceThreshold / sleepTime,
+                0,
+                1);
+        System.out.println(
+            "Current: "
+                + currentVelocity / sleepTime
+                + " Zero: "
+                + zeroVelocity / sleepTime
+                + " Threshold: "
+                + threshold);
+        altPID = altitudeCtrl.calculate(currentVelocity / sleepTime, zeroVelocity / sleepTime);
+        velPID =
             velocityCtrl.calculate(
                 verticalVelocity.get(), (-Utilities.clamp(surfaceAltitude.get() * 0.1, 3, 20)));
-
-        double interpolation = Utilities.linearInterpolation(velPID, altPID, threshold);
-
-        throttle(interpolation);
+        throttle(Utilities.linearInterpolation(velPID, altPID, threshold));
         navigation.aimForLanding();
-
-        if (threshold < 0.15 && surfaceAltitude.get() < landingDistanceThreshold * 2) {
+        if (threshold < 0.15 || surfaceAltitude.get() < landingDistanceThreshold) {
           hoverAltitude = landingDistanceThreshold;
           getActiveVessel().getControl().setGear(true);
           if (hoverAfterApproximation) {
@@ -227,6 +245,8 @@ public class LandingController extends Controller {
         setCurrentStatus("Se aproximando do momento do pouso...");
         break;
       case GOING_UP:
+        altitudeCtrl.reset();
+        velocityCtrl.reset();
         altitudeCtrl.setOutput(-0.5, 0.5);
         velocityCtrl.setOutput(-0.5, 0.5);
         throttle(
@@ -236,6 +256,8 @@ public class LandingController extends Controller {
         setCurrentStatus("Subindo altitude...");
         break;
       case GOING_DOWN:
+        altitudeCtrl.reset();
+        velocityCtrl.reset();
         controlThrottleByMatchingVerticalVelocity(-MAX_VELOCITY);
         navigation.aimAtRadialOut();
         setCurrentStatus("Baixando altitude...");
@@ -250,6 +272,8 @@ public class LandingController extends Controller {
         setCurrentStatus("Pousando...");
         break;
       case HOVERING:
+        altitudeCtrl.reset();
+        velocityCtrl.reset();
         altitudeCtrl.setOutput(-0.5, 0.5);
         velocityCtrl.setOutput(-0.5, 0.5);
         throttle(
@@ -262,6 +286,12 @@ public class LandingController extends Controller {
   }
 
   private void adjustPIDbyTWR() throws RPCException, StreamException {
+    // double currentTWR = Math.min(getTWR(), maxTWR);
+    // // double currentTWR = getMaxAcel(maxTWR);
+    // double pGain = currentTWR / (sleepTime);
+    // System.out.println(pGain);
+    // altitudeCtrl.setPIDValues(pGain * 0.1, 0.0002, pGain * 0.1 * 2);
+    // velocityCtrl.setPIDValues(pGain * 0.1, 0.1, 0.001);
     double currentTWR = getMaxAcel(maxTWR);
     double pGain = Math.min(getTWR(), maxTWR);
     altitudeCtrl.setPIDValues(currentTWR * velP * velP, 0.1, velD);
@@ -326,27 +356,35 @@ public class LandingController extends Controller {
     return false;
   }
 
-  private double[] calculateCurrentDistanceToGround() throws RPCException, StreamException {
-    double vertVel = verticalVelocity.get();
-    double horzVel = horizontalVelocity.get();
-    double vertAlt = surfaceAltitude.get();
-    double horzDist = horzVel * (vertAlt / Math.abs(vertVel));
-    double euclidianDistance = Math.sqrt(vertAlt * vertAlt + horzDist * horzDist);
-    return new double[] {euclidianDistance, 0};
+  private double calculateCurrentVelocityMagnitude() throws RPCException, StreamException {
+    double timeToGround = surfaceAltitude.get() / verticalVelocity.get();
+    double horizontalDistance = horizontalVelocity.get() * timeToGround;
+    return calculateEllipticTrajectory(horizontalDistance, surfaceAltitude.get());
   }
 
-  private double[] calculateZeroVelocityMagnitude() throws RPCException, StreamException {
-    double vertVel = verticalVelocity.get();
-    double horzVel = horizontalVelocity.get();
-    return new double[] {Math.sqrt(horzVel * horzVel + vertVel * vertVel), 0};
+  private double calculateZeroVelocityMagnitude() throws RPCException, StreamException {
+    double zeroVelocityDistance =
+        calculateEllipticTrajectory(horizontalVelocity.get(), verticalVelocity.get());
+    double zeroVelocityBurnTime = zeroVelocityDistance / getMaxAcel(maxTWR);
+    return zeroVelocityDistance * zeroVelocityBurnTime;
+  }
+
+  private double calculateEllipticTrajectory(double a, double b) {
+    double semiMajor = Math.max(a * 2, b * 2);
+    double semiMinor = Math.min(a * 2, b * 2);
+    return Math.PI * Math.sqrt((semiMajor * semiMajor + semiMinor * semiMinor)) / 4;
   }
 
   private void cleanup() {
     try {
+      landingMode = false;
+      hoveringMode = false;
+      utStream.removeCallback(utCallbackTag);
+      utStream.remove();
       apErrorStream.removeCallback(isOrientedCallbackTag);
+      apErrorStream.remove();
       periapsis.removeCallback(isDeorbitBurnDoneCallbackTag);
       verticalVelocity.removeCallback(isFallingCallbackTag);
-      apErrorStream.remove();
       ap.disengage();
       throttle(0);
     } catch (RPCException e) {
