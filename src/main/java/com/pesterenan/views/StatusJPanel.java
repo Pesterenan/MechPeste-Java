@@ -75,8 +75,6 @@ public class StatusJPanel extends JPanel implements UIMethods, StatusDisplay {
   }
 
   private void handleConnect(ActionEvent e) {
-    setStatusMessage(Bundle.getString("status_connecting"));
-    setBtnConnectVisible(false);
-    MechPeste.newInstance().getConnectionManager().connectAndMonitor("MechPeste - Pesterenan");
+    MechPeste.newInstance().getConnectionManager().connect();
   }
 }

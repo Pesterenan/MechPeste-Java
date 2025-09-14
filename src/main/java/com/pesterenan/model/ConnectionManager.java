@@ -16,13 +16,15 @@ public class ConnectionManager {
   private KRPC krpc;
   private Connection connection;
   private SpaceCenter spaceCenter;
-  private final StatusDisplay statusDisplay;
+  private StatusDisplay statusDisplay;
   private volatile boolean isConnecting = false;
-  private ScheduledExecutorService connectionScheduler;
+  private ScheduledExecutorService connectionMonitor;
+  private String connectionName;
 
   public ConnectionManager(final String connectionName, final StatusDisplay statusDisplay) {
     this.statusDisplay = statusDisplay;
-    connectAndMonitor(connectionName);
+    this.connectionName = connectionName;
+    startMonitoring();
   }
 
   public Connection getConnection() {
@@ -37,41 +39,18 @@ public class ConnectionManager {
     return krpc;
   }
 
-  public void connectAndMonitor(final String connectionName) {
-    if (connectionScheduler != null && !connectionScheduler.isShutdown()) {
-      return;
-    }
-    connectionScheduler = Executors.newSingleThreadScheduledExecutor();
-    connectionScheduler.scheduleAtFixedRate(
+  public void connect() {
+    attemptConnection();
+  }
+
+  private void startMonitoring() {
+    if (connectionMonitor != null && !connectionMonitor.isShutdown()) return;
+    connectionMonitor =
+        Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "MP_CONNECTION_MONITOR"));
+    connectionMonitor.scheduleAtFixedRate(
         () -> {
-          if (isConnectionAlive() || isConnecting) {
-            return;
-          }
-
-          isConnecting = true;
-          SwingUtilities.invokeLater(
-              () -> {
-                statusDisplay.setStatusMessage(Bundle.getString("status_connecting"));
-                statusDisplay.setBtnConnectVisible(false);
-              });
-
-          try {
-            connection = Connection.newInstance(connectionName);
-            krpc = KRPC.newInstance(getConnection());
-            spaceCenter = SpaceCenter.newInstance(getConnection());
-            SwingUtilities.invokeLater(
-                () -> {
-                  statusDisplay.setStatusMessage(Bundle.getString("status_connected"));
-                  statusDisplay.setBtnConnectVisible(false);
-                });
-          } catch (final IOException e) {
-            SwingUtilities.invokeLater(
-                () -> {
-                  statusDisplay.setStatusMessage(Bundle.getString("status_error_connection"));
-                  statusDisplay.setBtnConnectVisible(true);
-                });
-          } finally {
-            isConnecting = false;
+          if (!isConnectionAlive()) {
+            attemptConnection();
           }
         },
         0,
@@ -79,23 +58,50 @@ public class ConnectionManager {
         TimeUnit.SECONDS);
   }
 
+  private void attemptConnection() {
+    if (isConnecting) return;
+    try {
+      isConnecting = true;
+      SwingUtilities.invokeLater(
+          () -> {
+            statusDisplay.setStatusMessage(Bundle.getString("status_connecting"));
+            statusDisplay.setBtnConnectVisible(false);
+          });
+
+      connection = Connection.newInstance(connectionName);
+      krpc = KRPC.newInstance(connection);
+      spaceCenter = SpaceCenter.newInstance(connection);
+
+      SwingUtilities.invokeLater(
+          () -> statusDisplay.setStatusMessage(Bundle.getString("status_connected")));
+    } catch (IOException e) {
+      connection = null;
+      krpc = null;
+      spaceCenter = null;
+      SwingUtilities.invokeLater(
+          () -> {
+            statusDisplay.setStatusMessage(Bundle.getString("status_error_connection"));
+            statusDisplay.setBtnConnectVisible(true);
+          });
+    } finally {
+      isConnecting = false;
+    }
+  }
+
   public boolean isConnectionAlive() {
     try {
-      if (krpc == null) return false;
+      if (krpc == null || connection == null)  return false;
       krpc.getStatus();
       return true;
-    } catch (final RPCException e) {
+    } catch (RPCException e) {
       return false;
     }
   }
 
-  public KRPC.GameScene getCurrentGameScene() throws RPCException {
-    return krpc.getCurrentGameScene();
-  }
-
   public boolean isOnFlightScene() {
     try {
-      return this.getCurrentGameScene().equals(KRPC.GameScene.FLIGHT);
+      if (krpc == null) return false;
+      return krpc.getCurrentGameScene().equals(KRPC.GameScene.FLIGHT);
     } catch (final RPCException e) {
       return false;
     }

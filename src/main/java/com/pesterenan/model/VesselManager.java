@@ -22,19 +22,19 @@ import krpc.client.services.SpaceCenter.Node;
 import krpc.client.services.SpaceCenter.Vessel;
 
 public class VesselManager {
-  private ConnectionManager connectionManager;
   private ActiveVessel currentVessel;
-  private int currentVesselId = -1;
-  private StatusDisplay statusDisplay;
+  private ConnectionManager connectionManager;
   private FunctionsAndTelemetryJPanel telemetryPanel;
+  private StatusDisplay statusDisplay;
+  private int currentVesselId = -1;
 
-  public void setTelemetryPanel(FunctionsAndTelemetryJPanel panel) {
-    this.telemetryPanel = panel;
-  }
-
-  public VesselManager(ConnectionManager connectionManager, StatusDisplay statusDisplay) {
+  public VesselManager(
+      final ConnectionManager connectionManager,
+      final StatusDisplay statusDisplay,
+      final FunctionsAndTelemetryJPanel telemetryPanel) {
     this.connectionManager = connectionManager;
     this.statusDisplay = statusDisplay;
+    this.telemetryPanel = telemetryPanel;
   }
 
   public Connection getConnection() {
@@ -173,6 +173,9 @@ public class VesselManager {
     Vessel activeVessel = getSpaceCenter().getActiveVessel();
     int activeVesselId = activeVessel.hashCode();
     if (currentVesselId != activeVesselId) {
+      if (currentVessel != null && currentVessel.hasModuleRunning()) {
+        currentVessel.cancelControl();
+      }
       currentVessel = new ActiveVessel(connectionManager, this);
       currentVesselId = currentVessel.getCurrentVesselId();
       MainGui.getInstance().setVesselManager(this);

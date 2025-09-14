@@ -33,7 +33,7 @@ public class ActiveVessel {
   public AutoPilot ap;
   public Flight flightParameters;
   public ReferenceFrame orbitalReferenceFrame;
-  protected Stream<Float> totalMass;
+  public Stream<Float> totalMass;
   public ReferenceFrame surfaceReferenceFrame;
   public float totalCharge;
   public double gravityAcel;
@@ -183,11 +183,11 @@ public class ActiveVessel {
     try {
       ap.disengage();
       throttle(0);
-      if (controllerThread != null) {
-        controllerThread.interrupt();
-        runningModule = false;
-      }
     } catch (RPCException ignored) {
+    }
+    if (controllerThread != null) {
+      controllerThread.interrupt();
+      runningModule = false;
     }
   }
 

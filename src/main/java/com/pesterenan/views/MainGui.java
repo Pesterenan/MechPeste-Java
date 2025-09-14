@@ -75,6 +75,10 @@ public class MainGui extends JFrame implements ActionListener, UIMethods {
 
   private FunctionsAndTelemetryJPanel pnlFunctionsAndTelemetry;
 
+  public FunctionsAndTelemetryJPanel getTelemetryPanel() {
+    return pnlFunctionsAndTelemetry;
+  }
+
   private StatusJPanel pnlStatus;
 
   private final Dimension APP_DIMENSION = new Dimension(480, 300);

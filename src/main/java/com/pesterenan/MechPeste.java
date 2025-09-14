@@ -2,15 +2,16 @@ package com.pesterenan;
 
 import com.pesterenan.model.ConnectionManager;
 import com.pesterenan.model.VesselManager;
+import com.pesterenan.views.FunctionsAndTelemetryJPanel;
 import com.pesterenan.views.MainGui;
 import com.pesterenan.views.StatusDisplay;
 import java.lang.reflect.InvocationTargetException;
 import javax.swing.SwingUtilities;
 
 public class MechPeste {
-  private static MechPeste instance;
   private ConnectionManager connectionManager = null;
   private VesselManager vesselManager;
+  private static MechPeste instance;
 
   public ConnectionManager getConnectionManager() {
     return connectionManager;
@@ -35,13 +36,12 @@ public class MechPeste {
       SwingUtilities.invokeAndWait(() -> MainGui.newInstance());
     } catch (InvocationTargetException | InterruptedException e) {
       System.err.println("Error while invoking GUI: " + e.getMessage());
-      e.printStackTrace();
     }
 
     StatusDisplay statusDisplay = MainGui.newInstance().getStatusPanel();
+    FunctionsAndTelemetryJPanel telemetryPanel = MainGui.newInstance().getTelemetryPanel();
     app.connectionManager = new ConnectionManager("MechPeste - Pesterenan", statusDisplay);
-    app.vesselManager = new VesselManager(app.connectionManager, statusDisplay);
-    app.vesselManager.setTelemetryPanel(MainGui.getInstance().getFunctionsAndTelemetryPanel());
+    app.vesselManager = new VesselManager(app.connectionManager, statusDisplay, telemetryPanel);
     app.vesselManager.startUpdateLoop();
   }
 }
