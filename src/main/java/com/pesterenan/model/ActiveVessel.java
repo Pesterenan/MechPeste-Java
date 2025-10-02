@@ -171,24 +171,41 @@ public class ActiveVessel {
       controller = new DockingController(this.connectionManager, this.vesselManager, commands);
       runningModule = true;
     }
-    controllerThread = new Thread(controller, currentVesselId + " - " + currentFunction);
+    String controllerThreadName = "MP_CTRL_" + currentFunction + "_" + currentVesselId;
+    controllerThread = new Thread(controller, controllerThreadName);
     controllerThread.start();
   }
 
-  public Map<Telemetry, Double> getTelemetryData() {
-    return telemetryData;
+  public Thread getControllerThread() {
+    return controllerThread;
   }
 
   public void cancelControl() {
-    try {
-      ap.disengage();
-      throttle(0);
-    } catch (RPCException ignored) {
-    }
     if (controllerThread != null) {
       controllerThread.interrupt();
       runningModule = false;
     }
+  }
+
+  public void removeStreams() {
+    try {
+      if (totalMass != null) totalMass.remove();
+      if (altitude != null) altitude.remove();
+      if (surfaceAltitude != null) surfaceAltitude.remove();
+      if (apoapsis != null) apoapsis.remove();
+      if (periapsis != null) periapsis.remove();
+      if (verticalVelocity != null) verticalVelocity.remove();
+      if (horizontalVelocity != null) horizontalVelocity.remove();
+      if (controllerThread != null && controllerThread.isAlive()) {
+        controllerThread.interrupt();
+      }
+    } catch (RPCException e) {
+      System.err.println("ERRO: Ao remover streams da nave atual. " + e.getMessage());
+    }
+  }
+
+  public Map<Telemetry, Double> getTelemetryData() {
+    return telemetryData;
   }
 
   public boolean hasModuleRunning() {
@@ -216,6 +233,7 @@ public class ActiveVessel {
   }
 
   private void initializeParameters() {
+    System.out.println("DEBUG: Initializing ActiveVessel parameters...");
     try {
       setActiveVessel(spaceCenter.getActiveVessel());
       currentVesselId = getActiveVessel().hashCode();
@@ -225,38 +243,35 @@ public class ActiveVessel {
       orbitalReferenceFrame = currentBody.getReferenceFrame();
       surfaceReferenceFrame = getActiveVessel().getSurfaceReferenceFrame();
       flightParameters = getActiveVessel().flight(orbitalReferenceFrame);
-      totalMass = connection.addStream(getActiveVessel(), "getMass");
-      totalMass.start();
 
-      // Add callbacks to update telemetry data automatically
+      System.out.println("DEBUG: Basic parameters set. Creating streams...");
       altitude = connection.addStream(flightParameters, "getMeanAltitude");
-      altitude.addCallback(val -> telemetryData.put(Telemetry.ALTITUDE, val < 0 ? 0 : val));
-      altitude.start();
-
-      surfaceAltitude = connection.addStream(flightParameters, "getSurfaceAltitude");
-      surfaceAltitude.addCallback(val -> telemetryData.put(Telemetry.ALT_SURF, val < 0 ? 0 : val));
-      surfaceAltitude.start();
-
       apoapsis = connection.addStream(getActiveVessel().getOrbit(), "getApoapsisAltitude");
-      apoapsis.addCallback(val -> telemetryData.put(Telemetry.APOAPSIS, val < 0 ? 0 : val));
-      apoapsis.start();
-
-      periapsis = connection.addStream(getActiveVessel().getOrbit(), "getPeriapsisAltitude");
-      periapsis.addCallback(val -> telemetryData.put(Telemetry.PERIAPSIS, val < 0 ? 0 : val));
-      periapsis.start();
-
-      verticalVelocity = connection.addStream(flightParameters, "getVerticalSpeed");
-      verticalVelocity.addCallback(val -> telemetryData.put(Telemetry.VERT_SPEED, val));
-      verticalVelocity.start();
-
       horizontalVelocity = connection.addStream(flightParameters, "getHorizontalSpeed");
-      horizontalVelocity.addCallback(
-          val -> telemetryData.put(Telemetry.HORZ_SPEED, val < 0 ? 0 : val));
-      horizontalVelocity.start();
+      periapsis = connection.addStream(getActiveVessel().getOrbit(), "getPeriapsisAltitude");
+      surfaceAltitude = connection.addStream(flightParameters, "getSurfaceAltitude");
+      totalMass = connection.addStream(getActiveVessel(), "getMass");
+      verticalVelocity = connection.addStream(flightParameters, "getVerticalSpeed");
 
+      altitude.addCallback(val -> telemetryData.put(Telemetry.ALTITUDE, val < 0 ? 0 : val));
+      apoapsis.addCallback(val -> telemetryData.put(Telemetry.APOAPSIS, val < 0 ? 0 : val));
+      horizontalVelocity.addCallback( val -> telemetryData.put(Telemetry.HORZ_SPEED, val < 0 ? 0 : val));
+      periapsis.addCallback(val -> telemetryData.put(Telemetry.PERIAPSIS, val < 0 ? 0 : val));
+      surfaceAltitude.addCallback(val -> telemetryData.put(Telemetry.ALT_SURF, val < 0 ? 0 : val));
+      verticalVelocity.addCallback(val -> telemetryData.put(Telemetry.VERT_SPEED, val));
+
+      altitude.start();
+      apoapsis.start();
+      horizontalVelocity.start();
+      periapsis.start();
+      surfaceAltitude.start();
+      totalMass.start();
+      verticalVelocity.start();
+      System.out.println("DEBUG: All streams created successfully.");
     } catch (RPCException | StreamException e) {
       System.err.println(
-          "Error while initializing parameters for active vessel: " + e.getMessage());
+          "DEBUG: CRITICAL ERROR while initializing parameters for active vessel: "
+              + e.getMessage());
     }
   }
 }

@@ -169,7 +169,7 @@ public class VesselManager {
         System.out.println("DEBUG: Vessel ID mismatch. Re-initializing...");
         if (currentVessel != null) {
           Thread oldThread = currentVessel.getControllerThread();
-          currentVessel.destroy(); // This will set flags and interrupt
+          currentVessel.removeStreams(); // This will set flags and interrupt
           if (oldThread != null) {
             try {
               oldThread.join(1000); // Wait for the old thread to die, with a timeout
