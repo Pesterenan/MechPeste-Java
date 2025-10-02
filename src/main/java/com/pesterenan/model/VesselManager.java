@@ -53,27 +53,16 @@ public class VesselManager {
     return currentVesselId;
   }
 
-  public void startUpdateLoop() {
-    ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+  public void startTelemetryLoop() {
+    ScheduledExecutorService scheduler =
+        Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "MP_TELEMETRY_UPDATER"));
     scheduler.scheduleAtFixedRate(
         () -> {
-          if (getConnection() == null || getSpaceCenter() == null) {
-            System.out.println("Connection not established yet, skipping update cycle.");
-            return;
-          }
-          try {
-            if (!connectionManager.isOnFlightScene()) {
-              try {
-                Thread.sleep(1000);
-              } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-              }
-              return;
-            }
+          if (connectionManager.isConnectionAlive()) {
             checkAndUpdateActiveVessel();
+          }
+          if (currentVessel != null && connectionManager.isOnFlightScene()) {
             updateUI();
-          } catch (RPCException e) {
-            System.err.println("RPC Error: " + e.getMessage());
           }
         },
         0,
@@ -84,7 +73,7 @@ public class VesselManager {
   public ListModel<String> getCurrentManeuvers() {
     DefaultListModel<String> list = new DefaultListModel<>();
     try {
-      List<Node> maneuvers = this.getSpaceCenter().getActiveVessel().getControl().getNodes();
+      List<Node> maneuvers = getSpaceCenter().getActiveVessel().getControl().getNodes();
       maneuvers.forEach(
           m -> {
             try {
@@ -102,7 +91,8 @@ public class VesselManager {
             } catch (RPCException ignored) {
             }
           });
-    } catch (RPCException | NullPointerException | UnsupportedOperationException ignored) {
+    } catch (RPCException | NullPointerException | UnsupportedOperationException e) {
+      System.err.println("ERRO: Não foi possivel atualizar as manobras atuais." + e.getMessage());
     }
     return list;
   }
@@ -121,13 +111,13 @@ public class VesselManager {
             try {
               String vesselName = v.hashCode() + " - \t" + v.getName();
               list.addElement(vesselName);
-            } catch (RPCException vesselNameError) {
+            } catch (RPCException e) {
               System.err.println(
-                  "Couldn't add vessel name to list. Error: " + vesselNameError.getMessage());
+                  "ERRO: Não foi possível adicionar nave na lista. " + e.getMessage());
             }
           });
-    } catch (RPCException rpcOrNpeException) {
-      System.err.println("Couldn't get vessel list, Error: " + rpcOrNpeException.getMessage());
+    } catch (RPCException | NullPointerException e) {
+      System.err.println("ERRO: Não foi possível buscar lista de naves. " + e.getMessage());
     }
     return list;
   }
@@ -135,7 +125,7 @@ public class VesselManager {
   public String getVesselInfo(int selectedIndex) {
     try {
       Vessel activeVessel =
-          this.getSpaceCenter().getVessels().stream()
+          getSpaceCenter().getVessels().stream()
               .filter(v -> v.hashCode() == selectedIndex)
               .findFirst()
               .get();
@@ -147,7 +137,8 @@ public class VesselManager {
           String.format(
               "Nome: %s\t\t\t | Corpo: %s", name, activeVessel.getOrbit().getBody().getName());
       return vesselInfo;
-    } catch (RPCException | NullPointerException ignored) {
+    } catch (RPCException | NullPointerException e) {
+      System.err.println("ERRO: Não foi possível buscar informações da nave. " + e.getMessage());
     }
     return "";
   }
@@ -166,19 +157,36 @@ public class VesselManager {
   }
 
   public void cancelControl(ActionEvent e) {
-    currentVessel.cancelControl();
+    if (currentVessel != null) {
+      currentVessel.cancelControl();
+    }
   }
 
-  private void checkAndUpdateActiveVessel() throws RPCException {
-    Vessel activeVessel = getSpaceCenter().getActiveVessel();
-    int activeVesselId = activeVessel.hashCode();
-    if (currentVesselId != activeVesselId) {
-      if (currentVessel != null && currentVessel.hasModuleRunning()) {
-        currentVessel.cancelControl();
+  public void checkAndUpdateActiveVessel() {
+    try {
+      int activeVesselId = getSpaceCenter().getActiveVessel().hashCode();
+      if (currentVesselId != activeVesselId) {
+        System.out.println("DEBUG: Vessel ID mismatch. Re-initializing...");
+        if (currentVessel != null) {
+          Thread oldThread = currentVessel.getControllerThread();
+          currentVessel.destroy(); // This will set flags and interrupt
+          if (oldThread != null) {
+            try {
+              oldThread.join(1000); // Wait for the old thread to die, with a timeout
+            } catch (InterruptedException e) {
+              System.err.println("Interrupted while waiting for old controller thread to die.");
+            }
+          }
+        }
+        currentVessel = new ActiveVessel(connectionManager, this);
+        currentVesselId = currentVessel.getCurrentVesselId();
+        MainGui.getInstance().setVesselManager(this);
       }
-      currentVessel = new ActiveVessel(connectionManager, this);
-      currentVesselId = currentVessel.getCurrentVesselId();
-      MainGui.getInstance().setVesselManager(this);
+    } catch (RPCException e) {
+      System.err.println(
+          "ERRO: Atualização de nave interrompida. Não foi possível buscar o ID da nave atual."
+              + e.getMessage());
+      e.printStackTrace();
     }
   }
 
@@ -201,7 +209,7 @@ public class VesselManager {
     }
     double TEN_KILOMETERS = 10000.0;
     try {
-      Vessel active = this.getSpaceCenter().getActiveVessel();
+      Vessel active = getSpaceCenter().getActiveVessel();
       if (vessel.getOrbit().getBody().getName().equals(active.getOrbit().getBody().getName())) {
         final Vector activePos = new Vector(active.position(active.getSurfaceReferenceFrame()));
         final Vector vesselPos = new Vector(vessel.position(active.getSurfaceReferenceFrame()));

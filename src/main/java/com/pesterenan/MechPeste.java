@@ -42,6 +42,6 @@ public class MechPeste {
     FunctionsAndTelemetryJPanel telemetryPanel = MainGui.newInstance().getTelemetryPanel();
     app.connectionManager = new ConnectionManager("MechPeste - Pesterenan", statusDisplay);
     app.vesselManager = new VesselManager(app.connectionManager, statusDisplay, telemetryPanel);
-    app.vesselManager.startUpdateLoop();
+    app.vesselManager.startTelemetryLoop();
   }
 }
