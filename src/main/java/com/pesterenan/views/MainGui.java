@@ -177,7 +177,7 @@ public class MainGui extends JFrame implements ActionListener, UIMethods {
     setTitle("MechPeste - Pesterenan");
     setJMenuBar(menuBar);
     setResizable(false);
-    setLocation(100, 100);
+    setLocation(50, 50);
     setContentPane(ctpMainGui);
     setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 

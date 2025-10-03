@@ -55,9 +55,7 @@ public class ControlePID {
       proportionalTerm = kp * error;
 
       // Integral
-      // integralTerm += 0.5f * ki * timeSample * (error + previousError);
-      // integralTerm += ki * (error + previousError);
-      integralTerm = ki * (integralTerm + (error * timeSample));
+      integralTerm += 0.5 * ki * timeSample * (error + previousError);
       integralTerm = limitOutput(integralTerm);
 
       derivativeTerm = kd * ((error - previousError) / timeSample);
