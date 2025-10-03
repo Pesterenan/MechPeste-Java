@@ -15,18 +15,30 @@ import krpc.client.Stream;
 import krpc.client.StreamException;
 import krpc.client.services.SpaceCenter.Engine;
 import krpc.client.services.SpaceCenter.Fairing;
+import krpc.client.services.SpaceCenter.VesselSituation;
 
 public class LiftoffController extends Controller {
+
+  private enum LIFTOFF_MODE {
+    GRAVITY_TURN,
+    FINALIZE_ORBIT,
+    CIRCULARIZE
+  }
 
   private static final float PITCH_UP = 90;
   private ControlePID thrControl;
   private float currentPitch, finalApoapsisAlt, heading, roll, maxTWR;
-  private volatile boolean targetApoapsisReached, dynamicPressureLowEnough = false;
-  private int apoapsisCallbackTag, pressureCallbackTag;
+  private volatile boolean targetApoapsisReached,
+      dynamicPressureLowEnough,
+      isLiftoffRunning = false;
+  private int apoapsisCallbackTag, pressureCallbackTag, utCallbackTag;
   private Stream<Float> pressureStream;
+  private Stream<Double> utStream;
   private boolean willDecoupleStages, willOpenPanelsAndAntenna;
   private String gravityCurveModel = Module.CIRCULAR.get();
   private Navigation navigation;
+  private LIFTOFF_MODE liftoffMode;
+  private double startCurveAlt;
 
   public LiftoffController(
       ConnectionManager connectionManager,
@@ -38,6 +50,65 @@ public class LiftoffController extends Controller {
     initializeParameters();
   }
 
+  @Override
+  public void run() {
+    try {
+      isLiftoffRunning = true;
+
+      // Part 1: Blocking Countdown and Launch
+      if (getActiveVessel().getSituation().equals(VesselSituation.PRE_LAUNCH)) {
+        throttleUp(getMaxThrottleForTWR(1.4), 1);
+        for (double count = 5.0; count >= 0; count -= 0.1) {
+          if (Thread.interrupted()) throw new InterruptedException();
+          setCurrentStatus(String.format(Bundle.getString("status_launching_in"), count));
+          Thread.sleep(100);
+        }
+        setCurrentStatus(Bundle.getString("status_liftoff"));
+        getActiveVessel().getControl().activateNextStage();
+      } else {
+        throttle(1.0f);
+      }
+
+      // Part 2: Async Gravity Turn
+      liftoffMode = LIFTOFF_MODE.GRAVITY_TURN; // Set initial state for async phase
+      setupCallbacks(); // This starts the UT stream
+      tuneAutoPilot();
+      startCurveAlt = altitude.get();
+      ap.setReferenceFrame(surfaceReferenceFrame);
+      ap.targetPitchAndHeading(currentPitch, heading);
+      ap.setTargetRoll(this.roll);
+      ap.engage();
+
+      // Loop to keep thread alive while async part runs
+      while (isLiftoffRunning) {
+        if (Thread.interrupted()) throw new InterruptedException();
+        Thread.sleep(250);
+      }
+    } catch (RPCException | InterruptedException | StreamException e) {
+      cleanup();
+      setCurrentStatus(Bundle.getString("status_ready"));
+    }
+  }
+
+  public void setHeading(float heading) {
+    final int MIN_HEADING = 0;
+    final int MAX_HEADING = 360;
+    this.heading = (float) Utilities.clamp(heading, MIN_HEADING, MAX_HEADING);
+  }
+
+  public void setRoll(float roll) {
+    final int MIN_ROLL = 0;
+    final int MAX_ROLL = 360;
+    this.roll = (float) Utilities.clamp(roll, MIN_ROLL, MAX_ROLL);
+  }
+
+  public void setFinalApoapsisAlt(float finalApoapsisAlt) {
+    final int MIN_FINAL_APOAPSIS = 10000;
+    final int MAX_FINAL_APOAPSIS = 2000000;
+    this.finalApoapsisAlt =
+        (float) Utilities.clamp(finalApoapsisAlt, MIN_FINAL_APOAPSIS, MAX_FINAL_APOAPSIS);
+  }
+
   private void initializeParameters() {
     currentPitch = PITCH_UP;
     setFinalApoapsisAlt(Float.parseFloat(commands.get(Module.APOAPSIS.get())));
@@ -45,82 +116,75 @@ public class LiftoffController extends Controller {
     setRoll(Float.parseFloat(commands.get(Module.ROLL.get())));
     maxTWR =
         (float) Utilities.clamp(Float.parseFloat(commands.get(Module.MAX_TWR.get())), 1.2, 5.0);
-    setGravityCurveModel(commands.get(Module.INCLINATION.get()));
+    gravityCurveModel = commands.get(Module.INCLINATION.get());
     willOpenPanelsAndAntenna = Boolean.parseBoolean(commands.get(Module.OPEN_PANELS.get()));
     willDecoupleStages = Boolean.parseBoolean(commands.get(Module.STAGE.get()));
     thrControl = new ControlePID(getConnectionManager().getSpaceCenter(), 25);
     thrControl.setOutput(0.0, 1.0);
   }
 
-  @Override
-  public void run() {
-    try {
-      // Apoapsis Check using Stream Callback
-      apoapsisCallbackTag =
-          apoapsis.addCallback(
-              (apo) -> {
-                if (apo >= getFinalApoapsis()) {
-                  targetApoapsisReached = true;
-                  apoapsis.removeCallback(apoapsisCallbackTag);
-                }
-              });
-      apoapsis.start();
+  private void setupCallbacks() throws RPCException, StreamException {
+    apoapsisCallbackTag =
+        apoapsis.addCallback(
+            (apo) -> {
+              if (apo >= finalApoapsisAlt) {
+                targetApoapsisReached = true;
+              }
+            });
+    apoapsis.start();
 
-      // Dynamic Pressure Check using Stream Callback
-      pressureStream = connection.addStream(flightParameters, "getDynamicPressure");
-      pressureCallbackTag =
-          pressureStream.addCallback(
-              (pressure) -> {
-                if (pressure <= 10) {
-                  dynamicPressureLowEnough = true;
-                  pressureStream.removeCallback(pressureCallbackTag);
-                }
-              });
-      pressureStream.start();
+    pressureStream = connection.addStream(flightParameters, "getDynamicPressure");
+    pressureCallbackTag =
+        pressureStream.addCallback(
+            (pressure) -> {
+              if (pressure <= 10) {
+                dynamicPressureLowEnough = true;
+              }
+            });
+    pressureStream.start();
 
-      tuneAutoPilot();
-      liftoff();
-      gravityCurve();
-      finalizeCurve();
-      circularizeOrbitOnApoapsis();
-    } catch (RPCException | InterruptedException | StreamException e) {
-      cleanup();
-      setCurrentStatus(Bundle.getString("status_ready"));
+    utStream = connection.addStream(spaceCenter.getClass(), "getUT");
+    utCallbackTag =
+        utStream.addCallback(
+            (ut) -> {
+              try {
+                if (!isLiftoffRunning) {
+                  utStream.removeCallback(utCallbackTag);
+                  return;
+                }
+                handleLiftoff();
+              } catch (Exception e) {
+                System.err.println("Liftoff UT Callback error: " + e.getMessage());
+              }
+            });
+    utStream.start();
+  }
+
+  private void handleLiftoff() throws RPCException, StreamException, InterruptedException {
+    switch (liftoffMode) {
+      case GRAVITY_TURN:
+        gravityTurn();
+        break;
+      case FINALIZE_ORBIT:
+        finalizeOrbit();
+        break;
+      case CIRCULARIZE:
+        circularizeOrbitOnApoapsis();
+        isLiftoffRunning = false;
+        break;
     }
   }
 
-  private void cleanup() {
-    try {
-      apoapsis.removeCallback(apoapsisCallbackTag);
-      pressureStream.removeCallback(pressureCallbackTag);
-      pressureStream.remove();
-      ap.disengage();
-      throttle(0);
-    } catch (RPCException e) {
-      // ignore
-    }
-  }
-
-  private void gravityCurve() throws RPCException, StreamException, InterruptedException {
-    ap.setReferenceFrame(surfaceReferenceFrame);
-    ap.targetPitchAndHeading(currentPitch, getHeading());
-    ap.setTargetRoll(getRoll());
-    ap.engage();
-    throttle(getMaxThrottleForTWR(maxTWR));
-    double startCurveAlt = altitude.get();
-
-    while (currentPitch > 1 && !targetApoapsisReached) {
-      if (Thread.interrupted()) {
-        throw new InterruptedException();
-      }
+  private void gravityTurn() throws RPCException, StreamException, InterruptedException {
+    if (currentPitch > 1 && !targetApoapsisReached) {
       double altitudeProgress =
-          Utilities.remap(startCurveAlt, getFinalApoapsis(), 1, 0.01, altitude.get(), false);
+          Utilities.remap(startCurveAlt, finalApoapsisAlt, 1, 0.01, altitude.get(), false);
       currentPitch = (float) (calculateCurrentPitch(altitudeProgress));
       double currentMaxTWR = calculateTWRBasedOnPressure(currentPitch);
       ap.setTargetPitch(currentPitch);
       double throttleValue =
           Math.min(
-              thrControl.calculate(apoapsis.get() / getFinalApoapsis() * 1000, 1000),
+              thrControl.calculate(apoapsis.get() / finalApoapsisAlt * 1000, 1000),
               getMaxThrottleForTWR(currentMaxTWR));
       throttle(Utilities.clamp(throttleValue, 0.05, 1.0));
 
@@ -129,8 +193,45 @@ public class LiftoffController extends Controller {
       }
       setCurrentStatus(
           String.format(Bundle.getString("status_liftoff_inclination") + " %.1f", currentPitch));
+    } else {
+      throttle(0);
+      liftoffMode = LIFTOFF_MODE.FINALIZE_ORBIT;
     }
-    throttle(0);
+  }
+
+  private void finalizeOrbit() throws RPCException, StreamException, InterruptedException {
+    if (!dynamicPressureLowEnough) {
+      setCurrentStatus(Bundle.getString("status_maintaining_until_orbit"));
+      getActiveVessel().getControl().setRCS(true);
+      navigation.aimAtPrograde();
+      throttle(thrControl.calculate(apoapsis.get() / finalApoapsisAlt * 1000, 1000));
+    } else {
+      throttle(0.0f);
+      if (willDecoupleStages) {
+        jettisonFairings();
+      }
+      if (willOpenPanelsAndAntenna) {
+        openPanelsAndAntenna();
+      }
+      apoapsis.removeCallback(apoapsisCallbackTag);
+      pressureStream.removeCallback(pressureCallbackTag);
+      liftoffMode = LIFTOFF_MODE.CIRCULARIZE;
+    }
+  }
+
+  private void cleanup() {
+    try {
+      isLiftoffRunning = false;
+      apoapsis.removeCallback(apoapsisCallbackTag);
+      pressureStream.removeCallback(pressureCallbackTag);
+      utStream.removeCallback(utCallbackTag);
+      pressureStream.remove();
+      utStream.remove();
+      ap.disengage();
+      throttle(0);
+    } catch (RPCException | NullPointerException e) {
+      // ignore
+    }
   }
 
   private double calculateTWRBasedOnPressure(float currentPitch) throws RPCException {
@@ -139,26 +240,6 @@ public class LiftoffController extends Controller {
       return Utilities.remap(90.0, 0.0, maxTWR, 5.0, currentPitch, true);
     }
     return Utilities.remap(22000.0, 10.0, maxTWR, 5.0, currentPressure, true);
-  }
-
-  private void finalizeCurve() throws RPCException, StreamException, InterruptedException {
-    setCurrentStatus(Bundle.getString("status_maintaining_until_orbit"));
-    getActiveVessel().getControl().setRCS(true);
-
-    while (!dynamicPressureLowEnough) {
-      if (Thread.interrupted()) {
-        throw new InterruptedException();
-      }
-      navigation.aimAtPrograde();
-      throttle(thrControl.calculate(apoapsis.get() / getFinalApoapsis() * 1000, 1000));
-    }
-    throttle(0.0f);
-    if (willDecoupleStages) {
-      jettisonFairings();
-    }
-    if (willOpenPanelsAndAntenna) {
-      openPanelsAndAntenna();
-    }
   }
 
   private void circularizeOrbitOnApoapsis() {
@@ -178,7 +259,7 @@ public class LiftoffController extends Controller {
         if (f.getJettisoned()) {
           String eventName = f.getPart().getModules().get(0).getEvents().get(0);
           f.getPart().getModules().get(0).triggerEvent(eventName);
-          Thread.sleep(10000);
+          Thread.sleep(5000);
         }
       }
     }
@@ -214,40 +295,5 @@ public class LiftoffController extends Controller {
       }
     }
     return false;
-  }
-
-  public float getHeading() {
-    return heading;
-  }
-
-  public void setHeading(float heading) {
-    final int MIN_HEADING = 0;
-    final int MAX_HEADING = 360;
-    this.heading = (float) Utilities.clamp(heading, MIN_HEADING, MAX_HEADING);
-  }
-
-  public float getFinalApoapsis() {
-    return finalApoapsisAlt;
-  }
-
-  public float getRoll() {
-    return this.roll;
-  }
-
-  public void setRoll(float roll) {
-    final int MIN_ROLL = 0;
-    final int MAX_ROLL = 360;
-    this.roll = (float) Utilities.clamp(roll, MIN_ROLL, MAX_ROLL);
-  }
-
-  private void setGravityCurveModel(String model) {
-    this.gravityCurveModel = model;
-  }
-
-  public void setFinalApoapsisAlt(float finalApoapsisAlt) {
-    final int MIN_FINAL_APOAPSIS = 10000;
-    final int MAX_FINAL_APOAPSIS = 2000000;
-    this.finalApoapsisAlt =
-        (float) Utilities.clamp(finalApoapsisAlt, MIN_FINAL_APOAPSIS, MAX_FINAL_APOAPSIS);
   }
 }
