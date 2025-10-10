@@ -1,7 +1,6 @@
 package com.pesterenan.controllers;
 
-import com.pesterenan.model.ConnectionManager;
-import com.pesterenan.model.VesselManager;
+import com.pesterenan.model.ActiveVessel;
 import com.pesterenan.resources.Bundle;
 import com.pesterenan.utils.Module;
 import com.pesterenan.utils.Utilities;
@@ -66,8 +65,8 @@ public class DockingController extends Controller {
   private long sleepTime = 25;
 
   private DOCKING_STEPS dockingStep;
-  private ConnectionManager connectionManager;
   private boolean isDocking, isOriented = false;
+  private final Map<String, String> commands;
 
   private Stream<Double> utStream;
   private Stream<Double> errorStream;
@@ -76,12 +75,8 @@ public class DockingController extends Controller {
 
   private DockingPhase currentPhase;
 
-  public DockingController(
-      ConnectionManager connectionManager,
-      VesselManager vesselManager,
-      Map<String, String> commands) {
-    super(connectionManager, vesselManager);
-    this.connectionManager = connectionManager;
+  public DockingController(ActiveVessel vessel, Map<String, String> commands) {
+    super(vessel);
     this.commands = commands;
     initializeParameters();
   }
@@ -106,10 +101,10 @@ public class DockingController extends Controller {
 
   public void startDocking() throws RPCException, StreamException {
     isDocking = true;
-    krpc = KRPC.newInstance(connectionManager.getConnection());
+    krpc = KRPC.newInstance(vessel.getConnectionManager().getConnection());
     currentPhase = DockingPhase.SETUP;
 
-    utStream = connection.addStream(spaceCenter.getClass(), "getUT");
+    utStream = vessel.connection.addStream(vessel.spaceCenter.getClass(), "getUT");
     utCallbackTag =
         utStream.addCallback(
             (ut) -> {
@@ -131,13 +126,13 @@ public class DockingController extends Controller {
     try {
       DOCKING_MAX_SPEED = Double.parseDouble(commands.get(Module.MAX_SPEED.get()));
       SAFE_DISTANCE = Double.parseDouble(commands.get(Module.SAFE_DISTANCE.get()));
-      drawing = Drawing.newInstance(connectionManager.getConnection());
-      targetVessel = connectionManager.getSpaceCenter().getTargetVessel();
-      control = getActiveVessel().getControl();
-      vesselRefFrame = getActiveVessel().getReferenceFrame();
-      orbitalRefVessel = getActiveVessel().getOrbitalReferenceFrame();
+      drawing = Drawing.newInstance(vessel.getConnectionManager().getConnection());
+      targetVessel = vessel.getConnectionManager().getSpaceCenter().getTargetVessel();
+      control = vessel.getActiveVessel().getControl();
+      vesselRefFrame = vessel.getActiveVessel().getReferenceFrame();
+      orbitalRefVessel = vessel.getActiveVessel().getOrbitalReferenceFrame();
 
-      myDockingPort = getActiveVessel().getParts().getDockingPorts().get(0);
+      myDockingPort = vessel.getActiveVessel().getParts().getDockingPorts().get(0);
       targetDockingPort = targetVessel.getParts().getDockingPorts().get(0);
       dockingStep = DOCKING_STEPS.STOP_RELATIVE_SPEED;
 
@@ -163,7 +158,7 @@ public class DockingController extends Controller {
         targetPosition = new Vector(targetVessel.position(vesselRefFrame));
         if (targetPosition.magnitude() > SAFE_DISTANCE) {
           Vector targetDirection =
-              new Vector(getActiveVessel().position(orbitalRefVessel))
+              new Vector(vessel.getActiveVessel().position(orbitalRefVessel))
                   .subtract(new Vector(targetVessel.position(orbitalRefVessel)))
                   .multiply(-1);
           pointToTarget(targetDirection);
@@ -222,11 +217,11 @@ public class DockingController extends Controller {
 
   private void pointToTarget(Vector targetDirection)
       throws RPCException, InterruptedException, StreamException {
-    getActiveVessel().getAutoPilot().setReferenceFrame(orbitalRefVessel);
-    getActiveVessel().getAutoPilot().setTargetDirection(targetDirection.toTriplet());
-    getActiveVessel().getAutoPilot().setTargetRoll(90);
-    getActiveVessel().getAutoPilot().engage();
-    errorStream = connection.addStream(ap, "getError");
+    vessel.getActiveVessel().getAutoPilot().setReferenceFrame(orbitalRefVessel);
+    vessel.getActiveVessel().getAutoPilot().setTargetDirection(targetDirection.toTriplet());
+    vessel.getActiveVessel().getAutoPilot().setTargetRoll(90);
+    vessel.getActiveVessel().getAutoPilot().engage();
+    errorStream = vessel.connection.addStream(vessel.ap, "getError");
     errorCallbackTag =
         errorStream.addCallback(
             (error) -> {
@@ -236,7 +231,7 @@ public class DockingController extends Controller {
               }
             });
     errorStream.start();
-    getActiveVessel().getAutoPilot().disengage();
+    vessel.getActiveVessel().getAutoPilot().disengage();
     control.setSAS(true);
     control.setSASMode(SASMode.STABILITY_ASSIST);
   }
@@ -403,8 +398,8 @@ public class DockingController extends Controller {
       distLineXAxis.remove();
       distLineYAxis.remove();
       distLineZAxis.remove();
-      ap.disengage();
-      throttle(0);
+      vessel.ap.disengage();
+      vessel.throttle(0);
     } catch (RPCException | NullPointerException e) {
       // ignore
     }

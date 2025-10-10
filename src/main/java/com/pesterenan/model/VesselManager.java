@@ -166,27 +166,22 @@ public class VesselManager {
     try {
       int activeVesselId = getSpaceCenter().getActiveVessel().hashCode();
       if (currentVesselId != activeVesselId) {
-        System.out.println("DEBUG: Vessel ID mismatch. Re-initializing...");
+        System.out.println("DEBUG: Active vessel changed. Re-initializing...");
         if (currentVessel != null) {
-          Thread oldThread = currentVessel.getControllerThread();
-          currentVessel.removeStreams(); // This will set flags and interrupt
-          if (oldThread != null) {
-            try {
-              oldThread.join(1000); // Wait for the old thread to die, with a timeout
-            } catch (InterruptedException e) {
-              System.err.println("Interrupted while waiting for old controller thread to die.");
-            }
-          }
+          currentVessel.reinitialize();
+        } else {
+          currentVessel = new ActiveVessel(connectionManager, this);
         }
-        currentVessel = new ActiveVessel(connectionManager, this);
         currentVesselId = currentVessel.getCurrentVesselId();
         MainGui.getInstance().setVesselManager(this);
       }
     } catch (RPCException e) {
-      System.err.println(
-          "ERRO: Atualização de nave interrompida. Não foi possível buscar o ID da nave atual."
-              + e.getMessage());
-      e.printStackTrace();
+      if (currentVessel != null) {
+        System.out.println("DEBUG: Could not get active vessel. Cleaning up.");
+        currentVessel.removeStreams();
+        currentVessel = null;
+        currentVesselId = -1;
+      }
     }
   }
 

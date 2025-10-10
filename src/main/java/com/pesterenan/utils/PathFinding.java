@@ -1,6 +1,5 @@
 package com.pesterenan.utils;
 
-import com.pesterenan.controllers.Controller;
 import com.pesterenan.model.ConnectionManager;
 import com.pesterenan.model.VesselManager;
 import java.io.IOException;
@@ -16,7 +15,7 @@ import krpc.client.services.SpaceCenter.Waypoint;
 import krpc.client.services.SpaceCenter.WaypointManager;
 import org.javatuples.Triplet;
 
-public class PathFinding extends Controller {
+public class PathFinding {
 
   private WaypointManager waypointManager;
   private String waypointName;
@@ -24,18 +23,21 @@ public class PathFinding extends Controller {
   private List<Vector> pathToTarget;
   private Drawing drawing;
   private Drawing.Polygon polygonPath;
+  private final ConnectionManager connectionManager;
+  private final VesselManager vesselManager;
 
   public PathFinding(ConnectionManager connectionManager, VesselManager vesselManager) {
-    super(connectionManager, vesselManager);
+    this.connectionManager = connectionManager;
+    this.vesselManager = vesselManager;
     initializeParameters();
   }
 
   private void initializeParameters() {
     try {
-      waypointManager = getConnectionManager().getSpaceCenter().getWaypointManager();
+      waypointManager = connectionManager.getSpaceCenter().getWaypointManager();
       waypointsToReach = new ArrayList<>();
       pathToTarget = new ArrayList<>();
-      drawing = Drawing.newInstance(getConnectionManager().getConnection());
+      drawing = Drawing.newInstance(connectionManager.getConnection());
     } catch (RPCException ignored) {
     }
   }
@@ -51,7 +53,7 @@ public class PathFinding extends Controller {
   private boolean hasSameName(Waypoint waypoint) {
     try {
       return waypoint.getName().toLowerCase().contains(waypointName.toLowerCase())
-          && waypoint.getBody().equals(currentBody);
+          && waypoint.getBody().equals(vesselManager.getCurrentVessel().currentBody);
     } catch (RPCException e) {
       return false;
     }
@@ -67,11 +69,21 @@ public class PathFinding extends Controller {
                   try {
                     w1Distance =
                         Vector.distance(
-                            new Vector(getActiveVessel().position(orbitalReferenceFrame)),
+                            new Vector(
+                                vesselManager
+                                    .getCurrentVessel()
+                                    .getActiveVessel()
+                                    .position(
+                                        vesselManager.getCurrentVessel().orbitalReferenceFrame)),
                             waypointPosOnSurface(w1));
                     w2Distance =
                         Vector.distance(
-                            new Vector(getActiveVessel().position(orbitalReferenceFrame)),
+                            new Vector(
+                                vesselManager
+                                    .getCurrentVessel()
+                                    .getActiveVessel()
+                                    .position(
+                                        vesselManager.getCurrentVessel().orbitalReferenceFrame)),
                             waypointPosOnSurface(w2));
                   } catch (RPCException e) {
                   }
@@ -80,23 +92,18 @@ public class PathFinding extends Controller {
             .collect(Collectors.toList());
     waypointsToReach.forEach(System.out::println);
     Waypoint currentWaypoint = waypointsToReach.get(0);
-    // for (Waypoint waypoint : waypointsToReach) {
-    // double waypointDistance = Vector.distance(new
-    // Vector(getNaveAtual().position(orbitalReferenceFrame)),
-    // waypointPosOnSurface(waypoint)
-    // );
-    // if (currentDistance > waypointDistance) {
-    // currentDistance = waypointDistance;
-    // currentWaypoint = waypoint;
-    // }
-    // }
     return waypointPosOnSurface(currentWaypoint);
   }
 
   private Vector waypointPosOnSurface(Waypoint waypoint) throws RPCException {
     return new Vector(
-        currentBody.surfacePosition(
-            waypoint.getLatitude(), waypoint.getLongitude(), orbitalReferenceFrame));
+        vesselManager
+            .getCurrentVessel()
+            .currentBody
+            .surfacePosition(
+                waypoint.getLatitude(),
+                waypoint.getLongitude(),
+                vesselManager.getCurrentVessel().orbitalReferenceFrame));
   }
 
   public boolean isPathToTargetEmpty() {
@@ -135,27 +142,19 @@ public class PathFinding extends Controller {
     waypointsToReach.remove(0);
   }
 
-  /**
-   * Builds the path to the targetPosition, on the Celestial Body Reference ( Orbital Ref )
-   *
-   * @param targetPosition the target pos to build the path to
-   * @throws IOException
-   * @throws RPCException
-   * @throws InterruptedException
-   */
   public void buildPathToTarget(Vector targetPosition)
       throws IOException, RPCException, InterruptedException {
-    // Get current rover Position on Orbital Ref, transform to Surf Ref and add 20
-    // centimeters on height:
     Vector roverHeight = new Vector(0.2, 0.0, 0.0);
     Vector currentRoverPos =
         transformSurfToOrb(
-            new Vector(getActiveVessel().position(surfaceReferenceFrame)).sum(roverHeight));
-    // Calculate distance from rover to target on Orbital Ref:
+            new Vector(
+                    vesselManager
+                        .getCurrentVessel()
+                        .getActiveVessel()
+                        .position(vesselManager.getCurrentVessel().surfaceReferenceFrame))
+                .sum(roverHeight));
     double distanceToTarget = Vector.distance(currentRoverPos, targetPosition);
-    // Add rover pos as first point, on Orbital Ref
     pathToTarget.add(currentRoverPos);
-    // Calculate the next points positions and add to the list on Orbital Ref
     int index = 0;
     while (distanceToTarget > 50) {
       if (Thread.interrupted()) {
@@ -183,7 +182,9 @@ public class PathFinding extends Controller {
     drawablePath.offerLast(new Triplet<>(0.0, 0.0, 0.0));
     polygonPath =
         drawing.addPolygon(
-            drawablePath.stream().collect(Collectors.toList()), orbitalReferenceFrame, true);
+            drawablePath.stream().collect(Collectors.toList()),
+            vesselManager.getCurrentVessel().orbitalReferenceFrame,
+            true);
     polygonPath.setThickness(0.5f);
     polygonPath.setColor(new Triplet<>(1.0, 0.5, 0.0));
   }
@@ -197,9 +198,7 @@ public class PathFinding extends Controller {
 
   private Vector calculateNextPoint(Vector currentPoint, Vector targetDirection)
       throws RPCException, IOException {
-    // PONTO REF SUPERFICIE: X = CIMA, Y = NORTE, Z = LESTE;
     double stepDistance = 100.0;
-    // Calculate the next point position on surface:
     Vector nextPoint =
         getPosOnSurface(
             transformSurfToOrb(currentPoint.sum(targetDirection.multiply(stepDistance))));
@@ -213,7 +212,7 @@ public class PathFinding extends Controller {
       double searchDistance)
       throws RPCException {
     return Math.min(
-        getConnectionManager()
+        connectionManager
             .getSpaceCenter()
             .raycastDistance(currentPoint.toTriplet(), targetDirection.toTriplet(), reference),
         searchDistance);
@@ -221,23 +220,40 @@ public class PathFinding extends Controller {
 
   private Vector getPosOnSurface(Vector vector) throws RPCException {
     return new Vector(
-        currentBody.surfacePosition(
-            currentBody.latitudeAtPosition(vector.toTriplet(), orbitalReferenceFrame),
-            currentBody.longitudeAtPosition(vector.toTriplet(), orbitalReferenceFrame),
-            orbitalReferenceFrame));
+        vesselManager
+            .getCurrentVessel()
+            .currentBody
+            .surfacePosition(
+                vesselManager
+                    .getCurrentVessel()
+                    .currentBody
+                    .latitudeAtPosition(
+                        vector.toTriplet(), vesselManager.getCurrentVessel().orbitalReferenceFrame),
+                vesselManager
+                    .getCurrentVessel()
+                    .currentBody
+                    .longitudeAtPosition(
+                        vector.toTriplet(), vesselManager.getCurrentVessel().orbitalReferenceFrame),
+                vesselManager.getCurrentVessel().orbitalReferenceFrame));
   }
 
   private Vector transformSurfToOrb(Vector vector) throws IOException, RPCException {
     return new Vector(
-        getConnectionManager()
+        connectionManager
             .getSpaceCenter()
-            .transformPosition(vector.toTriplet(), surfaceReferenceFrame, orbitalReferenceFrame));
+            .transformPosition(
+                vector.toTriplet(),
+                vesselManager.getCurrentVessel().surfaceReferenceFrame,
+                vesselManager.getCurrentVessel().orbitalReferenceFrame));
   }
 
   private Vector transformOrbToSurf(Vector vector) throws IOException, RPCException {
     return new Vector(
-        getConnectionManager()
+        connectionManager
             .getSpaceCenter()
-            .transformPosition(vector.toTriplet(), orbitalReferenceFrame, surfaceReferenceFrame));
+            .transformPosition(
+                vector.toTriplet(),
+                vesselManager.getCurrentVessel().orbitalReferenceFrame,
+                vesselManager.getCurrentVessel().surfaceReferenceFrame));
   }
 }

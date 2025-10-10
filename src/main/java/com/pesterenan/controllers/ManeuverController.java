@@ -1,7 +1,6 @@
 package com.pesterenan.controllers;
 
-import com.pesterenan.model.ConnectionManager;
-import com.pesterenan.model.VesselManager;
+import com.pesterenan.model.ActiveVessel;
 import com.pesterenan.resources.Bundle;
 import com.pesterenan.utils.Attributes;
 import com.pesterenan.utils.ControlePID;
@@ -70,14 +69,12 @@ public class ManeuverController extends Controller {
   private Stream<Triplet<Double, Double, Double>> remainingBurnStream;
 
   private double lastBurnDv = Double.MAX_VALUE;
+  private final Map<String, String> commands;
 
-  public ManeuverController(
-      ConnectionManager connectionManager,
-      VesselManager vesselManager,
-      Map<String, String> commands) {
-    super(connectionManager, vesselManager);
+  public ManeuverController(ActiveVessel vessel, Map<String, String> commands) {
+    super(vessel);
     this.commands = commands;
-    this.navigation = new Navigation(connectionManager, getActiveVessel());
+    this.navigation = new Navigation(vessel.getConnectionManager(), vessel.getActiveVessel());
     initializeParameters();
   }
 
@@ -98,12 +95,12 @@ public class ManeuverController extends Controller {
 
   public void calculateManeuver() {
     try {
-      tuneAutoPilot();
+      vessel.tuneAutoPilot();
       if (commands.get(Module.FUNCTION.get()).equals(Module.EXECUTE.get())) {
         return;
       }
-      if (getActiveVessel().getSituation() == VesselSituation.LANDED
-          || getActiveVessel().getSituation() == VesselSituation.SPLASHED) {
+      if (vessel.getActiveVessel().getSituation() == VesselSituation.LANDED
+          || vessel.getActiveVessel().getSituation() == VesselSituation.SPLASHED) {
         throw new InterruptedException();
       }
       if (commands.get(Module.FUNCTION.get()).equals(Module.ADJUST.get())) {
@@ -116,21 +113,21 @@ public class ManeuverController extends Controller {
       }
       if (commands.get(Module.FUNCTION.get()).equals(Module.LOW_ORBIT.get())) {
         biEllipticTransferToOrbit(
-            lowOrbitAltitude, getActiveVessel().getOrbit().getTimeToPeriapsis());
+            lowOrbitAltitude, vessel.getActiveVessel().getOrbit().getTimeToPeriapsis());
         return;
       }
-      double gravParameter = currentBody.getGravitationalParameter();
+      double gravParameter = vessel.currentBody.getGravitationalParameter();
       double startingAltitutde = 0, timeUntilAltitude = 0;
       if (commands.get(Module.FUNCTION.get()).equals(Module.APOAPSIS.get())) {
-        startingAltitutde = getActiveVessel().getOrbit().getApoapsis();
-        timeUntilAltitude = getActiveVessel().getOrbit().getTimeToApoapsis();
+        startingAltitutde = vessel.getActiveVessel().getOrbit().getApoapsis();
+        timeUntilAltitude = vessel.getActiveVessel().getOrbit().getTimeToApoapsis();
       }
       if (commands.get(Module.FUNCTION.get()).equals(Module.PERIAPSIS.get())) {
-        startingAltitutde = getActiveVessel().getOrbit().getPeriapsis();
-        timeUntilAltitude = getActiveVessel().getOrbit().getTimeToPeriapsis();
+        startingAltitutde = vessel.getActiveVessel().getOrbit().getPeriapsis();
+        timeUntilAltitude = vessel.getActiveVessel().getOrbit().getTimeToPeriapsis();
       }
 
-      double semiMajorAxis = getActiveVessel().getOrbit().getSemiMajorAxis();
+      double semiMajorAxis = vessel.getActiveVessel().getOrbit().getSemiMajorAxis();
       double currentOrbitalVelocity =
           Math.sqrt(gravParameter * ((2.0 / startingAltitutde) - (1.0 / semiMajorAxis)));
       double targetOrbitalVelocity =
@@ -145,7 +142,7 @@ public class ManeuverController extends Controller {
 
   public void executeNextManeuver() throws InterruptedException {
     try {
-      Node maneuverNode = getActiveVessel().getControl().getNodes().get(0);
+      Node maneuverNode = vessel.getActiveVessel().getControl().getNodes().get(0);
       double burnTime = calculateBurnTime(maneuverNode);
       executeBurn(maneuverNode, burnTime);
     } catch (UnsupportedOperationException e) {
@@ -167,18 +164,18 @@ public class ManeuverController extends Controller {
   public void orientToManeuverNode(Node maneuverNode)
       throws RPCException, StreamException, InterruptedException {
     setCurrentStatus(Bundle.getString("status_orienting_ship"));
-    ap.engage();
-    ap.setReferenceFrame(maneuverNode.getReferenceFrame());
+    vessel.ap.engage();
+    vessel.ap.setReferenceFrame(maneuverNode.getReferenceFrame());
 
     // --- STAGE 1: ORIENT TO MANEUVER (PITCH/HEADING) ---
     try {
       setCurrentStatus(Bundle.getString("status_orienting_to_maneuver"));
-      ap.setTargetDirection(new Triplet<>(0.0, 1.0, 0.0)); // Prograde in node's frame
-      ap.setTargetRoll(Float.NaN); // Disable roll control
+      vessel.ap.setTargetDirection(new Triplet<>(0.0, 1.0, 0.0)); // Prograde in node's frame
+      vessel.ap.setTargetRoll(Float.NaN); // Disable roll control
 
       final CountDownLatch directionLatch = new CountDownLatch(1);
-      this.headingErrorStream = connection.addStream(ap, "getHeadingError");
-      this.pitchErrorStream = connection.addStream(ap, "getPitchError");
+      this.headingErrorStream = vessel.connection.addStream(vessel.ap, "getHeadingError");
+      this.pitchErrorStream = vessel.connection.addStream(vessel.ap, "getPitchError");
 
       final Stream<Float> finalHeadingErrorStream = this.headingErrorStream;
       final Stream<Float> finalPitchErrorStream = this.pitchErrorStream;
@@ -217,9 +214,9 @@ public class ManeuverController extends Controller {
     // --- STAGE 2: STABILIZE ROLL ---
     try {
       setCurrentStatus(Bundle.getString("status_stabilizing_roll"));
-      ap.setTargetRoll(0.0f);
+      vessel.ap.setTargetRoll(0.0f);
       final CountDownLatch rollLatch = new CountDownLatch(1);
-      this.rollErrorStream = connection.addStream(ap, "getRollError");
+      this.rollErrorStream = vessel.connection.addStream(vessel.ap, "getRollError");
       final Stream<Float> finalRollErrorStream = this.rollErrorStream;
       final int[] rollCallbackTag = new int[1];
       rollCallbackTag[0] =
@@ -248,9 +245,9 @@ public class ManeuverController extends Controller {
 
   public double calculateBurnTime(Node maneuverNode) {
     try {
-      List<Engine> engines = getActiveVessel().getParts().getEngines();
+      List<Engine> engines = vessel.getActiveVessel().getParts().getEngines();
       for (Engine engine : engines) {
-        if (engine.getPart().getStage() == getActiveVessel().getControl().getCurrentStage()
+        if (engine.getPart().getStage() == vessel.getActiveVessel().getControl().getCurrentStage()
             && !engine.getActive()) {
           engine.setActive(true);
         }
@@ -260,9 +257,9 @@ public class ManeuverController extends Controller {
     }
     double burnDuration = 0;
     try {
-      double thrust = getActiveVessel().getAvailableThrust();
-      double isp = getActiveVessel().getSpecificImpulse() * CONST_GRAV;
-      double totalMass = getActiveVessel().getMass();
+      double thrust = vessel.getActiveVessel().getAvailableThrust();
+      double isp = vessel.getActiveVessel().getSpecificImpulse() * CONST_GRAV;
+      double totalMass = vessel.getActiveVessel().getMass();
       double dryMass = totalMass / Math.exp(maneuverNode.getDeltaV() / isp);
       double burnRatio = thrust / isp;
       burnDuration = (totalMass - dryMass) / burnRatio;
@@ -281,7 +278,7 @@ public class ManeuverController extends Controller {
       // 2. WARP AND COUNTDOWN
       // Wait until it's time to burn
       final CountDownLatch timeToBurnLatch = new CountDownLatch(1);
-      timeToNodeStream = connection.addStream(maneuverNode, "getTimeTo");
+      timeToNodeStream = vessel.connection.addStream(maneuverNode, "getTimeTo");
       timeToNodeStream.addCallback(
           (time) -> {
             // Countdown for the last 5 seconds of warp
@@ -307,9 +304,13 @@ public class ManeuverController extends Controller {
       double burnStartTime = maneuverNode.getTimeTo() - (burnDuration / 2.0) - 30;
       if (burnStartTime > 0) {
         setCurrentStatus(Bundle.getString("status_maneuver_warp"));
-        getConnectionManager()
+        vessel
+            .getConnectionManager()
             .getSpaceCenter()
-            .warpTo((getConnectionManager().getSpaceCenter().getUT() + burnStartTime), 100000, 4);
+            .warpTo(
+                (vessel.getConnectionManager().getSpaceCenter().getUT() + burnStartTime),
+                100000,
+                4);
       }
 
       // 2. ORIENT (AFTER WARP)
@@ -324,7 +325,7 @@ public class ManeuverController extends Controller {
       // 4. EXECUTE THE BURN
       final CountDownLatch burnCompleteLatch = new CountDownLatch(1);
       remainingBurnStream =
-          connection.addStream(
+          vessel.connection.addStream(
               maneuverNode, "remainingBurnVector", maneuverNode.getReferenceFrame());
       remainingBurnStream.addCallback(
           (burn) -> {
@@ -334,7 +335,7 @@ public class ManeuverController extends Controller {
               // SAFETY STOP: Check if dV is increasing
               if (burnDvLeft > lastBurnDv + 0.1) { // Using a 0.1m/s tolerance
                 System.err.println("Maneuver failed: Delta-V increasing. Aborting burn.");
-                throttle(0);
+                vessel.throttle(0);
                 burnCompleteLatch.countDown();
                 return;
               }
@@ -345,7 +346,7 @@ public class ManeuverController extends Controller {
                 return;
               }
               navigation.aimAtManeuverNode(maneuverNode);
-              throttle(ctrlManeuver.calculate(0, burnDvLeft / 100.0));
+              vessel.throttle(ctrlManeuver.calculate(0, burnDvLeft / 100.0));
             } catch (Exception e) {
               e.printStackTrace();
               burnCompleteLatch.countDown();
@@ -355,17 +356,17 @@ public class ManeuverController extends Controller {
 
       setCurrentStatus(Bundle.getString("status_maneuver_executing"));
       burnCompleteLatch.await();
-      throttle(0.0f);
+      vessel.throttle(0.0f);
       remainingBurnStream.remove();
 
       if (fineAdjustment) {
         adjustManeuverWithRCS(maneuverNode);
       }
 
-      ap.setReferenceFrame(surfaceReferenceFrame);
-      ap.disengage();
-      getActiveVessel().getControl().setSAS(true);
-      getActiveVessel().getControl().setRCS(false);
+      vessel.ap.setReferenceFrame(vessel.surfaceReferenceFrame);
+      vessel.ap.disengage();
+      vessel.getActiveVessel().getControl().setSAS(true);
+      vessel.getActiveVessel().getControl().setRCS(false);
       maneuverNode.remove();
       setCurrentStatus(Bundle.getString("status_ready"));
     } catch (RPCException | StreamException e) {
@@ -377,14 +378,14 @@ public class ManeuverController extends Controller {
   }
 
   private void initializeParameters() {
-    ctrlRCS = new ControlePID(getConnectionManager().getSpaceCenter(), 25);
-    ctrlManeuver = new ControlePID(getConnectionManager().getSpaceCenter(), 25);
+    ctrlRCS = new ControlePID(vessel.getConnectionManager().getSpaceCenter(), 25);
+    ctrlManeuver = new ControlePID(vessel.getConnectionManager().getSpaceCenter(), 25);
     ctrlManeuver.setPIDValues(1, 0.001, 0.1);
     ctrlManeuver.setOutput(0.1, 1.0);
     ctrlRCS.setOutput(0.5, 1.0);
     fineAdjustment = canFineAdjust(commands.get(Module.FINE_ADJUST.get()));
     try {
-      lowOrbitAltitude = new Attributes().getLowOrbitAltitude(currentBody.getName());
+      lowOrbitAltitude = new Attributes().getLowOrbitAltitude(vessel.currentBody.getName());
     } catch (RPCException e) {
     }
   }
@@ -392,16 +393,16 @@ public class ManeuverController extends Controller {
   private Node biEllipticTransferToOrbit(double targetAltitude, double timeToStart) {
     double[] totalDv = {0, 0, 0};
     try {
-      Orbit currentOrbit = getActiveVessel().getOrbit();
+      Orbit currentOrbit = vessel.getActiveVessel().getOrbit();
       double startingRadius = currentOrbit.getApoapsis();
-      double gravParameter = currentBody.getGravitationalParameter();
+      double gravParameter = vessel.currentBody.getGravitationalParameter();
       double deltaV1 =
           Math.sqrt(2 * gravParameter / startingRadius) - Math.sqrt(gravParameter / startingRadius);
-      double intermediateRadius = currentBody.getEquatorialRadius() + targetAltitude;
+      double intermediateRadius = vessel.currentBody.getEquatorialRadius() + targetAltitude;
       double deltaV2 =
           Math.sqrt(gravParameter / intermediateRadius)
               - Math.sqrt(2 * gravParameter / intermediateRadius);
-      double targetRadius = currentBody.getEquatorialRadius() + targetAltitude;
+      double targetRadius = vessel.currentBody.getEquatorialRadius() + targetAltitude;
       double deltaV3 =
           Math.sqrt(2 * gravParameter / intermediateRadius)
               - Math.sqrt(gravParameter / intermediateRadius);
@@ -417,14 +418,14 @@ public class ManeuverController extends Controller {
   private void alignPlanesWithTargetVessel() throws InterruptedException, RPCException {
     Stream<Double> utStream = null;
     try {
-      Vessel vessel = getActiveVessel();
-      Orbit vesselOrbit = getActiveVessel().getOrbit();
+      Vessel vesselObj = this.vessel.getActiveVessel();
+      Orbit vesselOrbit = this.vessel.getActiveVessel().getOrbit();
       Orbit targetVesselOrbit =
-          getConnectionManager().getSpaceCenter().getTargetVessel().getOrbit();
-      if (vessel.getControl().getNodes().isEmpty()) {
+          this.vessel.getConnectionManager().getSpaceCenter().getTargetVessel().getOrbit();
+      if (vesselObj.getControl().getNodes().isEmpty()) {
         MainGui.newInstance().getCreateManeuverPanel().createManeuver();
       }
-      java.util.List<Node> currentManeuvers = vessel.getControl().getNodes();
+      java.util.List<Node> currentManeuvers = vesselObj.getControl().getNodes();
       Node currentManeuver = currentManeuvers.get(0);
       double[] incNodesUt = {
         vesselOrbit.uTAtTrueAnomaly(vesselOrbit.trueAnomalyAtAN(targetVesselOrbit)),
@@ -438,7 +439,7 @@ public class ManeuverController extends Controller {
       ctrlManeuver.setTimeSample(25);
 
       final CountDownLatch latch = new CountDownLatch(1);
-      utStream = connection.addStream(spaceCenter.getClass(), "getUT");
+      utStream = vessel.connection.addStream(vessel.spaceCenter.getClass(), "getUT");
       final Stream<Double> finalUtStream = utStream;
       final int[] utCallbackTag = new int[1];
       utCallbackTag[0] =
@@ -478,22 +479,22 @@ public class ManeuverController extends Controller {
   private void rendezvousWithTargetVessel() throws InterruptedException, RPCException {
     Stream<Double> utStream = null;
     try {
-      List<Node> currentManeuvers = getActiveVessel().getControl().getNodes();
+      List<Node> currentManeuvers = vessel.getActiveVessel().getControl().getNodes();
       Node lastManeuverNode;
       if (currentManeuvers.isEmpty()) {
         MainGui.newInstance().getCreateManeuverPanel().createManeuver();
-        currentManeuvers = getActiveVessel().getControl().getNodes();
+        currentManeuvers = vessel.getActiveVessel().getControl().getNodes();
       } else {
         double lastManeuverNodeUT = 60 + currentManeuvers.get(currentManeuvers.size() - 1).getUT();
         MainGui.newInstance().getCreateManeuverPanel().createManeuver(lastManeuverNodeUT);
-        currentManeuvers = getActiveVessel().getControl().getNodes();
+        currentManeuvers = vessel.getActiveVessel().getControl().getNodes();
       }
       lastManeuverNode = currentManeuvers.get(currentManeuvers.size() - 1);
 
       final CountDownLatch latch = new CountDownLatch(1);
       final RendezvousState state = new RendezvousState(lastManeuverNode);
 
-      utStream = connection.addStream(spaceCenter.getClass(), "getUT");
+      utStream = vessel.connection.addStream(vessel.spaceCenter.getClass(), "getUT");
       final Stream<Double> finalUtStream = utStream;
       final int[] utCallbackTag = new int[1];
       utCallbackTag[0] =
@@ -524,9 +525,10 @@ public class ManeuverController extends Controller {
   private void updateRendezvousState(
       RendezvousState state, CountDownLatch latch, Stream<Double> stream, int callbackTag)
       throws RPCException, IOException {
-    Orbit targetVesselOrbit = getConnectionManager().getSpaceCenter().getTargetVessel().getOrbit();
+    Orbit targetVesselOrbit =
+        vessel.getConnectionManager().getSpaceCenter().getTargetVessel().getOrbit();
     ReferenceFrame currentBodyRefFrame =
-        getActiveVessel().getOrbit().getBody().getNonRotatingReferenceFrame();
+        vessel.getActiveVessel().getOrbit().getBody().getNonRotatingReferenceFrame();
 
     switch (state.phase) {
       case SETUP:
@@ -604,14 +606,15 @@ public class ManeuverController extends Controller {
   private Node createManeuver(double laterTime, double[] deltaV) {
     Node maneuverNode = null;
     try {
-      getActiveVessel()
+      vessel
+          .getActiveVessel()
           .getControl()
           .addNode(
-              getConnectionManager().getSpaceCenter().getUT() + laterTime,
+              vessel.getConnectionManager().getSpaceCenter().getUT() + laterTime,
               (float) deltaV[0],
               (float) deltaV[1],
               (float) deltaV[2]);
-      List<Node> currentNodes = getActiveVessel().getControl().getNodes();
+      List<Node> currentNodes = vessel.getActiveVessel().getControl().getNodes();
       maneuverNode = currentNodes.get(currentNodes.size() - 1);
     } catch (UnsupportedOperationException | RPCException e) {
       setCurrentStatus(Bundle.getString("status_maneuver_not_possible"));
@@ -626,8 +629,8 @@ public class ManeuverController extends Controller {
       if (rollErrorStream != null) rollErrorStream.remove();
       if (timeToNodeStream != null) timeToNodeStream.remove();
       if (remainingBurnStream != null) remainingBurnStream.remove();
-      if (ap != null) ap.disengage();
-      throttle(0);
+      if (vessel.ap != null) vessel.ap.disengage();
+      vessel.throttle(0);
     } catch (RPCException | NullPointerException e) {
       // ignore
     }
@@ -636,13 +639,13 @@ public class ManeuverController extends Controller {
   private void adjustManeuverWithRCS(Node maneuverNode)
       throws RPCException, StreamException, InterruptedException {
     setCurrentStatus("Fine tuning with RCS...");
-    getActiveVessel().getControl().setRCS(true);
+    vessel.getActiveVessel().getControl().setRCS(true);
     final CountDownLatch rcsLatch = new CountDownLatch(1);
 
     Stream<Triplet<Double, Double, Double>> rcsStream = null;
     try {
       rcsStream =
-          connection.addStream(
+          vessel.connection.addStream(
               maneuverNode, "remainingBurnVector", maneuverNode.getReferenceFrame());
       final Stream<Triplet<Double, Double, Double>> finalRcsStream = rcsStream;
       final int[] rcsCallbackTag = new int[1];
@@ -658,7 +661,8 @@ public class ManeuverController extends Controller {
                     return;
                   }
                   // Use the RCS PID controller to gently burn off remaining dV
-                  getActiveVessel()
+                  vessel
+                      .getActiveVessel()
                       .getControl()
                       .setForward((float) ctrlRCS.calculate(-progradeDv, 0));
                 } catch (Exception e) {
@@ -673,7 +677,7 @@ public class ManeuverController extends Controller {
         System.err.println("Timeout during RCS fine tuning.");
       }
     } finally {
-      getActiveVessel().getControl().setForward(0);
+      vessel.getActiveVessel().getControl().setForward(0);
       if (rcsStream != null) {
         rcsStream.remove();
       }
@@ -683,7 +687,7 @@ public class ManeuverController extends Controller {
   private boolean canFineAdjust(String string) {
     if ("true".equals(string)) {
       try {
-        List<RCS> rcsEngines = getActiveVessel().getParts().getRCS();
+        List<RCS> rcsEngines = vessel.getActiveVessel().getParts().getRCS();
         if (rcsEngines.size() > 0) {
           for (RCS rcs : rcsEngines) {
             if (rcs.getHasFuel()) {
@@ -714,7 +718,7 @@ public class ManeuverController extends Controller {
 
     double targetOrbit = endPosition.magnitude();
 
-    double activeVesselSMA = getActiveVessel().getOrbit().getSemiMajorAxis();
+    double activeVesselSMA = vessel.getActiveVessel().getOrbit().getSemiMajorAxis();
     angularDifference =
         targetPhaseAngle
             + Math.PI

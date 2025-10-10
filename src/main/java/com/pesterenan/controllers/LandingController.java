@@ -1,7 +1,6 @@
 package com.pesterenan.controllers;
 
-import com.pesterenan.model.ConnectionManager;
-import com.pesterenan.model.VesselManager;
+import com.pesterenan.model.ActiveVessel;
 import com.pesterenan.resources.Bundle;
 import com.pesterenan.utils.ControlePID;
 import com.pesterenan.utils.Module;
@@ -40,6 +39,7 @@ public class LandingController extends Controller {
   private boolean hoveringMode, hoverAfterApproximation, landingMode;
   private MODE currentMode;
   private float maxTWR;
+  private final Map<String, String> commands;
 
   private volatile boolean isDeorbitBurnDone, isOrientedForDeorbit, isFalling, wasAirborne = false;
   private int isOrientedCallbackTag,
@@ -49,13 +49,10 @@ public class LandingController extends Controller {
   private Stream<Float> apErrorStream;
   private Stream<Double> utStream;
 
-  public LandingController(
-      ConnectionManager connectionManager,
-      VesselManager vesselManager,
-      Map<String, String> commands) {
-    super(connectionManager, vesselManager);
+  public LandingController(ActiveVessel vessel, Map<String, String> commands) {
+    super(vessel);
     this.commands = commands;
-    this.navigation = new Navigation(connectionManager, getActiveVessel());
+    this.navigation = new Navigation(vessel.getConnectionManager(), vessel.getActiveVessel());
     this.initializeParameters();
   }
 
@@ -88,16 +85,16 @@ public class LandingController extends Controller {
   private void initializeParameters() {
     maxTWR = Float.parseFloat(commands.get(Module.MAX_TWR.get()));
     hoverAltitude = Double.parseDouble(commands.get(Module.HOVER_ALTITUDE.get()));
-    altitudeCtrl = new ControlePID(spaceCenter, sleepTime);
-    velocityCtrl = new ControlePID(spaceCenter, sleepTime);
+    altitudeCtrl = new ControlePID(vessel.spaceCenter, sleepTime);
+    velocityCtrl = new ControlePID(vessel.spaceCenter, sleepTime);
     altitudeCtrl.setOutput(0, 1);
     velocityCtrl.setOutput(0, 1);
   }
 
   private void hoverArea() throws RPCException, StreamException, InterruptedException {
     hoveringMode = true;
-    ap.engage();
-    tuneAutoPilot();
+    vessel.ap.engage();
+    vessel.tuneAutoPilot();
     setupCallbacks();
   }
 
@@ -109,18 +106,19 @@ public class LandingController extends Controller {
     }
     altitudeCtrl.reset();
     velocityCtrl.reset();
-    setCurrentStatus(Bundle.getString("status_starting_landing_at") + " " + currentBody.getName());
+    setCurrentStatus(
+        Bundle.getString("status_starting_landing_at") + " " + vessel.currentBody.getName());
     currentMode = MODE.DEORBITING;
-    ap.engage();
-    tuneAutoPilot();
-    getActiveVessel().getControl().setBrakes(true);
+    vessel.ap.engage();
+    vessel.tuneAutoPilot();
+    vessel.getActiveVessel().getControl().setBrakes(true);
     setCurrentStatus(Bundle.getString("status_starting_landing"));
     setupCallbacks();
   }
 
   private void setupCallbacks() throws RPCException, StreamException {
     // Callback for ship orientation
-    apErrorStream = connection.addStream(ap, "getError");
+    apErrorStream = vessel.connection.addStream(vessel.ap, "getError");
     isOrientedCallbackTag =
         apErrorStream.addCallback(
             (error) -> {
@@ -132,7 +130,7 @@ public class LandingController extends Controller {
 
     // Callback for de-orbit burn completion
     isDeorbitBurnDoneCallbackTag =
-        periapsis.addCallback(
+        vessel.periapsis.addCallback(
             p -> {
               try {
                 if (isDeorbitBurnDone) return; // Stop if flag is already set
@@ -141,10 +139,10 @@ public class LandingController extends Controller {
                   // During de-orbit, actively control throttle
                   if (p <= targetPeriapsis) {
                     isDeorbitBurnDone = true;
-                    throttle(0.0f);
-                    periapsis.removeCallback(isDeorbitBurnDoneCallbackTag);
+                    vessel.throttle(0.0f);
+                    vessel.periapsis.removeCallback(isDeorbitBurnDoneCallbackTag);
                   } else {
-                    throttle(altitudeCtrl.calculate(targetPeriapsis, p));
+                    vessel.throttle(altitudeCtrl.calculate(targetPeriapsis, p));
                   }
                 }
               } catch (RPCException e) {
@@ -154,15 +152,15 @@ public class LandingController extends Controller {
 
     // Callback for when the ship starts falling back to the ground
     isFallingCallbackTag =
-        verticalVelocity.addCallback(
+        vessel.verticalVelocity.addCallback(
             (vv) -> {
               if (vv <= -1) {
                 isFalling = true;
-                verticalVelocity.removeCallback(isFallingCallbackTag);
+                vessel.verticalVelocity.removeCallback(isFallingCallbackTag);
               }
             });
 
-    utStream = connection.addStream(spaceCenter.getClass(), "getUT");
+    utStream = vessel.connection.addStream(vessel.spaceCenter.getClass(), "getUT");
     utCallbackTag =
         utStream.addCallback(
             (ut) -> {
@@ -170,7 +168,8 @@ public class LandingController extends Controller {
                 if (landingMode) {
                   executeLandingStep();
                 } else if (hoveringMode) {
-                  altitudeErrorPercentage = surfaceAltitude.get() / hoverAltitude * HUNDRED_PERCENT;
+                  altitudeErrorPercentage =
+                      vessel.surfaceAltitude.get() / hoverAltitude * HUNDRED_PERCENT;
                   if (altitudeErrorPercentage > HUNDRED_PERCENT * 1.05) {
                     currentMode = MODE.GOING_DOWN;
                   } else if (altitudeErrorPercentage < HUNDRED_PERCENT * 0.95) {
@@ -189,9 +188,9 @@ public class LandingController extends Controller {
 
     // Start all streams
     apErrorStream.start();
-    apoapsis.start();
-    periapsis.start();
-    verticalVelocity.start();
+    vessel.apoapsis.start();
+    vessel.periapsis.start();
+    vessel.verticalVelocity.start();
     utStream.start();
   }
 
@@ -200,14 +199,16 @@ public class LandingController extends Controller {
     // Change vessel behavior depending on which mode is active
     switch (currentMode) {
       case DEORBITING:
-        if (getActiveVessel().getSituation().equals(VesselSituation.ORBITING)
-            || getActiveVessel().getSituation().equals(VesselSituation.SUB_ORBITAL)) {
+        if (vessel.getActiveVessel().getSituation().equals(VesselSituation.ORBITING)
+            || vessel.getActiveVessel().getSituation().equals(VesselSituation.SUB_ORBITAL)) {
           setCurrentStatus(Bundle.getString("status_going_suborbital"));
-          getActiveVessel().getControl().setRCS(true);
-          throttle(0.0f);
-          targetPeriapsis = currentBody.getAtmosphereDepth();
+          vessel.getActiveVessel().getControl().setRCS(true);
+          vessel.throttle(0.0f);
+          targetPeriapsis = vessel.currentBody.getAtmosphereDepth();
           targetPeriapsis =
-              targetPeriapsis > 0 ? targetPeriapsis / 2 : -currentBody.getEquatorialRadius() / 2;
+              targetPeriapsis > 0
+                  ? targetPeriapsis / 2
+                  : -vessel.currentBody.getEquatorialRadius() / 2;
           currentMode = MODE.ORIENTING_DEORBIT;
         } else {
           currentMode = MODE.APPROACHING;
@@ -223,8 +224,8 @@ public class LandingController extends Controller {
       case EXECUTING_DEORBIT_BURN:
         setCurrentStatus(Bundle.getString("status_lowering_periapsis"));
         if (isDeorbitBurnDone) {
-          getActiveVessel().getControl().setRCS(false);
-          throttle(0.0f);
+          vessel.getActiveVessel().getControl().setRCS(false);
+          vessel.throttle(0.0f);
           currentMode = MODE.WAITING;
         }
         break;
@@ -233,7 +234,7 @@ public class LandingController extends Controller {
           currentMode = MODE.APPROACHING;
         } else {
           setCurrentStatus(Bundle.getString("status_waiting_for_landing"));
-          throttle(0.0f);
+          vessel.throttle(0.0f);
         }
         break;
       case APPROACHING:
@@ -241,7 +242,7 @@ public class LandingController extends Controller {
         velocityCtrl.setOutput(0, 1);
         double currentVelocity = calculateCurrentVelocityMagnitude();
         double zeroVelocity = calculateZeroVelocityMagnitude();
-        double landingDistanceThreshold = Math.max(hoverAltitude, getMaxAcel(maxTWR) * 5);
+        double landingDistanceThreshold = Math.max(hoverAltitude, vessel.getMaxAcel(maxTWR) * 5);
         double threshold =
             Utilities.clamp(
                 ((currentVelocity + zeroVelocity) - landingDistanceThreshold)
@@ -251,12 +252,13 @@ public class LandingController extends Controller {
         double altPID = altitudeCtrl.calculate(currentVelocity, zeroVelocity);
         double velPID =
             velocityCtrl.calculate(
-                verticalVelocity.get(), (-Utilities.clamp(surfaceAltitude.get() * 0.1, 3, 20)));
-        throttle(Utilities.linearInterpolation(velPID, altPID, threshold));
+                vessel.verticalVelocity.get(),
+                (-Utilities.clamp(vessel.surfaceAltitude.get() * 0.1, 3, 20)));
+        vessel.throttle(Utilities.linearInterpolation(velPID, altPID, threshold));
         navigation.aimForLanding();
-        if (threshold < 0.15 || surfaceAltitude.get() < landingDistanceThreshold) {
+        if (threshold < 0.15 || vessel.surfaceAltitude.get() < landingDistanceThreshold) {
           hoverAltitude = landingDistanceThreshold;
-          getActiveVessel().getControl().setGear(true);
+          vessel.getActiveVessel().getControl().setGear(true);
           if (hoverAfterApproximation) {
             landingMode = false;
             hoverArea();
@@ -269,9 +271,9 @@ public class LandingController extends Controller {
       case LANDING:
         if (hasTheVesselLanded()) break;
         controlThrottleByMatchingVerticalVelocity(
-            horizontalVelocity.get() > 4
+            vessel.horizontalVelocity.get() > 4
                 ? 0
-                : -Utilities.clamp(surfaceAltitude.get() * 0.1, 3, 20));
+                : -Utilities.clamp(vessel.surfaceAltitude.get() * 0.1, 3, 20));
         navigation.aimForLanding();
         setCurrentStatus("Pousando...");
         break;
@@ -290,9 +292,9 @@ public class LandingController extends Controller {
       case GOING_UP:
         altitudeCtrl.setOutput(-0.5, 0.5);
         velocityCtrl.setOutput(-0.5, 0.5);
-        throttle(
+        vessel.throttle(
             altitudeCtrl.calculate(altitudeErrorPercentage, HUNDRED_PERCENT)
-                + velocityCtrl.calculate(verticalVelocity.get(), MAX_VELOCITY));
+                + velocityCtrl.calculate(vessel.verticalVelocity.get(), MAX_VELOCITY));
         navigation.aimAtRadialOut();
         setCurrentStatus("Subindo altitude...");
         break;
@@ -304,9 +306,9 @@ public class LandingController extends Controller {
       case HOVERING:
         altitudeCtrl.setOutput(-0.5, 0.5);
         velocityCtrl.setOutput(-0.5, 0.5);
-        throttle(
+        vessel.throttle(
             altitudeCtrl.calculate(altitudeErrorPercentage, HUNDRED_PERCENT)
-                + velocityCtrl.calculate(verticalVelocity.get(), 0));
+                + velocityCtrl.calculate(vessel.verticalVelocity.get(), 0));
         navigation.aimAtRadialOut();
         setCurrentStatus("Sobrevoando area...");
         break;
@@ -316,15 +318,17 @@ public class LandingController extends Controller {
   }
 
   private void adjustLandingPID() throws RPCException, StreamException {
-    double maxAccel = getMaxAcel(maxTWR);
-    double currentTWR = Math.min(getTWR(), maxTWR);
+    double maxAccel = vessel.getMaxAcel(maxTWR);
+    double currentTWR = Math.min(vessel.getTWR(), maxTWR);
 
     if (currentMode == MODE.APPROACHING) {
       // 1. Calcula a distância de trajetória restante (usando o método que já temos)
       double trajectoryLength = calculateCurrentVelocityMagnitude();
       // 2. Calcula a velocidade total (vetorial)
       double totalVelocity =
-          Math.sqrt(Math.pow(verticalVelocity.get(), 2) + Math.pow(horizontalVelocity.get(), 2));
+          Math.sqrt(
+              Math.pow(vessel.verticalVelocity.get(), 2)
+                  + Math.pow(vessel.horizontalVelocity.get(), 2));
 
       // 3. Calcula o tempo de impacto baseado na TRAJETÓRIA
       double timeToImpact = 10.0; // Default seguro
@@ -347,7 +351,7 @@ public class LandingController extends Controller {
   }
 
   private void adjustHoverPID() throws RPCException, StreamException {
-    double currentTWR = Math.min(getTWR(), maxTWR);
+    double currentTWR = Math.min(vessel.getTWR(), maxTWR);
     altitudeCtrl.setPIDValues(currentTWR * velP, currentTWR * velI, currentTWR * velD);
     velocityCtrl.setPIDValues(currentTWR * velP, currentTWR * velI, currentTWR * velD);
   }
@@ -355,23 +359,24 @@ public class LandingController extends Controller {
   private void controlThrottleByMatchingVerticalVelocity(double velocityToMatch)
       throws RPCException, StreamException {
     velocityCtrl.setOutput(0, 1);
-    throttle(
-        velocityCtrl.calculate(verticalVelocity.get(), velocityToMatch + horizontalVelocity.get()));
+    vessel.throttle(
+        velocityCtrl.calculate(
+            vessel.verticalVelocity.get(), velocityToMatch + vessel.horizontalVelocity.get()));
   }
 
   private boolean hasTheVesselLanded() throws RPCException {
-    VesselSituation situation = getActiveVessel().getSituation();
+    VesselSituation situation = vessel.getActiveVessel().getSituation();
     if (wasAirborne
         && (situation.equals(VesselSituation.LANDED)
             || situation.equals(VesselSituation.SPLASHED))) {
       setCurrentStatus(Bundle.getString("status_landed"));
       hoveringMode = false;
       landingMode = false;
-      throttle(0.0f);
-      getActiveVessel().getControl().setSAS(true);
-      getActiveVessel().getControl().setRCS(true);
-      getActiveVessel().getControl().setBrakes(false);
-      ap.disengage();
+      vessel.throttle(0.0f);
+      vessel.getActiveVessel().getControl().setSAS(true);
+      vessel.getActiveVessel().getControl().setRCS(true);
+      vessel.getActiveVessel().getControl().setBrakes(false);
+      vessel.ap.disengage();
       return true;
     }
     // If we are not landed, we must be airborne
@@ -384,15 +389,15 @@ public class LandingController extends Controller {
   }
 
   private double calculateCurrentVelocityMagnitude() throws RPCException, StreamException {
-    double timeToGround = surfaceAltitude.get() / verticalVelocity.get();
-    double horizontalDistance = horizontalVelocity.get() * timeToGround;
-    return calculateEllipticTrajectory(horizontalDistance, surfaceAltitude.get());
+    double timeToGround = vessel.surfaceAltitude.get() / vessel.verticalVelocity.get();
+    double horizontalDistance = vessel.horizontalVelocity.get() * timeToGround;
+    return calculateEllipticTrajectory(horizontalDistance, vessel.surfaceAltitude.get());
   }
 
   private double calculateZeroVelocityMagnitude() throws RPCException, StreamException {
     double zeroVelocityDistance =
-        calculateEllipticTrajectory(horizontalVelocity.get(), verticalVelocity.get());
-    double zeroVelocityBurnTime = zeroVelocityDistance / getMaxAcel(maxTWR);
+        calculateEllipticTrajectory(vessel.horizontalVelocity.get(), vessel.verticalVelocity.get());
+    double zeroVelocityBurnTime = zeroVelocityDistance / vessel.getMaxAcel(maxTWR);
     return zeroVelocityDistance * zeroVelocityBurnTime;
   }
 
@@ -406,8 +411,8 @@ public class LandingController extends Controller {
     try {
       landingMode = false;
       hoveringMode = false;
-      if (ap != null) {
-        ap.disengage();
+      if (vessel.ap != null) {
+        vessel.ap.disengage();
       }
       if (apErrorStream != null) {
         apErrorStream.remove();
@@ -415,7 +420,7 @@ public class LandingController extends Controller {
       if (utStream != null) {
         utStream.remove();
       }
-      throttle(0);
+      vessel.throttle(0);
       setCurrentStatus(Bundle.getString("status_ready"));
     } catch (RPCException | NullPointerException e) {
       System.err.println("Erro durante a limpeza do LandingController: " + e.getMessage());

@@ -26,9 +26,9 @@ import krpc.client.services.SpaceCenter.VesselSituation;
 
 public class ActiveVessel {
 
-  protected Vessel activeVessel;
-  protected SpaceCenter spaceCenter;
-  protected Connection connection;
+  public Vessel activeVessel;
+  public SpaceCenter spaceCenter;
+  public Connection connection;
   private final Map<Telemetry, Double> telemetryData = new ConcurrentHashMap<>();
   public AutoPilot ap;
   public Flight flightParameters;
@@ -46,10 +46,10 @@ public class ActiveVessel {
   public Stream<Double> missionTime;
   public Stream<Double> horizontalVelocity;
   public Map<String, String> commands;
-  protected int currentVesselId = 0;
-  protected Thread controllerThread = null;
-  protected Controller controller;
-  protected long timer = 0;
+  public int currentVesselId = 0;
+  public Thread controllerThread = null;
+  public Controller controller;
+  public long timer = 0;
   private String currentStatus = Bundle.getString("status_ready");
   private boolean runningModule;
   private ConnectionManager connectionManager;
@@ -60,7 +60,7 @@ public class ActiveVessel {
     this.vesselManager = vesselManager;
     this.connection = connectionManager.getConnection();
     this.spaceCenter = connectionManager.getSpaceCenter();
-    initializeParameters();
+    reinitialize();
   }
 
   public ConnectionManager getConnectionManager() {
@@ -151,24 +151,24 @@ public class ActiveVessel {
       runningModule = false;
     }
     if (currentFunction.equals(Module.LIFTOFF.get())) {
-      controller = new LiftoffController(this.connectionManager, this.vesselManager, commands);
+      controller = new LiftoffController(this, commands);
       runningModule = true;
     }
     if (currentFunction.equals(Module.HOVERING.get())
         || currentFunction.equals(Module.LANDING.get())) {
-      controller = new LandingController(this.connectionManager, this.vesselManager, commands);
+      controller = new LandingController(this, commands);
       runningModule = true;
     }
     if (currentFunction.equals(Module.MANEUVER.get())) {
-      controller = new ManeuverController(this.connectionManager, this.vesselManager, commands);
+      controller = new ManeuverController(this, commands);
       runningModule = true;
     }
     if (currentFunction.equals(Module.ROVER.get())) {
-      controller = new RoverController(this.connectionManager, this.vesselManager, commands);
+      controller = new RoverController(this, commands);
       runningModule = true;
     }
     if (currentFunction.equals(Module.DOCKING.get())) {
-      controller = new DockingController(this.connectionManager, this.vesselManager, commands);
+      controller = new DockingController(this, commands);
       runningModule = true;
     }
     String controllerThreadName = "MP_CTRL_" + currentFunction + "_" + currentVesselId;
@@ -188,20 +188,54 @@ public class ActiveVessel {
   }
 
   public void removeStreams() {
+    // Interrupt any running controller thread
+    if (controllerThread != null && controllerThread.isAlive()) {
+      controllerThread.interrupt();
+      runningModule = false;
+    }
+    // Close all streams safely
     try {
       if (totalMass != null) totalMass.remove();
-      if (altitude != null) altitude.remove();
-      if (surfaceAltitude != null) surfaceAltitude.remove();
-      if (apoapsis != null) apoapsis.remove();
-      if (periapsis != null) periapsis.remove();
-      if (verticalVelocity != null) verticalVelocity.remove();
-      if (horizontalVelocity != null) horizontalVelocity.remove();
-      if (controllerThread != null && controllerThread.isAlive()) {
-        controllerThread.interrupt();
-      }
-    } catch (RPCException e) {
-      System.err.println("ERRO: Ao remover streams da nave atual. " + e.getMessage());
+    } catch (Exception e) {
+      /* ignore */
     }
+    try {
+      if (altitude != null) altitude.remove();
+    } catch (Exception e) {
+      /* ignore */
+    }
+    try {
+      if (surfaceAltitude != null) surfaceAltitude.remove();
+    } catch (Exception e) {
+      /* ignore */
+    }
+    try {
+      if (apoapsis != null) apoapsis.remove();
+    } catch (Exception e) {
+      /* ignore */
+    }
+    try {
+      if (periapsis != null) periapsis.remove();
+    } catch (Exception e) {
+      /* ignore */
+    }
+    try {
+      if (verticalVelocity != null) verticalVelocity.remove();
+    } catch (Exception e) {
+      /* ignore */
+    }
+    try {
+      if (horizontalVelocity != null) horizontalVelocity.remove();
+    } catch (Exception e) {
+      /* ignore */
+    }
+    try {
+      if (missionTime != null) missionTime.remove();
+    } catch (Exception e) {
+      /* ignore */
+    }
+    // Clear the telemetry data map
+    telemetryData.clear();
   }
 
   public Map<Telemetry, Double> getTelemetryData() {
@@ -212,7 +246,7 @@ public class ActiveVessel {
     return runningModule;
   }
 
-  protected void decoupleStage() throws RPCException, InterruptedException {
+  public void decoupleStage() throws RPCException, InterruptedException {
     setCurrentStatus(Bundle.getString("status_separating_stage"));
     spaceCenter.setActiveVessel(getActiveVessel());
     double currentThrottle = getActiveVessel().getControl().getThrottle();
@@ -222,7 +256,7 @@ public class ActiveVessel {
     throttleUp(currentThrottle, 1);
   }
 
-  protected void throttleUp(double throttleAmount, double seconds)
+  public void throttleUp(double throttleAmount, double seconds)
       throws RPCException, InterruptedException {
     double secondsElapsed = 0;
     while (secondsElapsed < seconds) {
@@ -232,8 +266,11 @@ public class ActiveVessel {
     }
   }
 
-  private void initializeParameters() {
-    System.out.println("DEBUG: Initializing ActiveVessel parameters...");
+  public void reinitialize() {
+    // Clean up any existing streams or threads before creating new ones
+    removeStreams();
+
+    System.out.println("DEBUG: Re-initializing ActiveVessel parameters...");
     try {
       setActiveVessel(spaceCenter.getActiveVessel());
       currentVesselId = getActiveVessel().hashCode();
@@ -252,10 +289,12 @@ public class ActiveVessel {
       surfaceAltitude = connection.addStream(flightParameters, "getSurfaceAltitude");
       totalMass = connection.addStream(getActiveVessel(), "getMass");
       verticalVelocity = connection.addStream(flightParameters, "getVerticalSpeed");
+      missionTime = connection.addStream(spaceCenter.getClass(), "getUT");
 
       altitude.addCallback(val -> telemetryData.put(Telemetry.ALTITUDE, val < 0 ? 0 : val));
       apoapsis.addCallback(val -> telemetryData.put(Telemetry.APOAPSIS, val < 0 ? 0 : val));
-      horizontalVelocity.addCallback( val -> telemetryData.put(Telemetry.HORZ_SPEED, val < 0 ? 0 : val));
+      horizontalVelocity.addCallback(
+          val -> telemetryData.put(Telemetry.HORZ_SPEED, val < 0 ? 0 : val));
       periapsis.addCallback(val -> telemetryData.put(Telemetry.PERIAPSIS, val < 0 ? 0 : val));
       surfaceAltitude.addCallback(val -> telemetryData.put(Telemetry.ALT_SURF, val < 0 ? 0 : val));
       verticalVelocity.addCallback(val -> telemetryData.put(Telemetry.VERT_SPEED, val));
@@ -267,10 +306,11 @@ public class ActiveVessel {
       surfaceAltitude.start();
       totalMass.start();
       verticalVelocity.start();
+      missionTime.start();
       System.out.println("DEBUG: All streams created successfully.");
     } catch (RPCException | StreamException e) {
       System.err.println(
-          "DEBUG: CRITICAL ERROR while initializing parameters for active vessel: "
+          "DEBUG: CRITICAL ERROR while re-initializing parameters for active vessel: "
               + e.getMessage());
     }
   }

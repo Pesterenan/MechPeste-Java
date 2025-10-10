@@ -1,7 +1,6 @@
 package com.pesterenan.controllers;
 
-import com.pesterenan.model.ConnectionManager;
-import com.pesterenan.model.VesselManager;
+import com.pesterenan.model.ActiveVessel;
 import com.pesterenan.resources.Bundle;
 import com.pesterenan.utils.ControlePID;
 import com.pesterenan.utils.Module;
@@ -39,14 +38,12 @@ public class LiftoffController extends Controller {
   private Navigation navigation;
   private LIFTOFF_MODE liftoffMode;
   private double startCurveAlt;
+  private final Map<String, String> commands;
 
-  public LiftoffController(
-      ConnectionManager connectionManager,
-      VesselManager vesselManager,
-      Map<String, String> commands) {
-    super(connectionManager, vesselManager);
+  public LiftoffController(ActiveVessel vessel, Map<String, String> commands) {
+    super(vessel);
     this.commands = commands;
-    this.navigation = new Navigation(connectionManager, getActiveVessel());
+    this.navigation = new Navigation(vessel.getConnectionManager(), vessel.getActiveVessel());
     initializeParameters();
   }
 
@@ -56,28 +53,28 @@ public class LiftoffController extends Controller {
       isLiftoffRunning = true;
 
       // Part 1: Blocking Countdown and Launch
-      if (getActiveVessel().getSituation().equals(VesselSituation.PRE_LAUNCH)) {
-        throttleUp(getMaxThrottleForTWR(1.4), 1);
+      if (vessel.getActiveVessel().getSituation().equals(VesselSituation.PRE_LAUNCH)) {
+        vessel.throttleUp(vessel.getMaxThrottleForTWR(1.4), 1);
         for (double count = 5.0; count >= 0; count -= 0.1) {
           if (Thread.interrupted()) throw new InterruptedException();
           setCurrentStatus(String.format(Bundle.getString("status_launching_in"), count));
           Thread.sleep(100);
         }
         setCurrentStatus(Bundle.getString("status_liftoff"));
-        getActiveVessel().getControl().activateNextStage();
+        vessel.getActiveVessel().getControl().activateNextStage();
       } else {
-        throttle(1.0f);
+        vessel.throttle(1.0f);
       }
 
       // Part 2: Async Gravity Turn
       liftoffMode = LIFTOFF_MODE.GRAVITY_TURN; // Set initial state for async phase
       setupCallbacks(); // This starts the UT stream
-      tuneAutoPilot();
-      startCurveAlt = altitude.get();
-      ap.setReferenceFrame(surfaceReferenceFrame);
-      ap.targetPitchAndHeading(currentPitch, heading);
-      ap.setTargetRoll(this.roll);
-      ap.engage();
+      vessel.tuneAutoPilot();
+      startCurveAlt = vessel.altitude.get();
+      vessel.ap.setReferenceFrame(vessel.surfaceReferenceFrame);
+      vessel.ap.targetPitchAndHeading(currentPitch, heading);
+      vessel.ap.setTargetRoll(this.roll);
+      vessel.ap.engage();
 
       // Loop to keep thread alive while async part runs
       while (isLiftoffRunning) {
@@ -119,21 +116,21 @@ public class LiftoffController extends Controller {
     gravityCurveModel = commands.get(Module.INCLINATION.get());
     willOpenPanelsAndAntenna = Boolean.parseBoolean(commands.get(Module.OPEN_PANELS.get()));
     willDecoupleStages = Boolean.parseBoolean(commands.get(Module.STAGE.get()));
-    thrControl = new ControlePID(getConnectionManager().getSpaceCenter(), 25);
+    thrControl = new ControlePID(vessel.getConnectionManager().getSpaceCenter(), 25);
     thrControl.setOutput(0.0, 1.0);
   }
 
   private void setupCallbacks() throws RPCException, StreamException {
     apoapsisCallbackTag =
-        apoapsis.addCallback(
+        vessel.apoapsis.addCallback(
             (apo) -> {
               if (apo >= finalApoapsisAlt) {
                 targetApoapsisReached = true;
               }
             });
-    apoapsis.start();
+    vessel.apoapsis.start();
 
-    pressureStream = connection.addStream(flightParameters, "getDynamicPressure");
+    pressureStream = vessel.connection.addStream(vessel.flightParameters, "getDynamicPressure");
     pressureCallbackTag =
         pressureStream.addCallback(
             (pressure) -> {
@@ -143,7 +140,7 @@ public class LiftoffController extends Controller {
             });
     pressureStream.start();
 
-    utStream = connection.addStream(spaceCenter.getClass(), "getUT");
+    utStream = vessel.connection.addStream(vessel.spaceCenter.getClass(), "getUT");
     utCallbackTag =
         utStream.addCallback(
             (ut) -> {
@@ -178,23 +175,23 @@ public class LiftoffController extends Controller {
   private void gravityTurn() throws RPCException, StreamException, InterruptedException {
     if (currentPitch > 1 && !targetApoapsisReached) {
       double altitudeProgress =
-          Utilities.remap(startCurveAlt, finalApoapsisAlt, 1, 0.01, altitude.get(), false);
+          Utilities.remap(startCurveAlt, finalApoapsisAlt, 1, 0.01, vessel.altitude.get(), false);
       currentPitch = (float) (calculateCurrentPitch(altitudeProgress));
       double currentMaxTWR = calculateTWRBasedOnPressure(currentPitch);
-      ap.setTargetPitch(currentPitch);
+      vessel.ap.setTargetPitch(currentPitch);
       double throttleValue =
           Math.min(
-              thrControl.calculate(apoapsis.get() / finalApoapsisAlt * 1000, 1000),
-              getMaxThrottleForTWR(currentMaxTWR));
-      throttle(Utilities.clamp(throttleValue, 0.05, 1.0));
+              thrControl.calculate(vessel.apoapsis.get() / finalApoapsisAlt * 1000, 1000),
+              vessel.getMaxThrottleForTWR(currentMaxTWR));
+      vessel.throttle(Utilities.clamp(throttleValue, 0.05, 1.0));
 
       if (willDecoupleStages && isCurrentStageWithoutFuel()) {
-        decoupleStage();
+        vessel.decoupleStage();
       }
       setCurrentStatus(
           String.format(Bundle.getString("status_liftoff_inclination") + " %.1f", currentPitch));
     } else {
-      throttle(0);
+      vessel.throttle(0);
       liftoffMode = LIFTOFF_MODE.FINALIZE_ORBIT;
     }
   }
@@ -202,18 +199,18 @@ public class LiftoffController extends Controller {
   private void finalizeOrbit() throws RPCException, StreamException, InterruptedException {
     if (!dynamicPressureLowEnough) {
       setCurrentStatus(Bundle.getString("status_maintaining_until_orbit"));
-      getActiveVessel().getControl().setRCS(true);
+      vessel.getActiveVessel().getControl().setRCS(true);
       navigation.aimAtPrograde();
-      throttle(thrControl.calculate(apoapsis.get() / finalApoapsisAlt * 1000, 1000));
+      vessel.throttle(thrControl.calculate(vessel.apoapsis.get() / finalApoapsisAlt * 1000, 1000));
     } else {
-      throttle(0.0f);
+      vessel.throttle(0.0f);
       if (willDecoupleStages) {
         jettisonFairings();
       }
       if (willOpenPanelsAndAntenna) {
         openPanelsAndAntenna();
       }
-      apoapsis.removeCallback(apoapsisCallbackTag);
+      vessel.apoapsis.removeCallback(apoapsisCallbackTag);
       pressureStream.removeCallback(pressureCallbackTag);
       liftoffMode = LIFTOFF_MODE.CIRCULARIZE;
     }
@@ -222,20 +219,20 @@ public class LiftoffController extends Controller {
   private void cleanup() {
     try {
       isLiftoffRunning = false;
-      apoapsis.removeCallback(apoapsisCallbackTag);
+      vessel.apoapsis.removeCallback(apoapsisCallbackTag);
       pressureStream.removeCallback(pressureCallbackTag);
       utStream.removeCallback(utCallbackTag);
       pressureStream.remove();
       utStream.remove();
-      ap.disengage();
-      throttle(0);
+      vessel.ap.disengage();
+      vessel.throttle(0);
     } catch (RPCException | NullPointerException e) {
       // ignore
     }
   }
 
   private double calculateTWRBasedOnPressure(float currentPitch) throws RPCException {
-    float currentPressure = flightParameters.getDynamicPressure();
+    float currentPressure = vessel.flightParameters.getDynamicPressure();
     if (currentPressure <= 10) {
       return Utilities.remap(90.0, 0.0, maxTWR, 5.0, currentPitch, true);
     }
@@ -248,11 +245,11 @@ public class LiftoffController extends Controller {
     commands.put(Module.MODULO.get(), Module.MANEUVER.get());
     commands.put(Module.FUNCTION.get(), Module.APOAPSIS.get());
     commands.put(Module.FINE_ADJUST.get(), String.valueOf(false));
-    getVesselManager().startModule(commands);
+    vessel.getVesselManager().startModule(commands);
   }
 
   private void jettisonFairings() throws RPCException, InterruptedException {
-    List<Fairing> fairings = getActiveVessel().getParts().getFairings();
+    List<Fairing> fairings = vessel.getActiveVessel().getParts().getFairings();
     if (fairings.size() > 0) {
       setCurrentStatus(Bundle.getString("status_jettisoning_shields"));
       for (Fairing f : fairings) {
@@ -266,9 +263,9 @@ public class LiftoffController extends Controller {
   }
 
   private void openPanelsAndAntenna() throws RPCException, InterruptedException {
-    getActiveVessel().getControl().setSolarPanels(true);
-    getActiveVessel().getControl().setRadiators(true);
-    getActiveVessel().getControl().setAntennas(true);
+    vessel.getActiveVessel().getControl().setSolarPanels(true);
+    vessel.getActiveVessel().getControl().setRadiators(true);
+    vessel.getActiveVessel().getControl().setAntennas(true);
   }
 
   private double calculateCurrentPitch(double currentAltitude) {
@@ -288,8 +285,8 @@ public class LiftoffController extends Controller {
   }
 
   private boolean isCurrentStageWithoutFuel() throws RPCException {
-    for (Engine engine : getActiveVessel().getParts().getEngines()) {
-      if (engine.getPart().getStage() == getActiveVessel().getControl().getCurrentStage()
+    for (Engine engine : vessel.getActiveVessel().getParts().getEngines()) {
+      if (engine.getPart().getStage() == vessel.getActiveVessel().getControl().getCurrentStage()
           && !engine.getHasFuel()) {
         return true;
       }
