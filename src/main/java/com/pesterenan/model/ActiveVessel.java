@@ -229,11 +229,6 @@ public class ActiveVessel {
     } catch (Exception e) {
       /* ignore */
     }
-    try {
-      if (missionTime != null) missionTime.remove();
-    } catch (Exception e) {
-      /* ignore */
-    }
     // Clear the telemetry data map
     telemetryData.clear();
   }

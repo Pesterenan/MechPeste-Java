@@ -32,7 +32,6 @@ public class LiftoffController extends Controller {
       isLiftoffRunning = false;
   private int apoapsisCallbackTag, pressureCallbackTag, utCallbackTag;
   private Stream<Float> pressureStream;
-  private Stream<Double> utStream;
   private boolean willDecoupleStages, willOpenPanelsAndAntenna;
   private String gravityCurveModel = Module.CIRCULAR.get();
   private Navigation navigation;
@@ -140,13 +139,12 @@ public class LiftoffController extends Controller {
             });
     pressureStream.start();
 
-    utStream = vessel.connection.addStream(vessel.spaceCenter.getClass(), "getUT");
     utCallbackTag =
-        utStream.addCallback(
+        vessel.missionTime.addCallback(
             (ut) -> {
               try {
                 if (!isLiftoffRunning) {
-                  utStream.removeCallback(utCallbackTag);
+                  vessel.missionTime.removeCallback(utCallbackTag);
                   return;
                 }
                 handleLiftoff();
@@ -154,7 +152,6 @@ public class LiftoffController extends Controller {
                 System.err.println("Liftoff UT Callback error: " + e.getMessage());
               }
             });
-    utStream.start();
   }
 
   private void handleLiftoff() throws RPCException, StreamException, InterruptedException {
@@ -221,9 +218,8 @@ public class LiftoffController extends Controller {
       isLiftoffRunning = false;
       vessel.apoapsis.removeCallback(apoapsisCallbackTag);
       pressureStream.removeCallback(pressureCallbackTag);
-      utStream.removeCallback(utCallbackTag);
+      vessel.missionTime.removeCallback(utCallbackTag);
       pressureStream.remove();
-      utStream.remove();
       vessel.ap.disengage();
       vessel.throttle(0);
     } catch (RPCException | NullPointerException e) {

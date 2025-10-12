@@ -68,7 +68,6 @@ public class DockingController extends Controller {
   private boolean isDocking, isOriented = false;
   private final Map<String, String> commands;
 
-  private Stream<Double> utStream;
   private Stream<Double> errorStream;
 
   private int utCallbackTag, errorCallbackTag;
@@ -104,22 +103,20 @@ public class DockingController extends Controller {
     krpc = KRPC.newInstance(vessel.getConnectionManager().getConnection());
     currentPhase = DockingPhase.SETUP;
 
-    utStream = vessel.connection.addStream(vessel.spaceCenter.getClass(), "getUT");
     utCallbackTag =
-        utStream.addCallback(
+        vessel.missionTime.addCallback(
             (ut) -> {
               try {
                 if (isDocking) {
                   updateDockingState();
                 } else {
-                  utStream.removeCallback(utCallbackTag);
+                  vessel.missionTime.removeCallback(utCallbackTag);
                 }
               } catch (Exception e) {
                 setCurrentStatus("Docking failed: " + e.getMessage());
                 cleanup();
               }
             });
-    utStream.start();
   }
 
   private void initializeParameters() {
@@ -388,9 +385,6 @@ public class DockingController extends Controller {
   private void cleanup() {
     try {
       isDocking = false;
-      if (utStream != null) {
-        utStream.remove();
-      }
       if (errorStream != null) {
         errorStream.remove();
       }

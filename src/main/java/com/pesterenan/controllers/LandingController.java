@@ -10,6 +10,7 @@ import java.util.Map;
 import krpc.client.RPCException;
 import krpc.client.Stream;
 import krpc.client.StreamException;
+import krpc.client.services.SpaceCenter.Engine;
 import krpc.client.services.SpaceCenter.VesselSituation;
 
 public class LandingController extends Controller {
@@ -27,9 +28,8 @@ public class LandingController extends Controller {
   }
 
   public static final double MAX_VELOCITY = 5;
-  private static final long sleepTime = 50;
   private static final double velP = 0.05;
-  private static final double velI = 0.005;
+  private static final double velI = 0.000001;
   private static final double velD = 0.001;
   private ControlePID altitudeCtrl;
   private ControlePID velocityCtrl;
@@ -47,7 +47,6 @@ public class LandingController extends Controller {
       isFallingCallbackTag,
       utCallbackTag;
   private Stream<Float> apErrorStream;
-  private Stream<Double> utStream;
 
   public LandingController(ActiveVessel vessel, Map<String, String> commands) {
     super(vessel);
@@ -74,6 +73,7 @@ public class LandingController extends Controller {
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt(); // Restore interrupted status
       System.err.println("Controle de Pouso finalizado via interrupção.");
+      setCurrentStatus(Bundle.getString("status_ready"));
     } catch (RPCException | StreamException e) {
       System.err.println("Erro no run do landingController:" + e.getMessage());
       setCurrentStatus(Bundle.getString("status_data_unavailable"));
@@ -85,8 +85,8 @@ public class LandingController extends Controller {
   private void initializeParameters() {
     maxTWR = Float.parseFloat(commands.get(Module.MAX_TWR.get()));
     hoverAltitude = Double.parseDouble(commands.get(Module.HOVER_ALTITUDE.get()));
-    altitudeCtrl = new ControlePID(vessel.spaceCenter, sleepTime);
-    velocityCtrl = new ControlePID(vessel.spaceCenter, sleepTime);
+    altitudeCtrl = new ControlePID(vessel.spaceCenter);
+    velocityCtrl = new ControlePID(vessel.spaceCenter);
     altitudeCtrl.setOutput(0, 1);
     velocityCtrl.setOutput(0, 1);
   }
@@ -154,15 +154,14 @@ public class LandingController extends Controller {
     isFallingCallbackTag =
         vessel.verticalVelocity.addCallback(
             (vv) -> {
-              if (vv <= -1) {
+              if (vv <= 0) {
                 isFalling = true;
                 vessel.verticalVelocity.removeCallback(isFallingCallbackTag);
               }
             });
 
-    utStream = vessel.connection.addStream(vessel.spaceCenter.getClass(), "getUT");
     utCallbackTag =
-        utStream.addCallback(
+        vessel.missionTime.addCallback(
             (ut) -> {
               try {
                 if (landingMode) {
@@ -179,7 +178,7 @@ public class LandingController extends Controller {
                   }
                   executeHoverStep();
                 } else {
-                  utStream.removeCallback(utCallbackTag);
+                  vessel.missionTime.removeCallback(utCallbackTag);
                 }
               } catch (Exception e) {
                 System.err.println("UT Callback error: " + e.getMessage());
@@ -191,7 +190,6 @@ public class LandingController extends Controller {
     vessel.apoapsis.start();
     vessel.periapsis.start();
     vessel.verticalVelocity.start();
-    utStream.start();
   }
 
   private void executeLandingStep() throws RPCException, StreamException, InterruptedException {
@@ -238,11 +236,17 @@ public class LandingController extends Controller {
         }
         break;
       case APPROACHING:
+        for (Engine engine : vessel.getActiveVessel().getParts().getEngines()) {
+          if (engine.getPart().getStage() == vessel.getActiveVessel().getControl().getCurrentStage()
+              && !engine.getActive()) {
+            engine.setActive(true);
+          }
+        }
         altitudeCtrl.setOutput(0, 1);
         velocityCtrl.setOutput(0, 1);
         double currentVelocity = calculateCurrentVelocityMagnitude();
         double zeroVelocity = calculateZeroVelocityMagnitude();
-        double landingDistanceThreshold = Math.max(hoverAltitude, vessel.getMaxAcel(maxTWR) * 5);
+        double landingDistanceThreshold = Math.max(hoverAltitude, vessel.getMaxAcel(maxTWR) * 3);
         double threshold =
             Utilities.clamp(
                 ((currentVelocity + zeroVelocity) - landingDistanceThreshold)
@@ -268,10 +272,11 @@ public class LandingController extends Controller {
         }
         setCurrentStatus("Se aproximando do momento do pouso...");
         break;
+
       case LANDING:
         if (hasTheVesselLanded()) break;
         controlThrottleByMatchingVerticalVelocity(
-            vessel.horizontalVelocity.get() > 4
+            vessel.horizontalVelocity.get() > 5
                 ? 0
                 : -Utilities.clamp(vessel.surfaceAltitude.get() * 0.1, 3, 20));
         navigation.aimForLanding();
@@ -288,10 +293,10 @@ public class LandingController extends Controller {
       return;
     }
     adjustHoverPID();
+    altitudeCtrl.setOutput(-0.5, 0.5);
+    velocityCtrl.setOutput(-0.5, 0.5);
     switch (currentMode) {
       case GOING_UP:
-        altitudeCtrl.setOutput(-0.5, 0.5);
-        velocityCtrl.setOutput(-0.5, 0.5);
         vessel.throttle(
             altitudeCtrl.calculate(altitudeErrorPercentage, HUNDRED_PERCENT)
                 + velocityCtrl.calculate(vessel.verticalVelocity.get(), MAX_VELOCITY));
@@ -304,11 +309,9 @@ public class LandingController extends Controller {
         setCurrentStatus("Baixando altitude...");
         break;
       case HOVERING:
-        altitudeCtrl.setOutput(-0.5, 0.5);
-        velocityCtrl.setOutput(-0.5, 0.5);
         vessel.throttle(
             altitudeCtrl.calculate(altitudeErrorPercentage, HUNDRED_PERCENT)
-                + velocityCtrl.calculate(vessel.verticalVelocity.get(), 0));
+                + velocityCtrl.calculate(0, -vessel.verticalVelocity.get()));
         navigation.aimAtRadialOut();
         setCurrentStatus("Sobrevoando area...");
         break;
@@ -339,7 +342,7 @@ public class LandingController extends Controller {
       // O resto da lógica permanece o mesmo, mas agora usando o novo timeToImpact
       double Kp = (currentTWR * velP) / timeToImpact;
       double Kd = Kp * (velD / velP);
-      double Ki = 0.0;
+      double Ki = 0.0001;
       altitudeCtrl.setPIDValues(Kp, Ki, Kd);
     } else {
       // Para outros modos, usa um PID mais simples e estável
@@ -416,9 +419,6 @@ public class LandingController extends Controller {
       }
       if (apErrorStream != null) {
         apErrorStream.remove();
-      }
-      if (utStream != null) {
-        utStream.remove();
       }
       vessel.throttle(0);
       setCurrentStatus(Bundle.getString("status_ready"));

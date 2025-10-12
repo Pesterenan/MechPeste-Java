@@ -3,6 +3,7 @@ package com.pesterenan.model;
 import com.pesterenan.resources.Bundle;
 import com.pesterenan.utils.Vector;
 import com.pesterenan.views.FunctionsAndTelemetryJPanel;
+import com.pesterenan.views.CreateManeuverJPanel;
 import com.pesterenan.views.MainGui;
 import com.pesterenan.views.StatusDisplay;
 import java.awt.event.ActionEvent;
@@ -27,6 +28,7 @@ public class VesselManager {
   private FunctionsAndTelemetryJPanel telemetryPanel;
   private StatusDisplay statusDisplay;
   private int currentVesselId = -1;
+  private ScheduledExecutorService telemetryMonitor;
 
   public VesselManager(
       final ConnectionManager connectionManager,
@@ -54,9 +56,10 @@ public class VesselManager {
   }
 
   public void startTelemetryLoop() {
-    ScheduledExecutorService scheduler =
+    if (telemetryMonitor != null && !telemetryMonitor.isShutdown()) return;
+    telemetryMonitor =
         Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "MP_TELEMETRY_UPDATER"));
-    scheduler.scheduleAtFixedRate(
+    telemetryMonitor.scheduleAtFixedRate(
         () -> {
           if (connectionManager.isConnectionAlive()) {
             checkAndUpdateActiveVessel();
@@ -92,7 +95,7 @@ public class VesselManager {
             }
           });
     } catch (RPCException | NullPointerException | UnsupportedOperationException e) {
-      System.err.println("ERRO: Não foi possivel atualizar as manobras atuais." + e.getMessage());
+      System.err.println("ERRO: Não foi possivel atualizar as manobras atuais. " + e.getClass().getSimpleName());
     }
     return list;
   }
@@ -162,7 +165,7 @@ public class VesselManager {
     }
   }
 
-  public void checkAndUpdateActiveVessel() {
+  private void checkAndUpdateActiveVessel() {
     try {
       int activeVesselId = getSpaceCenter().getActiveVessel().hashCode();
       if (currentVesselId != activeVesselId) {
@@ -175,28 +178,36 @@ public class VesselManager {
         currentVesselId = currentVessel.getCurrentVesselId();
         MainGui.getInstance().setVesselManager(this);
       }
+    } catch (IllegalArgumentException e) {
+      System.out.println("DEBUG: SpaceCenter not ready yet, skipping...");
     } catch (RPCException e) {
-      if (currentVessel != null) {
-        System.out.println("DEBUG: Could not get active vessel. Cleaning up.");
-        currentVessel.removeStreams();
-        currentVessel = null;
-        currentVesselId = -1;
-      }
+      System.out.println("DEBUG: Could not get active vessel. Cleaning up.");
+      clearVessel();
     }
+  }
+
+  public void clearVessel() {
+    if (currentVessel != null) {
+      currentVessel.removeStreams();
+    }
+    currentVessel = null;
+    currentVesselId = -1;
   }
 
   private void updateUI() {
     SwingUtilities.invokeLater(
-        () -> {
-          if (currentVessel != null && telemetryPanel != null) {
-            telemetryPanel.updateTelemetry(currentVessel.getTelemetryData());
-            MainGui.getInstance().getCreateManeuverPanel().updatePanel(getCurrentManeuvers());
-            if (currentVessel.hasModuleRunning()) {
-              statusDisplay.setStatusMessage(currentVessel.getCurrentStatus());
-            }
-          }
-        });
-  }
+                  () -> {
+                    if (currentVessel != null && telemetryPanel != null) {
+                      telemetryPanel.updateTelemetry(currentVessel.getTelemetryData());
+                      CreateManeuverJPanel createManeuverPanel = MainGui.getInstance().getCreateManeuverPanel();
+                      if (createManeuverPanel.isShowing()) {
+                        createManeuverPanel.updatePanel(getCurrentManeuvers());
+                      }
+                      if (currentVessel.hasModuleRunning()) {
+                        statusDisplay.setStatusMessage(currentVessel.getCurrentStatus());
+                      }
+                    }
+                  });  }
 
   private boolean filterVessels(Vessel vessel, String search) {
     if ("all".equals(search)) {

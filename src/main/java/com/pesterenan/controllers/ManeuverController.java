@@ -416,7 +416,7 @@ public class ManeuverController extends Controller {
   }
 
   private void alignPlanesWithTargetVessel() throws InterruptedException, RPCException {
-    Stream<Double> utStream = null;
+    final int[] utCallbackTag = new int[1];
     try {
       Vessel vesselObj = this.vessel.getActiveVessel();
       Orbit vesselOrbit = this.vessel.getActiveVessel().getOrbit();
@@ -439,11 +439,8 @@ public class ManeuverController extends Controller {
       ctrlManeuver.setTimeSample(25);
 
       final CountDownLatch latch = new CountDownLatch(1);
-      utStream = vessel.connection.addStream(vessel.spaceCenter.getClass(), "getUT");
-      final Stream<Double> finalUtStream = utStream;
-      final int[] utCallbackTag = new int[1];
       utCallbackTag[0] =
-          finalUtStream.addCallback(
+          vessel.missionTime.addCallback(
               (ut) -> {
                 try {
                   double currentInclination =
@@ -451,7 +448,6 @@ public class ManeuverController extends Controller {
                           currentManeuver.getOrbit().relativeInclination(targetVesselOrbit));
                   if (currentInclination <= 0.05) {
                     latch.countDown();
-                    finalUtStream.removeCallback(utCallbackTag[0]);
                     return;
                   }
                   double ctrlOutput = ctrlManeuver.calculate(currentInclination * 100, 0);
@@ -462,7 +458,6 @@ public class ManeuverController extends Controller {
                   latch.countDown();
                 }
               });
-      utStream.start();
       latch.await(); // Wait until the alignment is done
     } catch (Exception err) {
       if (err instanceof InterruptedException) {
@@ -470,14 +465,12 @@ public class ManeuverController extends Controller {
       }
       System.err.println("Error aligning planes: " + err);
     } finally {
-      if (utStream != null) {
-        utStream.remove();
-      }
+      vessel.missionTime.removeCallback(utCallbackTag[0]);
     }
   }
 
   private void rendezvousWithTargetVessel() throws InterruptedException, RPCException {
-    Stream<Double> utStream = null;
+    final int[] utCallbackTag = new int[1];
     try {
       List<Node> currentManeuvers = vessel.getActiveVessel().getControl().getNodes();
       Node lastManeuverNode;
@@ -494,21 +487,17 @@ public class ManeuverController extends Controller {
       final CountDownLatch latch = new CountDownLatch(1);
       final RendezvousState state = new RendezvousState(lastManeuverNode);
 
-      utStream = vessel.connection.addStream(vessel.spaceCenter.getClass(), "getUT");
-      final Stream<Double> finalUtStream = utStream;
-      final int[] utCallbackTag = new int[1];
       utCallbackTag[0] =
-          finalUtStream.addCallback(
+          vessel.missionTime.addCallback(
               ut -> {
                 try {
-                  updateRendezvousState(state, latch, finalUtStream, utCallbackTag[0]);
+                  updateRendezvousState(state, latch, utCallbackTag[0]);
                 } catch (Exception e) {
                   e.printStackTrace();
                   System.err.println("Error in rendezvous update: " + e);
                   latch.countDown();
                 }
               });
-      utStream.start();
       latch.await();
     } catch (Exception err) {
       if (err instanceof InterruptedException) {
@@ -516,14 +505,12 @@ public class ManeuverController extends Controller {
       }
       System.err.println("Error during rendezvous: " + err);
     } finally {
-      if (utStream != null) {
-        utStream.remove();
-      }
+      vessel.missionTime.removeCallback(utCallbackTag[0]);
     }
   }
 
   private void updateRendezvousState(
-      RendezvousState state, CountDownLatch latch, Stream<Double> stream, int callbackTag)
+      RendezvousState state, CountDownLatch latch, int callbackTag)
       throws RPCException, IOException {
     Orbit targetVesselOrbit =
         vessel.getConnectionManager().getSpaceCenter().getTargetVessel().getOrbit();
@@ -598,7 +585,6 @@ public class ManeuverController extends Controller {
 
       case DONE:
         latch.countDown();
-        stream.removeCallback(callbackTag);
         break;
     }
   }

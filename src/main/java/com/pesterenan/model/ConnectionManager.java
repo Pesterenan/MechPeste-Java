@@ -90,7 +90,7 @@ public class ConnectionManager {
 
   public boolean isConnectionAlive() {
     try {
-      if (krpc == null || connection == null)  return false;
+      if (krpc == null || connection == null) return false;
       krpc.getStatus();
       return true;
     } catch (RPCException e) {
