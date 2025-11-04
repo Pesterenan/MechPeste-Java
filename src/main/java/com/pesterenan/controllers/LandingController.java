@@ -42,6 +42,7 @@ public class LandingController extends Controller {
   private final Map<String, String> commands;
 
   private volatile boolean isDeorbitBurnDone, isOrientedForDeorbit, isFalling, wasAirborne = false;
+  private volatile boolean isCleaningUp = false;
   private int isOrientedCallbackTag,
       isDeorbitBurnDoneCallbackTag,
       isFallingCallbackTag,
@@ -163,15 +164,18 @@ public class LandingController extends Controller {
     utCallbackTag =
         vessel.missionTime.addCallback(
             (ut) -> {
+              if (isCleaningUp) {
+                return;
+              }
               try {
                 if (landingMode) {
                   executeLandingStep();
                 } else if (hoveringMode) {
                   altitudeErrorPercentage =
                       vessel.surfaceAltitude.get() / hoverAltitude * HUNDRED_PERCENT;
-                  if (altitudeErrorPercentage > HUNDRED_PERCENT * 1.05) {
+                  if (altitudeErrorPercentage > HUNDRED_PERCENT * 1.1) {
                     currentMode = MODE.GOING_DOWN;
-                  } else if (altitudeErrorPercentage < HUNDRED_PERCENT * 0.95) {
+                  } else if (altitudeErrorPercentage < HUNDRED_PERCENT * 0.9) {
                     currentMode = MODE.GOING_UP;
                   } else {
                     currentMode = MODE.HOVERING;
@@ -244,24 +248,27 @@ public class LandingController extends Controller {
         }
         altitudeCtrl.setOutput(0, 1);
         velocityCtrl.setOutput(0, 1);
-        double currentVelocity = calculateCurrentVelocityMagnitude();
-        double zeroVelocity = calculateZeroVelocityMagnitude();
-        double landingDistanceThreshold = Math.max(hoverAltitude, vessel.getMaxAcel(maxTWR) * 3);
+
+        double brakingDistance = calculateBrakingDistance();
+        double surfaceAltitude = vessel.surfaceAltitude.get();
+        // The threshold is a ratio of our current altitude versus the altitude needed to brake.
+        // It's 1 when we are much higher than the braking distance, and drops to 0 as we approach
+        // it.
         double threshold =
-            Utilities.clamp(
-                ((currentVelocity + zeroVelocity) - landingDistanceThreshold)
-                    / landingDistanceThreshold,
-                0,
-                1);
-        double altPID = altitudeCtrl.calculate(currentVelocity, zeroVelocity);
+            (brakingDistance > 1)
+                ? Utilities.clamp(surfaceAltitude / brakingDistance - 1, 0, 1)
+                : 0;
+
+        double altPID = altitudeCtrl.calculate(surfaceAltitude, brakingDistance);
         double velPID =
             velocityCtrl.calculate(
                 vessel.verticalVelocity.get(),
                 (-Utilities.clamp(vessel.surfaceAltitude.get() * 0.1, 3, 20)));
         vessel.throttle(Utilities.linearInterpolation(velPID, altPID, threshold));
         navigation.aimForLanding();
-        if (threshold < 0.15 || vessel.surfaceAltitude.get() < landingDistanceThreshold) {
-          hoverAltitude = landingDistanceThreshold;
+
+        double landingDistanceThreshold = Math.max(hoverAltitude, vessel.getMaxAcel(maxTWR) * 3);
+        if (surfaceAltitude < landingDistanceThreshold) {
           vessel.getActiveVessel().getControl().setGear(true);
           if (hoverAfterApproximation) {
             landingMode = false;
@@ -325,8 +332,20 @@ public class LandingController extends Controller {
     double currentTWR = Math.min(vessel.getTWR(), maxTWR);
 
     if (currentMode == MODE.APPROACHING) {
-      // 1. Calcula a distância de trajetória restante (usando o método que já temos)
-      double trajectoryLength = calculateCurrentVelocityMagnitude();
+      // 1. Calcula a distância de trajetória restante
+      double trajectoryLength;
+      double timeToGround = 0;
+      if (vessel.verticalVelocity.get() < -0.1) { // Apenas calcula se estiver descendo
+        timeToGround = vessel.surfaceAltitude.get() / -vessel.verticalVelocity.get();
+      }
+      if (timeToGround > 0) {
+        double horizontalDistance = vessel.horizontalVelocity.get() * timeToGround;
+        trajectoryLength =
+            calculateEllipticTrajectory(horizontalDistance, vessel.surfaceAltitude.get());
+      } else {
+        trajectoryLength = vessel.surfaceAltitude.get(); // Usa apenas a altitude como fallback
+      }
+
       // 2. Calcula a velocidade total (vetorial)
       double totalVelocity =
           Math.sqrt(
@@ -391,17 +410,18 @@ public class LandingController extends Controller {
     return false;
   }
 
-  private double calculateCurrentVelocityMagnitude() throws RPCException, StreamException {
-    double timeToGround = vessel.surfaceAltitude.get() / vessel.verticalVelocity.get();
-    double horizontalDistance = vessel.horizontalVelocity.get() * timeToGround;
-    return calculateEllipticTrajectory(horizontalDistance, vessel.surfaceAltitude.get());
-  }
-
-  private double calculateZeroVelocityMagnitude() throws RPCException, StreamException {
-    double zeroVelocityDistance =
-        calculateEllipticTrajectory(vessel.horizontalVelocity.get(), vessel.verticalVelocity.get());
-    double zeroVelocityBurnTime = zeroVelocityDistance / vessel.getMaxAcel(maxTWR);
-    return zeroVelocityDistance * zeroVelocityBurnTime;
+  private double calculateBrakingDistance() throws RPCException, StreamException {
+    double totalVelocity =
+        Math.sqrt(
+            Math.pow(vessel.verticalVelocity.get(), 2)
+                + Math.pow(vessel.horizontalVelocity.get(), 2));
+    // Braking distance formula: d = v^2 / (2 * a)
+    // where a is the effective deceleration (max engine acceleration - gravity)
+    double maxDeceleration = vessel.getMaxAcel(maxTWR);
+    if (maxDeceleration <= 0.1) { // Avoid division by zero or tiny numbers
+      return Double.POSITIVE_INFINITY;
+    }
+    return Math.pow(totalVelocity, 2) / (2 * maxDeceleration);
   }
 
   private double calculateEllipticTrajectory(double a, double b) {
@@ -411,6 +431,7 @@ public class LandingController extends Controller {
   }
 
   private void cleanup() {
+    isCleaningUp = true;
     try {
       landingMode = false;
       hoveringMode = false;

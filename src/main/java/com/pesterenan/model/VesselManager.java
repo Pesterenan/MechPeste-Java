@@ -179,7 +179,6 @@ public class VesselManager {
         MainGui.getInstance().setVesselManager(this);
       }
     } catch (IllegalArgumentException e) {
-      System.out.println("DEBUG: SpaceCenter not ready yet, skipping...");
     } catch (RPCException e) {
       System.out.println("DEBUG: Could not get active vessel. Cleaning up.");
       clearVessel();
