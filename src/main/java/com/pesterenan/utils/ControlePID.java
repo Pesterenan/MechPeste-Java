@@ -11,7 +11,7 @@ public class ControlePID {
   private double ki = 0.001;
   private double kd = 0.01;
   private double integralTerm = 0.0;
-  private double previousError, previousMeasurement, lastTime = 0.0;
+  private double previousError, lastTime = 0.0;
   private double timeSample = 0.025; // 25 millisegundos
   private double proportionalTerm;
 
@@ -19,9 +19,8 @@ public class ControlePID {
 
   public ControlePID() {}
 
-  public ControlePID(SpaceCenter spaceCenter, double timeSample) {
+  public ControlePID(SpaceCenter spaceCenter) {
     this.spaceCenter = spaceCenter;
-    setTimeSample(timeSample);
   }
 
   public ControlePID(double kp, double ki, double kd, double outputMin, double outputMax) {
@@ -38,7 +37,6 @@ public class ControlePID {
 
   public void reset() {
     this.previousError = 0;
-    this.previousMeasurement = 0;
     this.proportionalTerm = 0;
     this.integralTerm = 0;
     this.derivativeTerm = 0;

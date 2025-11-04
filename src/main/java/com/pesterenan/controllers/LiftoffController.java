@@ -115,7 +115,7 @@ public class LiftoffController extends Controller {
     gravityCurveModel = commands.get(Module.INCLINATION.get());
     willOpenPanelsAndAntenna = Boolean.parseBoolean(commands.get(Module.OPEN_PANELS.get()));
     willDecoupleStages = Boolean.parseBoolean(commands.get(Module.STAGE.get()));
-    thrControl = new ControlePID(vessel.getConnectionManager().getSpaceCenter(), 25);
+    thrControl = new ControlePID(vessel.getConnectionManager().getSpaceCenter());
     thrControl.setOutput(0.0, 1.0);
   }
 

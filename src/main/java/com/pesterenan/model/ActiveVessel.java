@@ -149,6 +149,11 @@ public class ActiveVessel {
     if (controllerThread != null) {
       controllerThread.interrupt();
       runningModule = false;
+      try {
+        controllerThread.join(); // Wait for the previous thread to finish
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
     }
     if (currentFunction.equals(Module.LIFTOFF.get())) {
       controller = new LiftoffController(this, commands);
@@ -194,40 +199,42 @@ public class ActiveVessel {
       runningModule = false;
     }
     // Close all streams safely
-    try {
-      if (totalMass != null) totalMass.remove();
-    } catch (Exception e) {
-      /* ignore */
-    }
-    try {
-      if (altitude != null) altitude.remove();
-    } catch (Exception e) {
-      /* ignore */
-    }
-    try {
-      if (surfaceAltitude != null) surfaceAltitude.remove();
-    } catch (Exception e) {
-      /* ignore */
-    }
-    try {
-      if (apoapsis != null) apoapsis.remove();
-    } catch (Exception e) {
-      /* ignore */
-    }
-    try {
-      if (periapsis != null) periapsis.remove();
-    } catch (Exception e) {
-      /* ignore */
-    }
-    try {
-      if (verticalVelocity != null) verticalVelocity.remove();
-    } catch (Exception e) {
-      /* ignore */
-    }
-    try {
-      if (horizontalVelocity != null) horizontalVelocity.remove();
-    } catch (Exception e) {
-      /* ignore */
+    synchronized (connection) {
+      try {
+        if (totalMass != null) totalMass.remove();
+      } catch (Exception e) {
+        /* ignore */
+      }
+      try {
+        if (altitude != null) altitude.remove();
+      } catch (Exception e) {
+        /* ignore */
+      }
+      try {
+        if (surfaceAltitude != null) surfaceAltitude.remove();
+      } catch (Exception e) {
+        /* ignore */
+      }
+      try {
+        if (apoapsis != null) apoapsis.remove();
+      } catch (Exception e) {
+        /* ignore */
+      }
+      try {
+        if (periapsis != null) periapsis.remove();
+      } catch (Exception e) {
+        /* ignore */
+      }
+      try {
+        if (verticalVelocity != null) verticalVelocity.remove();
+      } catch (Exception e) {
+        /* ignore */
+      }
+      try {
+        if (horizontalVelocity != null) horizontalVelocity.remove();
+      } catch (Exception e) {
+        /* ignore */
+      }
     }
     // Clear the telemetry data map
     telemetryData.clear();
@@ -277,31 +284,33 @@ public class ActiveVessel {
       flightParameters = getActiveVessel().flight(orbitalReferenceFrame);
 
       System.out.println("DEBUG: Basic parameters set. Creating streams...");
-      altitude = connection.addStream(flightParameters, "getMeanAltitude");
-      apoapsis = connection.addStream(getActiveVessel().getOrbit(), "getApoapsisAltitude");
-      horizontalVelocity = connection.addStream(flightParameters, "getHorizontalSpeed");
-      periapsis = connection.addStream(getActiveVessel().getOrbit(), "getPeriapsisAltitude");
-      surfaceAltitude = connection.addStream(flightParameters, "getSurfaceAltitude");
-      totalMass = connection.addStream(getActiveVessel(), "getMass");
-      verticalVelocity = connection.addStream(flightParameters, "getVerticalSpeed");
-      missionTime = connection.addStream(spaceCenter.getClass(), "getUT");
+      synchronized (connection) {
+        altitude = connection.addStream(flightParameters, "getMeanAltitude");
+        apoapsis = connection.addStream(getActiveVessel().getOrbit(), "getApoapsisAltitude");
+        horizontalVelocity = connection.addStream(flightParameters, "getHorizontalSpeed");
+        periapsis = connection.addStream(getActiveVessel().getOrbit(), "getPeriapsisAltitude");
+        surfaceAltitude = connection.addStream(flightParameters, "getSurfaceAltitude");
+        totalMass = connection.addStream(getActiveVessel(), "getMass");
+        verticalVelocity = connection.addStream(flightParameters, "getVerticalSpeed");
+        missionTime = connection.addStream(spaceCenter.getClass(), "getUT");
 
-      altitude.addCallback(val -> telemetryData.put(Telemetry.ALTITUDE, val < 0 ? 0 : val));
-      apoapsis.addCallback(val -> telemetryData.put(Telemetry.APOAPSIS, val < 0 ? 0 : val));
-      horizontalVelocity.addCallback(
-          val -> telemetryData.put(Telemetry.HORZ_SPEED, val < 0 ? 0 : val));
-      periapsis.addCallback(val -> telemetryData.put(Telemetry.PERIAPSIS, val < 0 ? 0 : val));
-      surfaceAltitude.addCallback(val -> telemetryData.put(Telemetry.ALT_SURF, val < 0 ? 0 : val));
-      verticalVelocity.addCallback(val -> telemetryData.put(Telemetry.VERT_SPEED, val));
+        altitude.addCallback(val -> telemetryData.put(Telemetry.ALTITUDE, val < 0 ? 0 : val));
+        apoapsis.addCallback(val -> telemetryData.put(Telemetry.APOAPSIS, val < 0 ? 0 : val));
+        horizontalVelocity.addCallback(
+            val -> telemetryData.put(Telemetry.HORZ_SPEED, val < 0 ? 0 : val));
+        periapsis.addCallback(val -> telemetryData.put(Telemetry.PERIAPSIS, val < 0 ? 0 : val));
+        surfaceAltitude.addCallback(val -> telemetryData.put(Telemetry.ALT_SURF, val < 0 ? 0 : val));
+        verticalVelocity.addCallback(val -> telemetryData.put(Telemetry.VERT_SPEED, val));
 
-      altitude.start();
-      apoapsis.start();
-      horizontalVelocity.start();
-      periapsis.start();
-      surfaceAltitude.start();
-      totalMass.start();
-      verticalVelocity.start();
-      missionTime.start();
+        altitude.start();
+        apoapsis.start();
+        horizontalVelocity.start();
+        periapsis.start();
+        surfaceAltitude.start();
+        totalMass.start();
+        verticalVelocity.start();
+        missionTime.start();
+      }
       System.out.println("DEBUG: All streams created successfully.");
     } catch (RPCException | StreamException e) {
       System.err.println(

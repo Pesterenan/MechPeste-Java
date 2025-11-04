@@ -378,8 +378,8 @@ public class ManeuverController extends Controller {
   }
 
   private void initializeParameters() {
-    ctrlRCS = new ControlePID(vessel.getConnectionManager().getSpaceCenter(), 25);
-    ctrlManeuver = new ControlePID(vessel.getConnectionManager().getSpaceCenter(), 25);
+    ctrlRCS = new ControlePID(vessel.getConnectionManager().getSpaceCenter());
+    ctrlManeuver = new ControlePID(vessel.getConnectionManager().getSpaceCenter());
     ctrlManeuver.setPIDValues(1, 0.001, 0.1);
     ctrlManeuver.setOutput(0.1, 1.0);
     ctrlRCS.setOutput(0.5, 1.0);

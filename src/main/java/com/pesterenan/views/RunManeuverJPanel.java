@@ -7,7 +7,6 @@ import static com.pesterenan.views.MainGui.PNL_DIMENSION;
 import com.pesterenan.MechPeste;
 import com.pesterenan.model.VesselManager;
 import com.pesterenan.resources.Bundle;
-import com.pesterenan.utils.ControlePID;
 import com.pesterenan.utils.Module;
 import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
@@ -42,7 +41,6 @@ public class RunManeuverJPanel extends JPanel implements ActionListener, UIMetho
       btnAlignPlanes,
       btnRendezvous;
   private JCheckBox chkFineAdjusment;
-  private final ControlePID ctrlManeuver = new ControlePID();
   private VesselManager vesselManager;
 
   public RunManeuverJPanel(StatusDisplay statusDisplay) {
