@@ -110,6 +110,7 @@ public class FunctionsAndTelemetryJPanel extends JPanel implements UIMethods {
     btnDocking.setActionCommand(Module.DOCKING.get());
     btnDocking.setMaximumSize(btnFuncDimension);
     btnDocking.setPreferredSize(btnFuncDimension);
+    btnDocking.setEnabled(false); // FIX: Not yet ready
   }
 
   private void cancelCurrentAction(ActionEvent e) {

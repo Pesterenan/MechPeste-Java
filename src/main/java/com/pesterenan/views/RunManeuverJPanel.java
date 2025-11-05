@@ -132,10 +132,12 @@ public class RunManeuverJPanel extends JPanel implements ActionListener, UIMetho
     btnAlignPlanes.addActionListener(this);
     btnAlignPlanes.setMaximumSize(BTN_DIMENSION);
     btnAlignPlanes.setPreferredSize(BTN_DIMENSION);
+    btnAlignPlanes.setEnabled(false); // FIX: Not yet ready
 
     btnRendezvous.addActionListener(this);
     btnRendezvous.setMaximumSize(BTN_DIMENSION);
     btnRendezvous.setPreferredSize(BTN_DIMENSION);
+    btnRendezvous.setEnabled(false); // FIX: Not yet ready
 
     btnApoapsis.addActionListener(this);
     btnApoapsis.setMaximumSize(BTN_DIMENSION);
