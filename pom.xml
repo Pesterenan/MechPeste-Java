@@ -5,7 +5,7 @@
 
   <groupId>com.pesterenan</groupId>
   <artifactId>MechPeste</artifactId>
-  <version>0.8.0</version>
+  <version>0.9.0</version>
 
   <build>
     <plugins>
@@ -61,10 +61,9 @@
         <version>2.37.0</version>
         <configuration>
           <java>
-            <eclipse>
-              <version>4.19</version>
-              <file>${project.basedir}/.settings/org.eclipse.jdt.core.prefs</file>
-            </eclipse>
+            <googleJavaFormat>
+              <version>1.22.0</version>
+            </googleJavaFormat>
           </java>
         </configuration>
       </plugin>
@@ -95,7 +94,7 @@
     <dependency>
       <groupId>com.google.protobuf</groupId>
       <artifactId>protobuf-java</artifactId>
-      <version>3.22.1</version>
+      <version>4.32.0</version>
     </dependency>
   </dependencies>
 
