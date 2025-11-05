@@ -3,6 +3,8 @@ package com.pesterenan.model;
 import com.pesterenan.resources.Bundle;
 import com.pesterenan.views.StatusDisplay;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -20,11 +22,22 @@ public class ConnectionManager {
   private volatile boolean isConnecting = false;
   private ScheduledExecutorService connectionMonitor;
   private String connectionName;
+  private final List<ConnectionListener> listeners = new ArrayList<>();
 
   public ConnectionManager(final String connectionName, final StatusDisplay statusDisplay) {
     this.statusDisplay = statusDisplay;
     this.connectionName = connectionName;
     startMonitoring();
+  }
+
+  public void addListener(ConnectionListener listener) {
+    listeners.add(listener);
+  }
+
+  private void notifyListeners() {
+    for (ConnectionListener listener : listeners) {
+      listener.onConnectionChanged(connection, spaceCenter);
+    }
   }
 
   public Connection getConnection() {
@@ -41,6 +54,19 @@ public class ConnectionManager {
 
   public void connect() {
     attemptConnection();
+  }
+
+  public void disconnect() {
+    try {
+      if (connection != null) {
+        connection.close();
+      }
+    } catch (IOException e) {
+      System.err.println("Error closing connection: " + e.getMessage());
+    }
+    if (connectionMonitor != null && !connectionMonitor.isShutdown()) {
+      connectionMonitor.shutdown();
+    }
   }
 
   private void startMonitoring() {
@@ -71,6 +97,7 @@ public class ConnectionManager {
       connection = Connection.newInstance(connectionName);
       krpc = KRPC.newInstance(connection);
       spaceCenter = SpaceCenter.newInstance(connection);
+      notifyListeners(); // Notify listeners of the new connection
 
       SwingUtilities.invokeLater(
           () -> statusDisplay.setStatusMessage(Bundle.getString("status_connected")));

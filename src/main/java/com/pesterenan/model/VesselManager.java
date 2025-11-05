@@ -22,11 +22,12 @@ import krpc.client.services.SpaceCenter;
 import krpc.client.services.SpaceCenter.Node;
 import krpc.client.services.SpaceCenter.Vessel;
 
-public class VesselManager {
+public class VesselManager implements ConnectionListener {
   private ActiveVessel currentVessel;
   private ConnectionManager connectionManager;
   private FunctionsAndTelemetryJPanel telemetryPanel;
   private StatusDisplay statusDisplay;
+  private SpaceCenter spaceCenter;
   private int currentVesselId = -1;
   private ScheduledExecutorService telemetryMonitor;
 
@@ -37,6 +38,14 @@ public class VesselManager {
     this.connectionManager = connectionManager;
     this.statusDisplay = statusDisplay;
     this.telemetryPanel = telemetryPanel;
+    this.connectionManager.addListener(this);
+  }
+
+  @Override
+  public void onConnectionChanged(Connection newConnection, SpaceCenter newSpaceCenter) {
+    this.spaceCenter = newSpaceCenter;
+    clearVessel();
+    System.out.println("DEBUG: Connection changed. Vessel cleared.");
   }
 
   public Connection getConnection() {
@@ -44,7 +53,7 @@ public class VesselManager {
   }
 
   public SpaceCenter getSpaceCenter() {
-    return connectionManager.getSpaceCenter();
+    return spaceCenter;
   }
 
   public ActiveVessel getCurrentVessel() {
