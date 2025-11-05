@@ -10,6 +10,9 @@ import com.pesterenan.utils.Vector;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import krpc.client.RPCException;
 import krpc.client.Stream;
@@ -26,7 +29,6 @@ public class RoverController extends Controller {
   float distanceFromTargetLimit = 50;
   private float maxSpeed = 3;
   private ReferenceFrame roverReferenceFrame;
-  private boolean isAutoRoverRunning;
   private PathFinding pathFinding;
   private Vector targetPoint = new Vector();
   private Vector roverDirection = new Vector();
@@ -35,9 +37,11 @@ public class RoverController extends Controller {
 
   private volatile double currentDistanceToTarget = 0;
   private volatile float currentChargePercentage = 100;
+  private volatile float currentChargeAmount = 0;
   private int distanceCallbackTag, chargeCallbackTag;
   private Stream<Triplet<Double, Double, Double>> positionStream;
   private Stream<Float> chargeAmountStream;
+  private ScheduledExecutorService roverExecutor;
 
   public RoverController(ActiveVessel vessel, Map<String, String> commands) {
     super(vessel);
@@ -53,7 +57,6 @@ public class RoverController extends Controller {
       pathFinding = new PathFinding(vessel.getConnectionManager(), vessel.getVesselManager());
       acelCtrl.setOutput(0, 1);
       sterringCtrl.setOutput(-1, 1);
-      isAutoRoverRunning = true;
     } catch (RPCException ignored) {
     }
   }
@@ -70,7 +73,32 @@ public class RoverController extends Controller {
   public void run() {
     if (commands.get(Module.MODULO.get()).equals(Module.ROVER.get())) {
       setTarget();
-      driveRoverToTarget();
+      currentMode = MODE.NEXT_POINT;
+      try {
+        setupCallbacks();
+        roverExecutor = Executors.newSingleThreadScheduledExecutor();
+        roverExecutor.scheduleAtFixedRate(this::roverStateMachine, 0, 100, TimeUnit.MILLISECONDS);
+      } catch (IOException | RPCException | StreamException e) {
+        cleanup();
+      }
+    }
+  }
+
+  private void roverStateMachine() {
+    try {
+      if (Thread.interrupted()) {
+        throw new InterruptedException();
+      }
+      changeControlMode();
+      if (isFarFromTarget()) {
+        currentMode = needToChargeBatteries() ? MODE.CHARGING : MODE.DRIVE;
+      } else { // Rover arrived at destiny
+        currentMode = MODE.NEXT_POINT;
+      }
+    } catch (InterruptedException e) {
+      cleanup();
+    } catch (RPCException | IOException | StreamException e) {
+      cleanup();
     }
   }
 
@@ -92,6 +120,7 @@ public class RoverController extends Controller {
         chargeAmountStream.addCallback(
             (amount) -> {
               try {
+                currentChargeAmount = amount;
                 float totalCharge = vessel.getActiveVessel().getResources().max("ElectricCharge");
                 currentChargePercentage = (float) Math.ceil(amount * 100 / totalCharge);
               } catch (RPCException e) {
@@ -137,34 +166,13 @@ public class RoverController extends Controller {
     }
   }
 
-  private void driveRoverToTarget() {
-    currentMode = MODE.NEXT_POINT;
-    try {
-      setupCallbacks();
-      while (isAutoRoverRunning) {
-        if (Thread.interrupted()) {
-          throw new InterruptedException();
-        }
-        changeControlMode();
-        if (isFarFromTarget()) {
-          currentMode = needToChargeBatteries() ? MODE.CHARGING : MODE.DRIVE;
-        } else { // Rover arrived at destiny
-          currentMode = MODE.NEXT_POINT;
-        }
-        Thread.sleep(100);
-      }
-    } catch (InterruptedException e) {
-      cleanup();
-    } catch (RPCException | IOException | StreamException e) {
-      cleanup();
-    }
-  }
-
   private void cleanup() {
     try {
+      if (roverExecutor != null && !roverExecutor.isShutdown()) {
+        roverExecutor.shutdownNow();
+      }
       vessel.getActiveVessel().getControl().setBrakes(true);
       pathFinding.removeDrawnPath();
-      isAutoRoverRunning = false;
       if (positionStream != null) {
         positionStream.removeCallback(distanceCallbackTag);
         positionStream.remove();
@@ -207,7 +215,6 @@ public class RoverController extends Controller {
   private void rechargeRover() throws RPCException, StreamException, InterruptedException {
 
     float totalCharge = vessel.getActiveVessel().getResources().max("ElectricCharge");
-    float currentCharge = vessel.getActiveVessel().getResources().amount("ElectricCharge");
 
     setRoverThrottle(0);
     vessel.getActiveVessel().getControl().setLights(false);
@@ -225,7 +232,7 @@ public class RoverController extends Controller {
       for (SolarPanel sp : solarPanels) {
         totalEnergyFlow += sp.getEnergyFlow();
       }
-      chargeTime = ((totalCharge - currentCharge) / totalEnergyFlow);
+      chargeTime = ((totalCharge - currentChargeAmount) / totalEnergyFlow);
       setCurrentStatus("Segundos de Carga: " + chargeTime);
       if (chargeTime < 1 || chargeTime > 21600) {
         chargeTime = 3600;
