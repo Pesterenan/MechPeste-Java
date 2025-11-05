@@ -11,6 +11,9 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
@@ -112,6 +115,14 @@ public class FunctionsAndTelemetryJPanel extends JPanel implements UIMethods {
   private void cancelCurrentAction(ActionEvent e) {
     statusDisplay.setStatusMessage("Canceling current action...");
     vesselManager.cancelControl(e);
+    ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+    executor.schedule(
+        () -> {
+          statusDisplay.setStatusMessage(Bundle.getString("lbl_stat_ready"));
+        },
+        2,
+        TimeUnit.SECONDS);
+    executor.shutdown();
   }
 
   @Override
