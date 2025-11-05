@@ -86,8 +86,9 @@ public class RoverController extends Controller {
 
   private void roverStateMachine() {
     try {
-      if (Thread.interrupted()) {
-        throw new InterruptedException();
+      if (!isRunning()) {
+        cleanup();
+        return;
       }
       changeControlMode();
       if (isFarFromTarget()) {
@@ -95,9 +96,7 @@ public class RoverController extends Controller {
       } else { // Rover arrived at destiny
         currentMode = MODE.NEXT_POINT;
       }
-    } catch (InterruptedException e) {
-      cleanup();
-    } catch (RPCException | IOException | StreamException e) {
+    } catch (RPCException | IOException | StreamException | InterruptedException e) {
       cleanup();
     }
   }
@@ -186,16 +185,21 @@ public class RoverController extends Controller {
     }
   }
 
-  private void setNextPointInPath() throws RPCException, IOException, InterruptedException {
+  private void setNextPointInPath() throws RPCException, IOException {
     pathFinding.removePathsCurrentPoint();
     vessel.getActiveVessel().getControl().setBrakes(true);
     if (pathFinding.isPathToTargetEmpty()) {
       if (commands.get(Module.ROVER_TARGET_TYPE.get()).equals(Module.MAP_MARKER.get())) {
         pathFinding.removeWaypointFromList();
         if (pathFinding.isWaypointsToReachEmpty()) {
-          throw new InterruptedException();
+          stop();
+          return;
         }
-        pathFinding.buildPathToTarget(pathFinding.findNearestWaypoint());
+        try {
+          pathFinding.buildPathToTarget(pathFinding.findNearestWaypoint());
+        } catch (InterruptedException e) {
+          stop();
+        }
       }
 
     } else {

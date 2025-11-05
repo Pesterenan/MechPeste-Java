@@ -9,6 +9,9 @@ import com.pesterenan.utils.Utilities;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import krpc.client.RPCException;
 import krpc.client.Stream;
 import krpc.client.StreamException;
@@ -27,10 +30,8 @@ public class LiftoffController extends Controller {
   private static final float PITCH_UP = 90;
   private ControlePID thrControl;
   private float currentPitch, finalApoapsisAlt, heading, roll, maxTWR;
-  private volatile boolean targetApoapsisReached,
-      dynamicPressureLowEnough,
-      isLiftoffRunning = false;
-  private int apoapsisCallbackTag, pressureCallbackTag, utCallbackTag;
+  private volatile boolean targetApoapsisReached, dynamicPressureLowEnough;
+  private int apoapsisCallbackTag, pressureCallbackTag;
   private Stream<Float> pressureStream;
   private boolean willDecoupleStages, willOpenPanelsAndAntenna;
   private String gravityCurveModel = Module.CIRCULAR.get();
@@ -38,6 +39,7 @@ public class LiftoffController extends Controller {
   private LIFTOFF_MODE liftoffMode;
   private double startCurveAlt;
   private final Map<String, String> commands;
+  private ScheduledExecutorService liftoffExecutor;
 
   public LiftoffController(ActiveVessel vessel, Map<String, String> commands) {
     super(vessel);
@@ -49,13 +51,11 @@ public class LiftoffController extends Controller {
   @Override
   public void run() {
     try {
-      isLiftoffRunning = true;
-
       // Part 1: Blocking Countdown and Launch
       if (vessel.getActiveVessel().getSituation().equals(VesselSituation.PRE_LAUNCH)) {
         vessel.throttleUp(vessel.getMaxThrottleForTWR(1.4), 1);
         for (double count = 5.0; count >= 0; count -= 0.1) {
-          if (Thread.interrupted()) throw new InterruptedException();
+          if (!isRunning()) return;
           setCurrentStatus(String.format(Bundle.getString("status_launching_in"), count));
           Thread.sleep(100);
         }
@@ -67,7 +67,7 @@ public class LiftoffController extends Controller {
 
       // Part 2: Async Gravity Turn
       liftoffMode = LIFTOFF_MODE.GRAVITY_TURN; // Set initial state for async phase
-      setupCallbacks(); // This starts the UT stream
+      setupCallbacks();
       vessel.tuneAutoPilot();
       startCurveAlt = vessel.altitude.get();
       vessel.ap.setReferenceFrame(vessel.surfaceReferenceFrame);
@@ -75,11 +75,9 @@ public class LiftoffController extends Controller {
       vessel.ap.setTargetRoll(this.roll);
       vessel.ap.engage();
 
-      // Loop to keep thread alive while async part runs
-      while (isLiftoffRunning) {
-        if (Thread.interrupted()) throw new InterruptedException();
-        Thread.sleep(250);
-      }
+      liftoffExecutor = Executors.newSingleThreadScheduledExecutor();
+      liftoffExecutor.scheduleAtFixedRate(this::handleLiftoff, 0, 100, TimeUnit.MILLISECONDS);
+
     } catch (RPCException | InterruptedException | StreamException e) {
       cleanup();
       setCurrentStatus(Bundle.getString("status_ready"));
@@ -138,34 +136,29 @@ public class LiftoffController extends Controller {
               }
             });
     pressureStream.start();
-
-    utCallbackTag =
-        vessel.missionTime.addCallback(
-            (ut) -> {
-              try {
-                if (!isLiftoffRunning) {
-                  vessel.missionTime.removeCallback(utCallbackTag);
-                  return;
-                }
-                handleLiftoff();
-              } catch (Exception e) {
-                System.err.println("Liftoff UT Callback error: " + e.getMessage());
-              }
-            });
   }
 
-  private void handleLiftoff() throws RPCException, StreamException, InterruptedException {
-    switch (liftoffMode) {
-      case GRAVITY_TURN:
-        gravityTurn();
-        break;
-      case FINALIZE_ORBIT:
-        finalizeOrbit();
-        break;
-      case CIRCULARIZE:
-        circularizeOrbitOnApoapsis();
-        isLiftoffRunning = false;
-        break;
+  private void handleLiftoff() {
+    try {
+      if (!isRunning()) {
+        cleanup();
+        return;
+      }
+      switch (liftoffMode) {
+        case GRAVITY_TURN:
+          gravityTurn();
+          break;
+        case FINALIZE_ORBIT:
+          finalizeOrbit();
+          break;
+        case CIRCULARIZE:
+          circularizeOrbitOnApoapsis();
+          stop();
+          break;
+      }
+    } catch (RPCException | StreamException | InterruptedException e) {
+      System.err.println("Liftoff error: " + e.getMessage());
+      cleanup();
     }
   }
 
@@ -215,10 +208,11 @@ public class LiftoffController extends Controller {
 
   private void cleanup() {
     try {
-      isLiftoffRunning = false;
+      if (liftoffExecutor != null && !liftoffExecutor.isShutdown()) {
+        liftoffExecutor.shutdownNow();
+      }
       vessel.apoapsis.removeCallback(apoapsisCallbackTag);
       pressureStream.removeCallback(pressureCallbackTag);
-      vessel.missionTime.removeCallback(utCallbackTag);
       pressureStream.remove();
       vessel.ap.disengage();
       vessel.throttle(0);

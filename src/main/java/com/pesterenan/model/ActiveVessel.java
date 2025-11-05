@@ -186,8 +186,8 @@ public class ActiveVessel {
   }
 
   public void cancelControl() {
-    if (controllerThread != null) {
-      controllerThread.interrupt();
+    if (controller != null) {
+      controller.stop();
       runningModule = false;
     }
   }

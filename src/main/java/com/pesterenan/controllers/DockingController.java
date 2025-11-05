@@ -7,6 +7,9 @@ import com.pesterenan.utils.Utilities;
 import com.pesterenan.utils.Vector;
 import com.pesterenan.views.DockingJPanel;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import krpc.client.RPCException;
 import krpc.client.Stream;
 import krpc.client.StreamException;
@@ -65,14 +68,15 @@ public class DockingController extends Controller {
   private long sleepTime = 25;
 
   private DOCKING_STEPS dockingStep;
-  private boolean isDocking, isOriented = false;
+  private boolean isOriented = false;
   private final Map<String, String> commands;
 
   private Stream<Double> errorStream;
 
-  private int utCallbackTag, errorCallbackTag;
+  private int errorCallbackTag;
 
   private DockingPhase currentPhase;
+  private ScheduledExecutorService dockingExecutor;
 
   public DockingController(ActiveVessel vessel, Map<String, String> commands) {
     super(vessel);
@@ -85,38 +89,18 @@ public class DockingController extends Controller {
     if (commands.get(Module.MODULO.get()).equals(Module.DOCKING.get())) {
       try {
         startDocking();
-        while (isDocking) {
-          if (Thread.interrupted()) {
-            throw new InterruptedException();
-          }
-          Thread.sleep(250);
-        }
-      } catch (RPCException | InterruptedException | StreamException | IllegalArgumentException e) {
+      } catch (RPCException | StreamException e) {
         cleanup();
-        setCurrentStatus("Docking interrupted: " + e.getMessage());
+        setCurrentStatus("Docking failed: " + e.getMessage());
       }
     }
   }
 
   public void startDocking() throws RPCException, StreamException {
-    isDocking = true;
     krpc = KRPC.newInstance(vessel.getConnectionManager().getConnection());
     currentPhase = DockingPhase.SETUP;
-
-    utCallbackTag =
-        vessel.missionTime.addCallback(
-            (ut) -> {
-              try {
-                if (isDocking) {
-                  updateDockingState();
-                } else {
-                  vessel.missionTime.removeCallback(utCallbackTag);
-                }
-              } catch (Exception e) {
-                setCurrentStatus("Docking failed: " + e.getMessage());
-                cleanup();
-              }
-            });
+    dockingExecutor = Executors.newSingleThreadScheduledExecutor();
+    dockingExecutor.scheduleAtFixedRate(this::updateDockingState, 0, 100, TimeUnit.MILLISECONDS);
   }
 
   private void initializeParameters() {
@@ -139,68 +123,77 @@ public class DockingController extends Controller {
     }
   }
 
-  private void updateDockingState() throws RPCException, StreamException, InterruptedException {
-    Vector targetPosition;
-    switch (currentPhase) {
-      case SETUP:
-        setCurrentStatus("Setting up for docking...");
-        control.setSAS(true);
-        control.setRCS(false);
-        control.setSASMode(SASMode.STABILITY_ASSIST);
-        createLines(positionMyDockingPort, positionTargetDockingPort);
-        currentPhase = DockingPhase.ORIENT_TO_TARGET;
-        break;
-      case ORIENT_TO_TARGET:
-        setCurrentStatus("Orienting to target vessel...");
-        targetPosition = new Vector(targetVessel.position(vesselRefFrame));
-        if (targetPosition.magnitude() > SAFE_DISTANCE) {
-          Vector targetDirection =
-              new Vector(vessel.getActiveVessel().position(orbitalRefVessel))
-                  .subtract(new Vector(targetVessel.position(orbitalRefVessel)))
-                  .multiply(-1);
-          pointToTarget(targetDirection);
-          control.setRCS(true);
-          currentPhase = DockingPhase.APPROACH_TARGET;
-        } else {
-          currentPhase = DockingPhase.ORIENT_TO_PORT;
-        }
-        break;
-      case APPROACH_TARGET:
-        setCurrentStatus("Approaching target vessel...");
-        targetPosition = new Vector(targetVessel.position(vesselRefFrame));
-        if (targetPosition.magnitude() > SAFE_DISTANCE) {
-          controlShipRCS(targetPosition, SAFE_DISTANCE);
-        } else {
-          currentPhase = DockingPhase.ORIENT_TO_PORT;
-        }
-        break;
-      case ORIENT_TO_PORT:
-        setCurrentStatus("Orienting to docking port...");
-        control.setSAS(false);
-        control.setRCS(false);
-        Vector targetDockingPortDirection =
-            new Vector(targetDockingPort.direction(orbitalRefVessel)).multiply(-1);
-        pointToTarget(targetDockingPortDirection);
-        control.setRCS(true);
-        if (isOriented) {
-          currentPhase = DockingPhase.FINAL_APPROACH;
-        }
-        break;
-      case FINAL_APPROACH:
-        setCurrentStatus("Final approach...");
-        targetPosition =
-            new Vector(targetDockingPort.position(vesselRefFrame))
-                .subtract(new Vector(myDockingPort.position(vesselRefFrame)));
-        double safeDistance = targetPosition.magnitude() < 10 ? 1 : 10;
-        controlShipRCS(targetPosition, safeDistance);
-        if (myDockingPort.getState() == DockingPortState.DOCKED) {
-          setCurrentStatus("Docking successful!");
-          currentPhase = DockingPhase.FINISHED;
-        }
-        break;
-      case FINISHED:
+  private void updateDockingState() {
+    try {
+      if (!isRunning()) {
         cleanup();
-        break;
+        return;
+      }
+      Vector targetPosition;
+      switch (currentPhase) {
+        case SETUP:
+          setCurrentStatus("Setting up for docking...");
+          control.setSAS(true);
+          control.setRCS(false);
+          control.setSASMode(SASMode.STABILITY_ASSIST);
+          createLines(positionMyDockingPort, positionTargetDockingPort);
+          currentPhase = DockingPhase.ORIENT_TO_TARGET;
+          break;
+        case ORIENT_TO_TARGET:
+          setCurrentStatus("Orienting to target vessel...");
+          targetPosition = new Vector(targetVessel.position(vesselRefFrame));
+          if (targetPosition.magnitude() > SAFE_DISTANCE) {
+            Vector targetDirection =
+                new Vector(vessel.getActiveVessel().position(orbitalRefVessel))
+                    .subtract(new Vector(targetVessel.position(orbitalRefVessel)))
+                    .multiply(-1);
+            pointToTarget(targetDirection);
+            control.setRCS(true);
+            currentPhase = DockingPhase.APPROACH_TARGET;
+          } else {
+            currentPhase = DockingPhase.ORIENT_TO_PORT;
+          }
+          break;
+        case APPROACH_TARGET:
+          setCurrentStatus("Approaching target vessel...");
+          targetPosition = new Vector(targetVessel.position(vesselRefFrame));
+          if (targetPosition.magnitude() > SAFE_DISTANCE) {
+            controlShipRCS(targetPosition, SAFE_DISTANCE);
+          } else {
+            currentPhase = DockingPhase.ORIENT_TO_PORT;
+          }
+          break;
+        case ORIENT_TO_PORT:
+          setCurrentStatus("Orienting to docking port...");
+          control.setSAS(false);
+          control.setRCS(false);
+          Vector targetDockingPortDirection =
+              new Vector(targetDockingPort.direction(orbitalRefVessel)).multiply(-1);
+          pointToTarget(targetDockingPortDirection);
+          control.setRCS(true);
+          if (isOriented) {
+            currentPhase = DockingPhase.FINAL_APPROACH;
+          }
+          break;
+        case FINAL_APPROACH:
+          setCurrentStatus("Final approach...");
+          targetPosition =
+              new Vector(targetDockingPort.position(vesselRefFrame))
+                  .subtract(new Vector(myDockingPort.position(vesselRefFrame)));
+          double safeDistance = targetPosition.magnitude() < 10 ? 1 : 10;
+          controlShipRCS(targetPosition, safeDistance);
+          if (myDockingPort.getState() == DockingPortState.DOCKED) {
+            setCurrentStatus("Docking successful!");
+            currentPhase = DockingPhase.FINISHED;
+          }
+          break;
+        case FINISHED:
+          stop();
+          break;
+      }
+    } catch (RPCException | StreamException | InterruptedException e) {
+      setCurrentStatus("Docking failed: " + e.getMessage());
+      cleanup();
     }
   }
 
@@ -383,8 +376,10 @@ public class DockingController extends Controller {
   }
 
   private void cleanup() {
+    if (dockingExecutor != null && !dockingExecutor.isShutdown()) {
+      dockingExecutor.shutdownNow();
+    }
     try {
-      isDocking = false;
       if (errorStream != null) {
         errorStream.remove();
       }

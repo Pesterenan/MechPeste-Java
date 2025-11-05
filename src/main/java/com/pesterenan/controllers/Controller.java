@@ -4,6 +4,7 @@ import com.pesterenan.model.ActiveVessel;
 
 public class Controller implements Runnable {
   protected final ActiveVessel vessel;
+  private volatile boolean isRunning = true;
   private String currentStatus = "";
 
   public Controller(ActiveVessel vessel) {
@@ -12,6 +13,14 @@ public class Controller implements Runnable {
 
   public void run() {
     // This method should be overridden by subclasses.
+  }
+
+  public void stop() {
+    this.isRunning = false;
+  }
+
+  public boolean isRunning() {
+    return this.isRunning;
   }
 
   public String getCurrentStatus() {

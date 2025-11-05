@@ -7,6 +7,9 @@ import com.pesterenan.utils.Module;
 import com.pesterenan.utils.Navigation;
 import com.pesterenan.utils.Utilities;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import krpc.client.RPCException;
 import krpc.client.Stream;
 import krpc.client.StreamException;
@@ -36,18 +39,15 @@ public class LandingController extends Controller {
   private Navigation navigation;
   private final int HUNDRED_PERCENT = 100;
   private double altitudeErrorPercentage, hoverAltitude, targetPeriapsis;
-  private boolean hoveringMode, hoverAfterApproximation, landingMode;
+  private boolean hoverAfterApproximation, landingMode;
   private MODE currentMode;
   private float maxTWR;
   private final Map<String, String> commands;
 
   private volatile boolean isDeorbitBurnDone, isOrientedForDeorbit, isFalling, wasAirborne = false;
-  private volatile boolean isCleaningUp = false;
-  private int isOrientedCallbackTag,
-      isDeorbitBurnDoneCallbackTag,
-      isFallingCallbackTag,
-      utCallbackTag;
+  private int isOrientedCallbackTag, isDeorbitBurnDoneCallbackTag, isFallingCallbackTag;
   private Stream<Float> apErrorStream;
+  private ScheduledExecutorService landingExecutor;
 
   public LandingController(ActiveVessel vessel, Map<String, String> commands) {
     super(vessel);
@@ -61,24 +61,39 @@ public class LandingController extends Controller {
     try {
       if (commands.get(Module.MODULO.get()).equals(Module.HOVERING.get())) {
         hoverArea();
-      }
-      if (commands.get(Module.MODULO.get()).equals(Module.LANDING.get())) {
+      } else if (commands.get(Module.MODULO.get()).equals(Module.LANDING.get())) {
         autoLanding();
       }
-      while (landingMode || hoveringMode) {
-        if (Thread.interrupted()) {
-          throw new InterruptedException();
-        }
-        Thread.sleep(100);
-      }
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt(); // Restore interrupted status
-      System.err.println("Controle de Pouso finalizado via interrupção.");
-      setCurrentStatus(Bundle.getString("status_ready"));
+      landingExecutor = Executors.newSingleThreadScheduledExecutor();
+      landingExecutor.scheduleAtFixedRate(this::landingStateMachine, 0, 100, TimeUnit.MILLISECONDS);
     } catch (RPCException | StreamException e) {
       System.err.println("Erro no run do landingController:" + e.getMessage());
       setCurrentStatus(Bundle.getString("status_data_unavailable"));
-    } finally {
+      cleanup();
+    }
+  }
+
+  private void landingStateMachine() {
+    try {
+      if (!isRunning()) {
+        cleanup();
+        return;
+      }
+      if (landingMode) {
+        executeLandingStep();
+      } else {
+        altitudeErrorPercentage = vessel.surfaceAltitude.get() / hoverAltitude * HUNDRED_PERCENT;
+        if (altitudeErrorPercentage > HUNDRED_PERCENT * 1.1) {
+          currentMode = MODE.GOING_DOWN;
+        } else if (altitudeErrorPercentage < HUNDRED_PERCENT * 0.9) {
+          currentMode = MODE.GOING_UP;
+        } else {
+          currentMode = MODE.HOVERING;
+        }
+        executeHoverStep();
+      }
+    } catch (Exception e) {
+      System.err.println("Landing state machine error: " + e.getMessage());
       cleanup();
     }
   }
@@ -92,14 +107,14 @@ public class LandingController extends Controller {
     velocityCtrl.setOutput(0, 1);
   }
 
-  private void hoverArea() throws RPCException, StreamException, InterruptedException {
-    hoveringMode = true;
+  private void hoverArea() throws RPCException, StreamException {
+    landingMode = false;
     vessel.ap.engage();
     vessel.tuneAutoPilot();
     setupCallbacks();
   }
 
-  private void autoLanding() throws RPCException, StreamException, InterruptedException {
+  private void autoLanding() throws RPCException, StreamException {
     landingMode = true;
     hoverAfterApproximation = Boolean.parseBoolean(commands.get(Module.HOVER_AFTER_LANDING.get()));
     if (!hoverAfterApproximation) {
@@ -158,34 +173,6 @@ public class LandingController extends Controller {
               if (vv <= 0) {
                 isFalling = true;
                 vessel.verticalVelocity.removeCallback(isFallingCallbackTag);
-              }
-            });
-
-    utCallbackTag =
-        vessel.missionTime.addCallback(
-            (ut) -> {
-              if (isCleaningUp) {
-                return;
-              }
-              try {
-                if (landingMode) {
-                  executeLandingStep();
-                } else if (hoveringMode) {
-                  altitudeErrorPercentage =
-                      vessel.surfaceAltitude.get() / hoverAltitude * HUNDRED_PERCENT;
-                  if (altitudeErrorPercentage > HUNDRED_PERCENT * 1.1) {
-                    currentMode = MODE.GOING_DOWN;
-                  } else if (altitudeErrorPercentage < HUNDRED_PERCENT * 0.9) {
-                    currentMode = MODE.GOING_UP;
-                  } else {
-                    currentMode = MODE.HOVERING;
-                  }
-                  executeHoverStep();
-                } else {
-                  vessel.missionTime.removeCallback(utCallbackTag);
-                }
-              } catch (Exception e) {
-                System.err.println("UT Callback error: " + e.getMessage());
               }
             });
 
@@ -296,7 +283,7 @@ public class LandingController extends Controller {
 
   private void executeHoverStep() throws RPCException, StreamException, InterruptedException {
     if (hasTheVesselLanded()) {
-      hoveringMode = false;
+      stop();
       return;
     }
     adjustHoverPID();
@@ -392,8 +379,7 @@ public class LandingController extends Controller {
         && (situation.equals(VesselSituation.LANDED)
             || situation.equals(VesselSituation.SPLASHED))) {
       setCurrentStatus(Bundle.getString("status_landed"));
-      hoveringMode = false;
-      landingMode = false;
+      stop();
       vessel.throttle(0.0f);
       vessel.getActiveVessel().getControl().setSAS(true);
       vessel.getActiveVessel().getControl().setRCS(true);
@@ -431,10 +417,10 @@ public class LandingController extends Controller {
   }
 
   private void cleanup() {
-    isCleaningUp = true;
+    if (landingExecutor != null && !landingExecutor.isShutdown()) {
+      landingExecutor.shutdownNow();
+    }
     try {
-      landingMode = false;
-      hoveringMode = false;
       if (vessel.ap != null) {
         vessel.ap.disengage();
       }
