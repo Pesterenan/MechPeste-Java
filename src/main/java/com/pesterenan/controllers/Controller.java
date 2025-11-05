@@ -1,25 +1,33 @@
 package com.pesterenan.controllers;
 
 import com.pesterenan.model.ActiveVessel;
-import com.pesterenan.model.ConnectionManager;
-import com.pesterenan.model.VesselManager;
 
-public class Controller extends ActiveVessel implements Runnable {
+public class Controller implements Runnable {
+  protected final ActiveVessel vessel;
+  private volatile boolean isRunning = true;
+  private String currentStatus = "";
 
-    public Controller(ConnectionManager connectionManager, VesselManager vesselManager) {
-        super(connectionManager, vesselManager);
-    }
+  public Controller(ActiveVessel vessel) {
+    this.vessel = vessel;
+  }
 
-    public void run() {
-        try {
-            while (!Thread.interrupted()) {
-                long currentTime = System.currentTimeMillis();
-                if (currentTime > timer + 100) {
-                    recordTelemetryData();
-                    timer = currentTime;
-                }
-            }
-        } catch (Exception ignored) {
-        }
-    }
+  public void run() {
+    // This method should be overridden by subclasses.
+  }
+
+  public void stop() {
+    this.isRunning = false;
+  }
+
+  public boolean isRunning() {
+    return this.isRunning;
+  }
+
+  public String getCurrentStatus() {
+    return currentStatus;
+  }
+
+  public void setCurrentStatus(String status) {
+    this.currentStatus = status;
+  }
 }
